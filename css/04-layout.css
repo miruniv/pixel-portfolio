@@ -86,25 +86,27 @@ body {
 }
 
 /* ---------- Колонка 2: персонаж ---------- */
-/* Одна панель с одной рамкой. Внутри — окно реплики, сцена и профиль;
-   вложенных коробок с двойными обводками в макете нет. */
+/* Одна панель с одной рамкой. Колонка flex, а не grid: сцене нужно уметь
+   отдавать высоту. При grid + align-content: center содержимое выше трека
+   вылезало поровну вверх и вниз — бабл наезжал на заголовок окна, а низ
+   уходил под нижнюю рамку. min-height: 0 снимает автоминимум флекс-
+   элементов, из-за которого они отказывались сжиматься. */
 .hero {
   grid-area: hero;
-  display: grid;
-  grid-template-rows: auto auto auto;
+  display: flex;
+  flex-direction: column;
   gap: var(--sp-4);
-  align-content: center;
   padding: var(--sp-3);
   margin: var(--sp-3);
   min-height: 0;
+  overflow: visible;
 }
 .hero > * { min-width: 0; }
-/* Бабл придвинут к персонажу: между ними ровно хвостик. Он выходит на
-   16px ниже рамки, поэтому просвет должен быть не меньше — иначе сцена
-   накрывает остриё. z-index держит хвостик поверх сцены. */
-.hero__bubble { grid-row: 1; width: 100%; z-index: 1; }
-.hero__stage  { grid-row: 2; width: 100%; }
-.charstats    { grid-row: 3; width: 100%; }
+
+/* Бабл и подпись держат свою высоту, сцена забирает остаток и сжимается */
+.hero__bubble { flex: 0 0 auto; width: 100%; z-index: 1; }
+.hero__stage  { flex: 1 1 auto; width: 100%; min-height: 0; }
+.charstats    { flex: 0 0 auto; width: 100%; }
 
 /* ---------- Колонка 3: контент ----------
    Контур .px-box рисуется снаружи бокса, поэтому overflow:hidden здесь

@@ -389,14 +389,18 @@
       var padTop = ir.top - sr.top, padBottom = sr.bottom - ir.bottom;
       var padLeft = ir.left - sr.left, padRight = sr.right - ir.right;
 
-      ok("поля над спрайтом и под ним равны", Math.abs(padTop - padBottom) <= 1,
+      // Персонаж намеренно ниже центра: сверху воздуха больше, чем под ногами
+      ok("над головой воздуха больше, чем под ногами", padTop > padBottom + 8,
          Math.round(padTop) + " сверху / " + Math.round(padBottom) + " снизу");
       ok("поля слева и справа равны", Math.abs(padLeft - padRight) <= 1,
          Math.round(padLeft) + " / " + Math.round(padRight));
       ok("спрайт не прижат к нижней грани рамки", padBottom >= 16, Math.round(padBottom));
-      ok("центр спрайта совпадает с центром рамки по обеим осям",
-         Math.abs((ir.left + ir.right) / 2 - (sr.left + sr.right) / 2) <= 1 &&
-         Math.abs((ir.top + ir.bottom) / 2 - (sr.top + sr.bottom) / 2) <= 1);
+      ok("спрайт по центру рамки по горизонтали",
+         Math.abs((ir.left + ir.right) / 2 - (sr.left + sr.right) / 2) <= 1);
+      ok("по вертикали спрайт ниже центра рамки",
+         (ir.top + ir.bottom) / 2 > (sr.top + sr.bottom) / 2,
+         Math.round((ir.top + ir.bottom) / 2) + " vs центр " +
+         Math.round((sr.top + sr.bottom) / 2));
       var w = Math.round(ir.width), hh = Math.round(ir.height);
       ok("спрайт выводится целым множителем исходного размера",
          w === hh && w % SITE_DATA.character.frameSize === 0,
@@ -405,14 +409,18 @@
       // gaze меряет сам <img>, поэтому после центрирования его центр —
       // это середина рамки. Проверяем от неё, а не от прежнего низа.
       var fcx = (ir.left + ir.right) / 2, fcy = (ir.top + ir.bottom) / 2;
+      // Сцена стала выше, поэтому точки для секторов берём заведомо за её
+      // пределами — иначе срабатывает правило «курсор внутри рамки».
+      var fr = $(".display").getBoundingClientRect();
+      var outX = fr.width / 2 + 120, outY = fr.height / 2 + 120;
       move(fcx + 6, fcy + 6); G.update();
       ok("мёртвая зона отсчитывается от середины рамки",
          fileOf(img) === "look-center.png", fileOf(img));
-      move(fcx + 300, fcy); G.update();
+      move(fcx + outX, fcy); G.update();
       ok("сектор вправо — от середины рамки", fileOf(img) === "look-right.png", fileOf(img));
-      move(fcx, fcy - 300); G.update();
+      move(fcx, fcy - outY); G.update();
       ok("сектор вверх — от середины рамки", fileOf(img) === "look-up.png", fileOf(img));
-      move(fcx - 220, fcy + 220); G.update();
+      move(fcx - outX, fcy + outY); G.update();
       ok("сектор вниз-влево — от середины рамки",
          fileOf(img) === "look-down-left.png", fileOf(img));
 
@@ -547,11 +555,12 @@
       ok("у шкалы есть текстовая альтернатива",
          ($(".lvlbar").getAttribute("aria-label") || "").indexOf(String(SITE_DATA.profile.level)) > -1,
          $(".lvlbar").getAttribute("aria-label"));
-      ok("строк STATUS/LOCATION/NOW столько же, сколько в данных",
-         $$(".charstats__rows dt").length === SITE_DATA.profile.rows.length);
-      ok("значения строк взяты из данных",
-         $$(".charstats__rows dd").map(function (n) { return n.textContent; }).join("|") ===
-         SITE_DATA.profile.rows.map(function (r) { return r.value; }).join("|"));
+      ok("блок STATUS / LOCATION / CURRENTLY убран",
+         $$(".charstats__rows").length === 0 && !SITE_DATA.profile.rows);
+      ok("после шкалы XP в колонке ничего нет",
+         $$(".hero > *").pop() === $(".charstats") &&
+         $(".charstats").lastElementChild.querySelector(".lvlbar") !== null,
+         $(".charstats").lastElementChild.className);
 
       // ==================== ПОДВАЛ ====================
       head("подвал");
@@ -937,6 +946,108 @@
              var n = $(sel);
              return !n || sideWidths(n).some(function (x) { return x === 0; });
            }).join(" ") || "все");
+
+      // ============ ЦЕНТРАЛЬНАЯ ПАНЕЛЬ ПОМЕЩАЕТСЯ В ОКНО ============
+      head("центральная колонка в границах окна");
+      location.hash = "#about"; await tick(200);
+      // На узком экране рабочая область прокручивается: меряем в её начале,
+      // иначе панель законно уезжает выше заголовка вместе со скроллом.
+      var wsEl = $(".workspace");
+      wsEl.scrollTop = 0; window.scrollTo(0, 0);
+      await tick(80);
+      var heroEl = $(".hero"), tbEl = $(".titlebar"), scEl = $(".screen");
+      var hr = heroEl.getBoundingClientRect();
+      var tr = tbEl.getBoundingClientRect();
+      var scs = getComputedStyle(scEl), sr = scEl.getBoundingClientRect();
+      var innerBottom = sr.bottom - parseFloat(scs.borderBottomWidth);
+
+      ok("верх панели не выше низа заголовка окна", hr.top >= tr.bottom - 0.5,
+         "панель " + Math.round(hr.top) + ", заголовок до " + Math.round(tr.bottom));
+      ok("низ панели не ниже внутренней нижней границы окна",
+         hr.bottom <= innerBottom + 0.5,
+         "панель " + Math.round(hr.bottom) + ", окно до " + Math.round(innerBottom));
+
+      // Главное: раньше в границах была сама панель, а вываливались её дети.
+      // Проверяем это не только в центре — в левой колонке была та же беда.
+      var kids = $$(".hero > *");
+      function escapedFrom(panelSel, kidSel) {
+        var p = $(panelSel);
+        if (!p) return [];
+        var pr = p.getBoundingClientRect();
+        return $$(kidSel).filter(function (n) {
+          var r = n.getBoundingClientRect();
+          return r.height > 0 && (r.top < pr.top - 0.5 || r.bottom > pr.bottom + 0.5);
+        });
+      }
+      function describe(list) {
+        return list.map(function (n) {
+          var r = n.getBoundingClientRect();
+          return n.className.split(" ")[0] + "(" + Math.round(r.top) + ".." +
+                 Math.round(r.bottom) + ")"; }).join(" ");
+      }
+      var escaped = escapedFrom(".hero", ".hero > *");
+      ok("всё содержимое центральной колонки внутри её панели", escaped.length === 0,
+         describe(escaped) || "панель " + Math.round(hr.top) + ".." + Math.round(hr.bottom));
+
+      var escActs = escapedFrom(".acts", ".acts > *");
+      ok("всё содержимое панели действий внутри неё", escActs.length === 0, describe(escActs));
+
+      var escContent = escapedFrom(".content-frame", ".content-frame > *");
+      ok("контент и подвал внутри правой панели", escContent.length === 0, describe(escContent));
+
+      // И сами панели внутри рабочей области — но только когда она не
+      // прокручивается: на узком экране всё, что ниже сгиба, выходит за её
+      // видимый прямоугольник совершенно законно.
+      var wr = wsEl.getBoundingClientRect();
+      var wsScrolls = wsEl.scrollHeight > wsEl.clientHeight + 1;
+      if (wsScrolls) {
+        ok("рабочая область прокручивается — панели проверяем по содержимому",
+           wsEl.scrollTop === 0, "scrollTop=" + wsEl.scrollTop);
+      } else {
+        var panels = [".hero", ".acts", ".stats", ".content-frame"];
+        var outOfWs = panels.filter(function (sel) {
+          var n = $(sel); if (!n) return false;
+          var r = n.getBoundingClientRect();
+          return r.top < wr.top - 0.5 || r.bottom > wr.bottom + 0.5;
+        });
+        ok("все панели внутри рабочей области", outOfWs.length === 0,
+           outOfWs.map(function (sel) {
+             var r = $(sel).getBoundingClientRect();
+             return sel + "(" + Math.round(r.top) + ".." + Math.round(r.bottom) + ")"; }).join(" "));
+      }
+
+      // position: relative у .px-box нужен хвостику и из потока не выводит.
+      // Важно другое: нет отрицательного отступа, смещения и transform.
+      ok("окно реплики в потоке: без отрицательных отступов и сдвигов",
+         (function () {
+           var cs = getComputedStyle($(".hero__bubble"));
+           var okPos = cs.position === "static" || cs.position === "relative";
+           var okOff = ["top", "left"].every(function (k) {
+             return cs[k] === "auto" || parseFloat(cs[k]) === 0; });
+           return okPos && okOff && parseFloat(cs.marginTop) >= 0 &&
+                  (cs.transform === "none" || cs.transform === "matrix(1, 0, 0, 1, 0, 0)");
+         })(),
+         (function () { var cs = getComputedStyle($(".hero__bubble"));
+           return cs.position + " top=" + cs.top + " mt=" + cs.marginTop + " " + cs.transform; })());
+
+      ok("порядок колонки: реплика -> сцена -> имя/LVL -> XP",
+         kids.map(function (n) { return n.className.split(" ")[0]; }).join(",") ===
+         "hero__bubble,hero__stage,charstats",
+         kids.map(function (n) { return n.className.split(" ")[0]; }).join(","));
+
+      // персонаж ниже центра сцены
+      var stInner = $(".display__inner").getBoundingClientRect();
+      var imgR = $(".char__img").getBoundingClientRect();
+      var padTop = imgR.top - stInner.top, padBottom = stInner.bottom - imgR.bottom;
+      var bias = (padTop - padBottom) / 2 / stInner.height * 100;
+      ok("персонаж смещён ниже центра сцены на 6-8% её высоты",
+         bias >= 6 && bias <= 8, bias.toFixed(1) + "% (сверху " + Math.round(padTop) +
+         ", снизу " + Math.round(padBottom) + ", сцена " + Math.round(stInner.height) + ")");
+
+      ok("спрайт масштабируется целым множителем",
+         Math.round(imgR.width) % $(".char__img").naturalWidth === 0 &&
+         Math.round(imgR.width) === Math.round(imgR.height),
+         Math.round(imgR.width) + " при исходнике " + $(".char__img").naturalWidth);
 
       // ==================== МОБИЛЬНАЯ РАСКЛАДКА ====================
       head("мобильная раскладка");

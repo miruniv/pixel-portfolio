@@ -111,12 +111,7 @@ const SITE_DATA = {
   profile: {
     level: 22,
     levelFilled: 7,          // сколько ячеек шкалы закрашено
-    levelTotal: 10,          // всего ячеек; счётчик в aria берётся отсюда
-    rows: [
-      { label: "STATUS",   value: "Open to work" },
-      { label: "LOCATION", value: "London, UK" },
-      { label: "NOW",      value: "Learning Three.js" }
-    ]
+    levelTotal: 10           // всего ячеек; счётчик в aria берётся отсюда
   },
 
   /* ------------------------------------------------------------ ДЕЙСТВИЯ -- */

@@ -7,8 +7,26 @@
        Дробный scale ломает pixelated: часть «пикселей» станет 3px, часть 4px. --- */
 /* Масштаб спрайта — только целые множители, и поля сцены вместе с ним:
    дробные значения ломают и pixelated, и попадание рамок на целый пиксель. */
-@media (max-width: 1100px) { :root { --char-scale: 2; --stage-pad: 40px; } }
-@media (max-width: 560px)  { :root { --char-scale: 1; --stage-pad: 16px; } }
+@media (max-width: 1100px) { :root { --char-scale: 2; --stage-pad: 32px; --stage-bias: 60px; } }
+/* Низкий вьюпорт ограничивает масштаб так же, как узкий: иначе спрайт
+   не оставляет сцене места и колонка перестаёт помещаться в окно. */
+@media (max-height: 900px) {
+  :root { --char-scale: 2; --stage-pad: 32px; --stage-bias: 60px; }
+
+  /* На низком экране панели ужимаются отступами, а не размерами кнопок:
+     высоты кнопок навигации и слотов заданы макетом (58-62px) и трогать
+     их нельзя. Без этого строка обратной связи вываливалась из своей
+     панели на 47px и упиралась в нижнюю рамку окна. */
+  /* Замер: панели действий не хватало ровно 7px. Поля панели и зазор
+     колонки дают 12 — с запасом и без ужимания кнопок. */
+  .col-left { gap: var(--sp-1); }
+  .acts { margin: 0; padding: var(--sp-2); gap: var(--sp-2); }
+  .actions__row { gap: var(--sp-2); }
+  .actions__primary, .actions__grid { gap: var(--sp-2); }
+  .hero { margin: var(--sp-2); padding: var(--sp-2); gap: var(--sp-3); }
+  .content-frame { margin: var(--sp-2); }
+}
+@media (max-width: 560px)  { :root { --char-scale: 1; --stage-pad: 16px; --stage-bias: 24px; } }
 
 /* ============ <= 900px: три колонки складываются вертикально ============ */
 @media (max-width: 900px) {

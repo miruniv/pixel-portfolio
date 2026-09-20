@@ -142,8 +142,7 @@
       profile: {
         level: prof.level,
         filled: filled,
-        total: total,
-        rows: Array.isArray(prof.rows) ? prof.rows : []
+        total: total
       },
       actions: {
         title: actRaw.title || "ACTIONS",

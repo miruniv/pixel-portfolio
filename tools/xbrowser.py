@@ -22,7 +22,7 @@ from playwright.sync_api import sync_playwright
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PAGE = "file://" + os.path.join(ROOT, "selftest.html")
 ENGINES = ["chromium", "firefox", "webkit"]
-VIEWPORTS = [("desktop", 1600, 1100), ("mobile", 390, 844)]
+VIEWPORTS = [("desktop", 1600, 1100), ("laptop", 1280, 800), ("mobile", 390, 844)]
 
 
 def run_one(browser, label, width, height):

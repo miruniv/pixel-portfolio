@@ -483,12 +483,6 @@
       bar
     ]));
 
-    var dl = el("dl", { class: "charstats__rows" });
-    p.rows.forEach(function (r) {
-      dl.appendChild(el("dt", { text: r.label }));
-      dl.appendChild(el("dd", { text: r.value }));
-    });
-    frag.appendChild(dl);
     return frag;
   }
 
