@@ -226,11 +226,17 @@
         var vals = (t.values || []).map(function (v) {
           return el("span", { class: "tag__val", text: v });
         });
-        tags.appendChild(el("li", { class: "tag" }, [
+        // tone: "alt" — второй цвет чипов, "plain" — значение без чипа
+        var cls = "tag" + (t.tone ? " tag--" + t.tone : "");
+        tags.appendChild(el("li", { class: cls }, [
           el("span", { class: "tag__label", text: (t.label || "") + ":" })
         ].concat(vals)));
       });
       frag.appendChild(tags);
+    }
+
+    if (data.featured && data.featured.title) {
+      frag.appendChild(featured(data.featured));
     }
 
     if (Array.isArray(data.links) && data.links.length) {
@@ -345,9 +351,20 @@
     return frag;
   }
 
-  /* ------------------------------------------- СТАТЫ ПЕРСОНАЖА ---- */
-  function charStats(p) {
+  /* ------------------------------------------- КАРТОЧКА ПРОФИЛЯ ---- */
+  function charStats(p, opts) {
+    opts = opts || {};
     var frag = document.createDocumentFragment();
+
+    // Шапка: имя со стрелками слева, уровень справа
+    frag.appendChild(el("div", { class: "profile__head" }, [
+      el("div", { class: "profile__ident" }, [
+        navArrow(-1, opts.prevLabel || "Previous section"),
+        el("p", { class: "profile__name", text: opts.name || "" }),
+        navArrow(1, opts.nextLabel || "Next section")
+      ]),
+      p.level == null ? null : el("p", { class: "profile__lvl", text: "LVL " + p.level })
+    ]));
 
     // Шкала из отдельных квадратиков, а не градиент: так она остаётся
     // пиксельной на любом масштабе.
@@ -363,7 +380,7 @@
       }));
     }
     frag.appendChild(el("div", { class: "charstats__lvl" }, [
-      el("span", { class: "charstats__lvlnum", text: "LVL " + p.level }),
+      el("span", { class: "charstats__lvlnum", text: "XP" }),
       bar
     ]));
 
@@ -398,7 +415,34 @@
     return frag;
   }
 
-  /* ---------------------------------------- СТРЕЛКИ У ПЛАШКИ ИМЕНИ ---- */
+  /* -------------------------------------------- FEATURED PROJECT ---- */
+  function featured(f) {
+    var external = /^https?:/i.test(f.url || "");
+    var kids = [
+      el("span", { class: "featured__icon px-box" },
+         d.pixelArt(ICONS[f.icon] || ICONS.monitor, 16)),
+      el("div", { class: "featured__body" }, [
+        f.label ? el("p", { class: "featured__label", text: f.label }) : null,
+        el("p", { class: "featured__title", text: f.title }),
+        f.text ? el("p", { class: "featured__text", text: f.text }) : null
+      ])
+    ];
+    if (f.url) {
+      kids.push(el("a", {
+        class: "featured__cta px-box",
+        href: f.url,
+        target: external ? "_blank" : null,
+        rel: external ? "noopener noreferrer" : null,
+        "aria-label": (f.cta || "Open") + ": " + f.title
+      }, [
+        el("span", { text: f.cta || "OPEN" }),
+        external ? d.pixelArt(ICONS.external, 16) : null
+      ]));
+    }
+    return el("div", { class: "featured px-box" }, kids);
+  }
+
+  /* ---------------------------------------- СТРЕЛКИ У ИМЕНИ ---- */
   function navArrow(dir, label) {
     return el("button", {
       type: "button",
@@ -412,6 +456,7 @@
   M.render = {
     stats: stats, hint: hint, grid: grid, page: page, detail: detail,
     appIcon: appIcon, icons: ICONS,
-    inventory: inventory, charStats: charStats, footer: footer, navArrow: navArrow
+    inventory: inventory, charStats: charStats, footer: footer,
+    navArrow: navArrow, featured: featured
   };
 })(window.MIRA);

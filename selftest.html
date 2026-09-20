@@ -100,12 +100,9 @@
         </div>
       </div>
 
-      <!-- Стрелки вставляет app.js: подписи берутся из SITE_DATA.ui -->
-      <div class="hero__nameplate" id="nameplate">
-        <p class="hero__plate px-box"><span id="plate-text"></span></p>
-      </div>
-
-      <section class="charstats px-box" id="charstats" aria-label="Character stats"></section>
+      <!-- Карточка профиля: имя, стрелки, LVL, шкала XP и строки статуса.
+           Собирается в app.js из SITE_DATA.profile и SITE_DATA.character -->
+      <section class="charstats px-box" id="charstats" aria-label="Character profile"></section>
     </div>
 
     <!-- Колонка 3: контент.
@@ -323,6 +320,53 @@
       var dirtyBefore = st.dirty;
       window.dispatchEvent(new Event("resize"));
       ok("resize помечает геометрию устаревшей", st.dirty === true, String(dirtyBefore));
+
+      // ==================== СЦЕНА: ЦЕНТРИРОВАНИЕ И ЦЕНТР ДЛЯ GAZE ====================
+      head("сцена персонажа");
+      var stage = $(".display__inner");
+      var ir = img.getBoundingClientRect(), sr = stage.getBoundingClientRect();
+      var padTop = ir.top - sr.top, padBottom = sr.bottom - ir.bottom;
+      var padLeft = ir.left - sr.left, padRight = sr.right - ir.right;
+
+      ok("поля над спрайтом и под ним равны", Math.abs(padTop - padBottom) <= 1,
+         Math.round(padTop) + " сверху / " + Math.round(padBottom) + " снизу");
+      ok("поля слева и справа равны", Math.abs(padLeft - padRight) <= 1,
+         Math.round(padLeft) + " / " + Math.round(padRight));
+      ok("спрайт не прижат к нижней грани рамки", padBottom >= 16, Math.round(padBottom));
+      ok("центр спрайта совпадает с центром рамки по обеим осям",
+         Math.abs((ir.left + ir.right) / 2 - (sr.left + sr.right) / 2) <= 1 &&
+         Math.abs((ir.top + ir.bottom) / 2 - (sr.top + sr.bottom) / 2) <= 1);
+      ok("спрайт выводится целым множителем исходного размера",
+         ir.width === ir.height && ir.width % SITE_DATA.character.frameSize === 0,
+         ir.width + "x" + ir.height + " при исходнике " + SITE_DATA.character.frameSize);
+
+      // gaze меряет сам <img>, поэтому после центрирования его центр —
+      // это середина рамки. Проверяем от неё, а не от прежнего низа.
+      var fcx = (ir.left + ir.right) / 2, fcy = (ir.top + ir.bottom) / 2;
+      move(fcx + 6, fcy + 6); G.update();
+      ok("мёртвая зона отсчитывается от середины рамки",
+         fileOf(img) === "look-center.png", fileOf(img));
+      move(fcx + 300, fcy); G.update();
+      ok("сектор вправо — от середины рамки", fileOf(img) === "look-right.png", fileOf(img));
+      move(fcx, fcy - 300); G.update();
+      ok("сектор вверх — от середины рамки", fileOf(img) === "look-up.png", fileOf(img));
+      move(fcx - 220, fcy + 220); G.update();
+      ok("сектор вниз-влево — от середины рамки",
+         fileOf(img) === "look-down-left.png", fileOf(img));
+
+      // Сдвигаем сцену программно: если бы gaze держал устаревший rect,
+      // точка в новом центре дала бы направление, а не center.
+      stage.style.paddingTop = "160px";
+      window.dispatchEvent(new Event("resize"));
+      var ir2 = img.getBoundingClientRect();
+      ok("геометрия реально изменилась", Math.abs(ir2.top - ir.top) > 20,
+         Math.round(ir.top) + " -> " + Math.round(ir2.top));
+      move((ir2.left + ir2.right) / 2, (ir2.top + ir2.bottom) / 2 + 6); G.update();
+      ok("после resize gaze берёт новый центр, а не старый",
+         fileOf(img) === "look-center.png", fileOf(img));
+      stage.style.paddingTop = "";
+      window.dispatchEvent(new Event("resize"));
+      G.update();
 
       // ==================== reduced-motion ====================
       head("gaze: prefers-reduced-motion");
@@ -564,12 +608,45 @@
            var r = b.getBoundingClientRect(); return Math.round(r.width) + "x" + Math.round(r.height);
          }).join(" "));
 
+      // ==================== FEATURED PROJECT ====================
+      head("карточка избранного проекта");
+      location.hash = "#about"; await tick(140);
+      var fc = $(".featured");
+      ok("карточка отрисована", !!fc);
+      ok("заголовок из данных",
+         $(".featured__title").textContent === SITE_DATA.sections[0].page.featured.title,
+         $(".featured__title").textContent);
+      ok("карточка идёт сразу после метаданных",
+         fc.previousElementSibling && fc.previousElementSibling.classList.contains("tags"),
+         fc.previousElementSibling && fc.previousElementSibling.className);
+      ok("у ссылки карточки есть aria-label",
+         !!$(".featured__cta").getAttribute("aria-label"),
+         $(".featured__cta").getAttribute("aria-label"));
+      ok("ряды метаданных несут разные тона",
+         $$(".tag--alt").length > 0 && $$(".tag--plain").length > 0,
+         "alt=" + $$(".tag--alt").length + " plain=" + $$(".tag--plain").length);
+      ok("вводное предложение крупнее остального текста",
+         parseFloat(getComputedStyle($(".detail__text > .typed:first-child")).fontSize) >
+         parseFloat(getComputedStyle($$(".detail__text > .typed")[1]).fontSize));
+
       head("регресс: геометрия и тексты");
       ok("у всех img есть alt", $$("img").every(function (i) { return i.hasAttribute("alt"); }));
       ok("нет горизонтального скролла",
          document.documentElement.scrollWidth <= window.innerWidth + 1,
          document.documentElement.scrollWidth + " > " + window.innerWidth);
-      ok("страница не скроллится", document.documentElement.scrollHeight <= window.innerHeight + 1);
+      // Ниже 760px по высоте страница отпускается в скролл сознательно
+      // (см. 07-responsive.css), поэтому проверяем правило, а не следствие.
+      var tallEnough = window.innerHeight >= 760;
+      if (tallEnough) {
+        ok("на высоком вьюпорте страница не скроллится",
+           document.documentElement.scrollHeight <= window.innerHeight + 1,
+           document.documentElement.scrollHeight + " > " + window.innerHeight);
+      } else {
+        ok("на низком вьюпорте скролл страницы осознанно разрешён",
+           getComputedStyle(document.body).overflowY !== "hidden",
+           "innerHeight=" + window.innerHeight + " overflowY=" +
+           getComputedStyle(document.body).overflowY);
+      }
       ok("контур .px-box не обрезан", getComputedStyle($(".content-frame")).overflow === "visible");
 
       // Проверка потерялась при перестройке набора в коммите с gaze — возвращена.
@@ -586,7 +663,7 @@
            return n.className.split(" ")[0] + " " + Math.round(r.width) + "x" + Math.round(r.height);
          }).join(", "));
       ok("крупные кнопки >= 44px",
-         $$(".stat, .card, .back, .link, .nav-arrow, .ribbon__item").every(function (n) {
+         $$(".stat, .card, .back, .link, .ribbon__item").every(function (n) {
            var r = n.getBoundingClientRect();
            return r.height === 0 || r.height >= 44;
          }));

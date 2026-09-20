@@ -138,6 +138,7 @@
   --font-body: "Silkscreen", "Press Start 2P", "Courier New", monospace;
   --fs-xs: 8px;    --fs-sm: 10px;   --fs-md: 12px;
   --fs-lg: 16px;   --fs-xl: 20px;   --fs-2xl: 24px;
+  --fs-lead: 14px;                  /* вводное предложение в разделе */
   --fs-label: 9px;                  /* подписи метаданных: BASED IN, STACK */
   --fs-copy: 11px;                  /* копирайт в подвале */
 

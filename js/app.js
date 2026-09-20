@@ -280,7 +280,6 @@
     refs.workspace = d.qs("#workspace");
     refs.inventory = d.qs("#inventory");
     refs.charstats = d.qs("#charstats");
-    refs.nameplate = d.qs("#nameplate");
     refs.footer = d.qs("#footer");
     refs.stats = d.qs("#stats");
     refs.statList = d.qs("#stat-list");
@@ -314,13 +313,12 @@
 
     // Инвентарь, статы персонажа и подвал — статичны, рисуем один раз
     refs.inventory.appendChild(render.inventory(store.inventory));
-    refs.charstats.appendChild(render.charStats(store.profile));
+    refs.charstats.appendChild(render.charStats(store.profile, {
+      name: (store.character && store.character.plate) || "",
+      prevLabel: ui.prevSection,
+      nextLabel: ui.nextSection
+    }));
     refs.footer.appendChild(render.footer(store.footer));
-
-    // Стрелки по бокам плашки с именем
-    var plate = d.qs(".hero__plate", refs.nameplate);
-    refs.nameplate.insertBefore(render.navArrow(-1, ui.prevSection || "Previous section"), plate);
-    refs.nameplate.appendChild(render.navArrow(1, ui.nextSection || "Next section"));
 
     // Персонаж
     M.character.init({
@@ -328,8 +326,6 @@
       bubbleInk: d.qs("#bubble-ink"),
       bubbleSr: d.qs("#bubble-sr")
     });
-    d.qs("#plate-text").textContent = (store.character && store.character.plate) || "";
-
     syncSound();
     audio.onChange(syncSound);
 

@@ -123,16 +123,28 @@ const SITE_DATA = {
       page: {
         hero: null,
         heroAlt: "",
+        // Первый абзац выводится крупнее остальных — это вводное предложение.
         text: [
-          "I'm a frontend developer who ended up here through pixel art.",
-          "I like interfaces that feel like objects you can pick up: buttons that click, edges you can see, nothing that slides around for no reason.",
-          "Currently building small tools and stubbornly hand-writing CSS."
+          "Frontend developer who likes small, handmade interfaces.",
+          "I like things that feel like objects you can pick up: buttons that click, edges you can see, nothing that slides around for no reason.",
+          "Everything here is hand-written HTML, CSS and JavaScript. No framework, no build step."
         ],
+        // tone: "alt" — второй цвет чипов, "plain" — значение строкой без чипа
         tags: [
-          { label: "BASED IN", values: ["Almaty"] },
-          { label: "STACK", values: ["HTML", "CSS", "JavaScript"] },
-          { label: "ALSO", values: ["Aseprite", "Figma"] }
+          { label: "BASED IN",  values: ["Almaty / London"], tone: "plain" },
+          { label: "STACK",     values: ["HTML", "CSS", "JavaScript"] },
+          { label: "ALSO",      values: ["Figma", "Aseprite", "Three.js"], tone: "alt" },
+          { label: "CURRENTLY", values: ["Building small tools \u00B7 Learning Three.js"], tone: "plain" }
         ],
+        // Карточка избранного проекта. Идёт сразу под метаданными.
+        featured: {
+          label: "FEATURED PROJECT",
+          title: "SITE REDESIGN",
+          text: "Bakery site rebuilt by hand \u2014 half the load time.",
+          icon: "monitor",
+          cta: "OPEN",
+          url: "#projects/site-redesign"
+        },
         links: []
       }
     },
