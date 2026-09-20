@@ -139,7 +139,8 @@
     refs.modalTitle.textContent = item.title;
     d.clear(refs.modalBody);
     refs.modalBody.appendChild(
-      render.detail(section, item, jobs, { hideBack: true })
+      // titleId: null — модалка уже подписана через aria-labelledby="modal-title"
+      render.detail(section, item, jobs, { hideBack: true, titleId: null })
     );
     refs.modal.dataset.open = "true";
     refs.screen.setAttribute("inert", "");

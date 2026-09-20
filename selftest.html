@@ -188,7 +188,7 @@
     });
   }
   var $ = function (s) { return document.querySelector(s); };
-  var $$ = function (s) { return [].slice.call(document.querySelectorAll(s)); };
+  var $$ = function (s, root) { return [].slice.call((root || document).querySelectorAll(s)); };
   function key(k) { document.dispatchEvent(new KeyboardEvent("keydown", { key: k, bubbles: true })); }
   function move(x, y) { document.dispatchEvent(new MouseEvent("mousemove", { clientX: x, clientY: y, bubbles: true })); }
   function fileOf(el) { return (el.getAttribute("src") || "").split("/").pop(); }
@@ -420,12 +420,21 @@
       key("End"); await tick(20);
       ok("End -> последний", document.activeElement === stats[4]);
 
+      var isNarrow = window.innerWidth <= 900;
       var card = $('.card[data-item="pixel-timer"]');
-      card.focus(); card.click(); await tick(140);
-      ok("DETAIL открылась", $("#content-title").textContent === "PIXEL TIMER");
-      ok("фокус на BACK", document.activeElement === $('[data-action="back"]'));
+      card.focus(); card.click(); await tick(170);
+      // На узком экране деталь открывается модалкой, а не в правой панели
+      var dRoot = isNarrow ? $("#modal-body") : $("#content");
+      ok("DETAIL открылась",
+         !!dRoot.querySelector(".detail__title") &&
+         dRoot.querySelector(".detail__title").textContent === "PIXEL TIMER",
+         isNarrow ? "модалка" : "панель");
+      ok("заголовок детали не дублирует id заголовка сетки",
+         $$("#content-title").length <= 1, $$("#content-title").length + " с таким id");
+      ok(isNarrow ? "фокус на кнопке закрытия модалки" : "фокус на BACK",
+         document.activeElement === (isNarrow ? $("#modal-close") : $('[data-action="back"]')));
       ok("полный текст в .sr-only",
-         $$("#content .sr-only p").map(function (p) { return p.textContent; }).join("|") ===
+         $$(".sr-only p", dRoot).map(function (p) { return p.textContent; }).join("|") ===
          SITE_DATA.sections[2].items[1].detail.text.join("|"));
       ok("печатающийся слой скрыт от SR", $(".detail__text").getAttribute("aria-hidden") === "true");
       ok("нет aria-live", !$("#content [aria-live]"));
@@ -438,18 +447,22 @@
       ok("Esc возвращает на сетку", !!$("#content .cards") && location.hash === "#projects");
       ok("фокус вернулся на карточку", document.activeElement === $('.card[data-item="pixel-timer"]'));
 
+      if (isNarrow) { key("Escape"); await tick(170); }
       $("#content").style.maxHeight = "120px";
       $("#content").scrollTop = 40;
       var saved = $("#content").scrollTop;
-      $('.card[data-item="site-redesign"]').click(); await tick(140);
-      $('[data-action="back"]').click(); await tick(160);
+      $('.card[data-item="site-redesign"]').click(); await tick(170);
+      if (isNarrow) { key("Escape"); } else { $('[data-action="back"]').click(); }
+      await tick(180);
       ok("BACK восстанавливает скролл сетки", $("#content").scrollTop === saved,
          $("#content").scrollTop + " != " + saved);
       $("#content").style.maxHeight = "";
 
       $('.card[data-item="site-redesign"]').click(); await tick(140);
       var len = history.length;
-      $('.ribbon__item[data-item="pixel-timer"]').click(); await tick(140);
+      $$('.ribbon__item[data-item="pixel-timer"]',
+         isNarrow ? $("#modal-body") : $("#content"))[0].click();
+      await tick(170);
       ok("лента соседей = replace, не push", history.length === len);
 
       location.hash = "#about"; await tick();
@@ -549,8 +562,8 @@
 
       // ==================== ЛЕНТА СОСЕДЕЙ ====================
       head("кнопки ленты соседей");
-      location.hash = "#projects/pixel-timer"; await tick(140);
-      var ribs = $$(".ribbon__item");
+      location.hash = "#projects/pixel-timer"; await tick(180);
+      var ribs = $$(".ribbon__item", window.innerWidth <= 900 ? $("#modal-body") : $("#content"));
       ok("кнопки ленты без текстовых подписей",
          ribs.every(function (b) { return b.textContent.trim() === ""; }),
          ribs.map(function (b) { return b.textContent.trim(); }).join(","));
@@ -722,6 +735,79 @@
       ok("вводное предложение крупнее остального текста",
          parseFloat(getComputedStyle($(".detail__text > .typed:first-child")).fontSize) >
          parseFloat(getComputedStyle($$(".detail__text > .typed")[1]).fontSize));
+
+      // ==================== МОБИЛЬНАЯ РАСКЛАДКА ====================
+      head("мобильная раскладка");
+      var narrow = window.innerWidth <= 900;
+      if (!narrow) {
+        ok("проверки мобильной раскладки идут отдельным прогоном", true,
+           "ширина " + window.innerWidth + ", здесь пропускаем");
+      } else {
+        function top(sel) { return $(sel).getBoundingClientRect().top; }
+        ok("порядок: реплика -> персонаж -> профиль -> действия -> навигация -> контент",
+           top(".hero__bubble") < top("#stage") &&
+           top("#stage") < top(".charstats") &&
+           top(".charstats") < top(".acts") &&
+           top(".acts") < top(".stats") &&
+           top(".stats") < top("#content"),
+           [".hero__bubble", "#stage", ".charstats", ".acts", ".stats", "#content"]
+             .map(function (s2) { return s2 + "=" + Math.round(top(s2)); }).join(" "));
+
+        // Главное требование: без прокрутки видны персонаж, окно диалога
+        // и хотя бы одна кнопка действия.
+        var firstAct = $(".act").getBoundingClientRect();
+        ok("персонаж виден без прокрутки",
+           $("#stage").getBoundingClientRect().bottom <= window.innerHeight);
+        ok("окно диалога видно без прокрутки",
+           $(".hero__bubble").getBoundingClientRect().bottom <= window.innerHeight);
+        ok("хотя бы одна кнопка действия видна без прокрутки",
+           firstAct.bottom <= window.innerHeight,
+           Math.round(firstAct.bottom) + " > " + window.innerHeight);
+
+        var row = $(".actions__row");
+        var navRow0 = $(".stats__list");
+        ok("лента действий скроллится горизонтально", row.scrollWidth > row.clientWidth,
+           row.scrollWidth + " vs " + row.clientWidth);
+        // Chrome нормализует "x proximity" в "x": proximity — значение по
+        // умолчанию и в computed style опускается. Проверяем ось.
+        ok("у ленты действий включён scroll-snap по горизонтали",
+           /^x/.test(getComputedStyle(row).scrollSnapType),
+           getComputedStyle(row).scrollSnapType);
+        ok("у ленты навигации включён scroll-snap по горизонтали",
+           /^x/.test(getComputedStyle(navRow0).scrollSnapType),
+           getComputedStyle(navRow0).scrollSnapType);
+        ok("ряд действий не схлопнут — кнопки внутри своей панели",
+           row.getBoundingClientRect().bottom <=
+           $(".acts").getBoundingClientRect().bottom + 1);
+
+        var slotSizes = $$(".act").map(function (n) {
+          return Math.round(n.getBoundingClientRect().width);
+        });
+        ok("слоты действий в диапазоне 82-104px",
+           slotSizes.every(function (w) { return w >= 82 && w <= 104; }),
+           slotSizes.join(" "));
+        ok("два главных действия идут первыми",
+           $$(".act")[0].dataset.action === "music" &&
+           $$(".act")[1].dataset.action === "outfit",
+           $$(".act")[0].dataset.action + " " + $$(".act")[1].dataset.action);
+
+        var navRow = $(".stats__list");
+        ok("навигация скроллится горизонтально", navRow.scrollWidth > navRow.clientWidth);
+        ok("подписи навигации полные, без сокращений",
+           $$(".stat__label").map(function (n) { return n.textContent; }).join("|") ===
+           SITE_DATA.sections.map(function (x) { return x.label; }).join("|"),
+           $$(".stat__label").map(function (n) { return n.textContent; }).join("|"));
+
+        ok("нет горизонтальной прокрутки страницы",
+           document.documentElement.scrollWidth <= window.innerWidth + 1,
+           document.documentElement.scrollWidth + " > " + window.innerWidth);
+        var tooSmallM = $$(".act, .stat, .nav-arrow, .footer__link, .link, .back").filter(function (n) {
+          var r2 = n.getBoundingClientRect();
+          return r2.height > 0 && (r2.width < 44 || r2.height < 44);
+        });
+        ok("все тач-цели не мельче 44px", tooSmallM.length === 0,
+           tooSmallM.map(function (n) { return n.className.split(" ")[0]; }).join(", "));
+      }
 
       head("регресс: геометрия и тексты");
       ok("у всех img есть alt", $$("img").every(function (i) { return i.hasAttribute("alt"); }));

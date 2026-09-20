@@ -13,15 +13,27 @@
 
   .screen { height: min(100%, 100%); }
 
+  /* Порядок блоков: шапка -> реплика -> персонаж -> профиль -> ДЕЙСТВИЯ ->
+     навигация -> контент -> подвал. Действия стоят сразу под персонажем
+     намеренно: нажал — реакцию видно на том же экране, без прокрутки.
+     .col-left раскрывается через display: contents, чтобы её дети встали
+     в сетку рабочей области по отдельности. */
   .workspace {
-    grid-template-areas: "hero" "stats" "content";
+    grid-template-areas: "hero" "acts" "nav" "content";
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto auto;
+    grid-template-rows: auto auto auto auto;
     align-content: start;
     gap: var(--sp-4);
     overflow-y: auto;                 /* скроллит рабочая область, не страница */
     overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
   }
+  .col-left { display: contents; }
+  /* display: contents меняет дерево боксов, но не DOM: правило
+     .workspace > * до этих элементов уже не достаёт, поэтому снимаем
+     min-height: 0 явно — он нужен только десктопной колонке. */
+  .acts  { grid-area: acts; margin: var(--sp-3) 0; min-height: auto; }
+  .stats { grid-area: nav; min-height: auto; }
 
   /* На десктопе min-height:0 обязателен — без него колонки не сжимаются и
      внутренний скролл не включается. Здесь он, наоборот, вреден: свободного
@@ -39,10 +51,65 @@
   /* Список статов сворачивается гамбургером, чтобы контент был ближе */
   .stats[data-collapsed="true"] .stats__list { display: none; }
 
-  /* Панель действий уходит под список статов. Панель статов персонажа
-     остаётся на месте, в центральной колонке. */
-  .col-left { grid-template-rows: auto auto; }
-  .actions__grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  /* Действия — одна горизонтальная лента, два главных первыми.
+     Оба контейнера становятся flex-строками внутри общей прокрутки,
+     поэтому визуально это один непрерывный ряд. */
+  /* flex: 0 0 auto обязателен: overflow-x: auto делает элемент скролл-
+     контейнером по ОБЕИМ осям, а у такого минимальный размер во flex равен
+     нулю — без этого ряд схлопывается, а кнопки вылезают за панель.
+     overflow-y: hidden убирает заодно паразитный вертикальный скролл. */
+  .actions__row {
+    display: flex;
+    flex: 0 0 auto;
+    gap: var(--sp-3);
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: var(--sp-2);
+  }
+  .actions__primary,
+  .actions__grid {
+    display: flex;
+    gap: var(--sp-3);
+    flex: 0 0 auto;
+    grid-template-columns: none;
+  }
+  .actions__row .act {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+  }
+  .act--primary { width: 104px; min-height: 88px; }
+  .act--slot { width: 88px; height: 88px; aspect-ratio: auto; }
+
+  /* Навигация — горизонтальная лента с полными подписями, без сокращений */
+  .stats__list {
+    flex-direction: row;
+    flex: 0 0 auto;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: var(--sp-2);
+  }
+  .stat {
+    flex: 0 0 auto;
+    width: auto;
+    white-space: nowrap;
+    scroll-snap-align: start;
+  }
+
+  /* Сцена ужимается по высоте: на 390x844 без этого не помещается
+     связка «персонаж + реплика + кнопка действия». Блоки не выкидываем
+     и порядок не меняем — только поля. */
+  .display__inner {
+    padding-block: var(--sp-4);
+    min-height: calc(var(--char-size) * var(--char-scale) + var(--sp-4) * 2);
+  }
+  .hero { gap: var(--sp-3); }
+  .charstats { gap: var(--sp-3); padding: var(--sp-3); }
 
   .hero__bubble { max-width: 420px; justify-self: center; }
   .hero__plate  { max-width: 420px; justify-self: center; }

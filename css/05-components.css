@@ -436,6 +436,7 @@
   white-space: nowrap;
 }
 
+.actions__row     { display: grid; gap: var(--sp-3); min-width: 0; }
 .actions__primary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-3); }
 .actions__grid    { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-3); }
 

@@ -320,8 +320,16 @@
       bar.appendChild(ribbon);
     }
 
+    // В модалке заголовок НЕ должен занимать id="content-title": он уже
+    // занят заголовком сетки в правой панели, а два одинаковых id ломают
+    // и aria-labelledby, и любой поиск по id.
     var head = el("div", null, [
-      el("h2", { class: "detail__title", id: "content-title", tabindex: "-1", text: item.title }),
+      el("h2", {
+        class: "detail__title",
+        id: opts.titleId === null ? null : (opts.titleId || "content-title"),
+        tabindex: "-1",
+        text: item.title
+      }),
       item.subtitle ? el("p", { class: "detail__sub", text: item.subtitle }) : null
     ]);
 
@@ -386,18 +394,22 @@
     var primary = act.items.filter(function (a) { return a.kind === "primary"; });
     var slots = act.items.filter(function (a) { return a.kind !== "primary"; });
 
+    // Обёртка нужна мобильной раскладке: там оба блока становятся одной
+    // горизонтальной лентой, два главных действия идут первыми.
+    var row = el("div", { class: "actions__row" });
     if (primary.length) {
       var top = el("div", { class: "actions__primary" });
       primary.forEach(function (a) { top.appendChild(actionNode(a, act.onBadge)); });
-      frag.appendChild(top);
+      row.appendChild(top);
     }
     if (slots.length) {
       var grid = el("ul", { class: "actions__grid" });
       slots.forEach(function (a) {
         grid.appendChild(el("li", null, actionNode(a, act.onBadge)));
       });
-      frag.appendChild(grid);
+      row.appendChild(grid);
     }
+    frag.appendChild(row);
 
     // role="status" — строка обратной связи читается сама, без фокуса
     frag.appendChild(el("p", {

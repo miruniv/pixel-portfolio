@@ -12,6 +12,10 @@ html, body {
   height: 100%;
   margin: 0;
   padding: 0;
+  /* iOS Safari врёт про высоту из-за адресной строки: сначала vh, следом
+     dvh — браузеры без поддержки dvh просто проигнорируют вторую строку. */
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 body {
