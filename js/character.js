@@ -58,7 +58,12 @@
       draggable: "false"
     });
     charEl.appendChild(img);
-    M.gaze.init({ img: img, cfg: cfg.gaze });
+    // Сцена нужна gaze, чтобы понимать «курсор внутри рамки персонажа»
+    M.gaze.init({
+      img: img,
+      cfg: cfg.gaze,
+      stageEl: charEl.closest(".display") || charEl.parentElement
+    });
   }
 
   function renderSprite(src) {

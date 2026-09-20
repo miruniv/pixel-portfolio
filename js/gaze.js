@@ -31,7 +31,16 @@
   var SECTOR = 360 / ORDER.length;          // 45°
   var HALF = SECTOR / 2;                    // 22.5°
 
-  var DEFAULTS = { deadZone: 60, hysteresis: 8, returnDelay: 120, fade: 120 };
+  /* deadZone удвоена, гистерезис поднят: внутри рамки курсор оказывается
+     близко к центру спрайта, и микродвижение перебрасывало угол через
+     границы секторов. minSwitchMs — верхний предел частоты переключений. */
+  var DEFAULTS = {
+    deadZone: 120,
+    hysteresis: 14,
+    minSwitchMs: 120,
+    returnDelay: 120,
+    fade: 120
+  };
 
   function normDeg(d) { d %= 360; return d < 0 ? d + 360 : d; }
 
@@ -78,20 +87,27 @@
     if (active.raf) cancelAnimationFrame(active.raf);
     clearTimeout(active.leaveTimer);
     clearTimeout(active.fadeTimer);
+    clearTimeout(active.retryTimer);
     active = null;
   }
 
-  /* opts: { img, cfg } */
+  function pointInRect(x, y, r) {
+    return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+  }
+
+  /* opts: { img, cfg, stageEl } */
   function init(opts) {
     destroy();
 
     var img = opts.img;
+    var stageEl = opts.stageEl || null;
     var cfg = opts.cfg || {};
     var urls = resolve(cfg);
     var dead = cfg.deadZone == null ? DEFAULTS.deadZone : cfg.deadZone;
     var hyst = cfg.hysteresis == null ? DEFAULTS.hysteresis : cfg.hysteresis;
     var returnDelay = cfg.returnDelay == null ? DEFAULTS.returnDelay : cfg.returnDelay;
     var fade = cfg.fade == null ? DEFAULTS.fade : cfg.fade;
+    var minSwitch = cfg.minSwitchMs == null ? DEFAULTS.minSwitchMs : cfg.minSwitchMs;
 
     // Предзагрузка: ссылки держим, иначе сборщик выкинет Image до показа.
     var preload = Object.keys(urls).map(function (k) {
@@ -115,13 +131,29 @@
     var st = {
       enabled: true, key: CENTER, off: [], preload: preload,
       x: 0, y: 0, hasPointer: false,
-      rect: null, dirty: true,
-      raf: 0, leaveTimer: 0, fadeTimer: 0
+      rect: null, stageRect: null, dirty: true,
+      raf: 0, leaveTimer: 0, fadeTimer: 0, retryTimer: 0,
+      lastSwitchAt: 0, insideStage: false
     };
     active = st;
 
+    /* Не чаще одного переключения в minSwitch миллисекунд. Если пришли
+       слишком рано — не теряем решение, а планируем повтор, иначе при
+       остановке курсора направление осталось бы устаревшим. */
     function setKey(key) {
       if (key === st.key) return;
+      var now = (window.performance && performance.now) ? performance.now() : Date.now();
+      var wait = minSwitch - (now - st.lastSwitchAt);
+      if (wait > 0) {
+        if (!st.retryTimer) {
+          st.retryTimer = window.setTimeout(function () {
+            st.retryTimer = 0;
+            schedule();
+          }, wait);
+        }
+        return;
+      }
+      st.lastSwitchAt = now;
       st.key = key;
       var url = urls[key] || urls[CENTER];
       if (img.getAttribute("src") !== url) img.setAttribute("src", url);
@@ -129,6 +161,9 @@
 
     function measure() {
       st.rect = img.getBoundingClientRect();
+      // Сцена меряется отдельно: «курсор внутри рамки» — это попадание в
+      // прямоугольник, а не радиус от центра спрайта.
+      st.stageRect = stageEl ? stageEl.getBoundingClientRect() : null;
       st.dirty = false;
     }
 
@@ -137,6 +172,11 @@
       if (st.dirty || !st.rect) measure();
       var r = st.rect;
       if (!r || !r.width || !r.height) return;   // спрайт скрыт — считать нечего
+      // Курсор внутри рамки персонажа — направление не пересчитываем вовсе
+      // и мягко возвращаем центральный кадр: там угол шумит сильнее всего.
+      st.insideStage = !!(st.stageRect && pointInRect(st.x, st.y, st.stageRect));
+      if (st.insideStage) { setKey(CENTER); return; }
+
       var dx = st.x - (r.left + r.width / 2);
       var dy = st.y - (r.top + r.height / 2);
       setKey(pickDirection(dx, dy, st.key, { deadZone: dead, hysteresis: hyst }));

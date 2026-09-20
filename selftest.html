@@ -221,14 +221,16 @@
       head("gaze: мёртвая зона");
       ok("r=0 -> center", G.pickDirection(0, 0, null) === "center");
       ok("r=20 -> center", G.pickDirection(14, 14, null) === "center", G.pickDirection(14, 14, null));
-      ok("r=59 -> center (внутри 60px)", G.pickDirection(59, 0, "right") === "center");
-      ok("r=61 из направления -> направление сохраняется",
-         G.pickDirection(61, 0, "right") === "right");
+      ok("r=59 -> center (внутри мёртвой зоны 120px)", G.pickDirection(59, 0, "right") === "center");
+      ok("r=119 -> center: зона выросла вдвое",
+         G.pickDirection(119, 0, "right") === "center", G.pickDirection(119, 0, "right"));
+      ok("r=121 из направления -> направление сохраняется",
+         G.pickDirection(121, 0, "right") === "right");
       ok("r=200 -> направление, не center", G.pickDirection(0, 200, null) === "down");
-      ok("выход из center требует запаса: r=65 остаётся center",
-         G.pickDirection(65, 0, "center") === "center", G.pickDirection(65, 0, "center"));
-      ok("выход из center: r=75 переключает на направление",
-         G.pickDirection(75, 0, "center") === "right", G.pickDirection(75, 0, "center"));
+      ok("выход из center требует запаса: r=130 остаётся center",
+         G.pickDirection(130, 0, "center") === "center", G.pickDirection(130, 0, "center"));
+      ok("выход из center: r=140 переключает на направление",
+         G.pickDirection(140, 0, "center") === "right", G.pickDirection(140, 0, "center"));
 
       // ==================== СЛЕЖЕНИЕ: ГИСТЕРЕЗИС ====================
       head("gaze: гистерезис");
@@ -236,9 +238,9 @@
         var a = deg * Math.PI / 180;
         return G.pickDirection(R * Math.cos(a), R * Math.sin(a), cur);
       }
-      ok("из right: 28° (меньше 22.5+8) остаётся right", at(28, "right") === "right", at(28, "right"));
-      ok("из right: 33° (больше запаса) уходит в downRight",
-         at(33, "right") === "downRight", at(33, "right"));
+      ok("из right: 33° (меньше 22.5+14) остаётся right", at(33, "right") === "right", at(33, "right"));
+      ok("из right: 40° (больше запаса) уходит в downRight",
+         at(40, "right") === "downRight", at(40, "right"));
       ok("из downRight: 20° остаётся downRight (без гистерезиса было бы right)",
          at(20, "downRight") === "downRight", at(20, "downRight"));
       ok("без гистерезиса тот же угол дал бы right", at(20, null) === "right");
@@ -279,8 +281,11 @@
         if (/hover|pointer/.test(q)) return { matches: true, addEventListener: function () {}, addListener: function () {} };
         return realMM.call(window, q);
       };
-      var gcfg = Object.assign({}, SITE_DATA.character.gaze, { returnDelay: 30, fade: 30 });
-      var st = G.init({ img: img, cfg: gcfg });
+      // minSwitchMs: 0 — здесь проверяется сопоставление сектора, а не частота;
+      // сам троттлинг проверяется отдельно ниже, с реальными паузами.
+      var gcfg = Object.assign({}, SITE_DATA.character.gaze,
+                               { returnDelay: 30, fade: 30, minSwitchMs: 0 });
+      var st = G.init({ img: img, cfg: gcfg, stageEl: $(".display") });
       ok("обработчики повешены", st.enabled === true);
       ok("предзагружены все 9 картинок", st.preload.length === 9, st.preload.length);
 
@@ -324,6 +329,51 @@
       var dirtyBefore = st.dirty;
       window.dispatchEvent(new Event("resize"));
       ok("resize помечает геометрию устаревшей", st.dirty === true, String(dirtyBefore));
+
+      // ==================== ДЁРГАНЬЕ ВНУТРИ РАМКИ ====================
+      head("gaze: курсор внутри рамки персонажа");
+      var frameRect = $(".display").getBoundingClientRect();
+      var ir0 = img.getBoundingClientRect();
+      var scx = (ir0.left + ir0.right) / 2, scy = (ir0.top + ir0.bottom) / 2;
+
+      // Берём угол сцены: он внутри рамки, но далеко от центра спрайта —
+      // по чистой математике это был бы сектор, а не center.
+      var inX = frameRect.left + 10, inY = frameRect.top + 10;
+      var rIn = Math.round(Math.hypot(inX - scx, inY - scy));
+      ok("контрольная точка внутри рамки и ВНЕ мёртвой зоны",
+         inX >= frameRect.left && inX <= frameRect.right &&
+         inY >= frameRect.top && inY <= frameRect.bottom &&
+         rIn > SITE_DATA.character.gaze.deadZone,
+         "r=" + rIn + " при зоне " + SITE_DATA.character.gaze.deadZone);
+      ok("по одному только углу эта точка дала бы направление",
+         G.pickDirection(inX - scx, inY - scy, "center",
+           { deadZone: SITE_DATA.character.gaze.deadZone,
+             hysteresis: SITE_DATA.character.gaze.hysteresis }) !== "center");
+
+      move(cx + 400, cy); G.update();
+      ok("подготовка: смотрит вправо", fileOf(img) === "look-right.png", fileOf(img));
+      move(inX, inY); G.update();
+      ok("внутри рамки направление не пересчитывается — возврат в центр",
+         fileOf(img) === "look-center.png", fileOf(img));
+      move(frameRect.right - 10, frameRect.bottom - 10); G.update();
+      ok("в противоположном углу рамки спрайт всё так же спокоен",
+         fileOf(img) === "look-center.png", fileOf(img));
+
+      // ---- частота переключений ----
+      var gth = G.init({ img: img, cfg: Object.assign({}, gcfg, { minSwitchMs: 120 }),
+                         stageEl: $(".display") });
+      move(cx + 400, cy); G.update();
+      ok("первое переключение проходит", fileOf(img) === "look-right.png", fileOf(img));
+      move(cx, cy + 400); G.update();
+      ok("второе переключение подряд отброшено: не чаще 1 раза в 120мс",
+         fileOf(img) === "look-right.png", fileOf(img));
+      await tick(200);
+      G.update();
+      ok("после паузы направление догоняет", fileOf(img) === "look-down.png", fileOf(img));
+
+      // возвращаем инстанс без троттлинга для остальных проверок
+      G.init({ img: img, cfg: gcfg, stageEl: $(".display") });
+      move(cx + 400, cy); G.update();
 
       // ==================== СЦЕНА: ЦЕНТРИРОВАНИЕ И ЦЕНТР ДЛЯ GAZE ====================
       head("сцена персонажа");
@@ -382,7 +432,7 @@
       head("gaze: prefers-reduced-motion");
       var realRM = M.dom.reducedMotion;
       M.dom.reducedMotion = function () { return true; };
-      var st2 = G.init({ img: img, cfg: gcfg });
+      var st2 = G.init({ img: img, cfg: gcfg, stageEl: $(".display") });
       ok("при reduced-motion обработчики НЕ вешаются", st2.enabled === false);
       ok("isEnabled() === false", G.isEnabled() === false);
       ok("показан look-center", fileOf(img) === "look-center.png", fileOf(img));
@@ -397,7 +447,7 @@
         if (/hover|pointer/.test(q)) return { matches: false, addEventListener: function () {}, addListener: function () {} };
         return realMM.call(window, q);
       };
-      var st3 = G.init({ img: img, cfg: gcfg });
+      var st3 = G.init({ img: img, cfg: gcfg, stageEl: $(".display") });
       ok("на тач-устройстве обработчики НЕ вешаются", st3.enabled === false);
       move(cx + 400, cy); G.update(); await raf();
       ok("картинка остаётся look-center", fileOf(img) === "look-center.png", fileOf(img));
@@ -655,7 +705,7 @@
         }
         return realMM.call(window, q);
       };
-      var stDance = G.init({ img: img, cfg: gcfg });
+      var stDance = G.init({ img: img, cfg: gcfg, stageEl: $(".display") });
       window.matchMedia = realMM;
       ok("gaze поднимается при активном танце", stDance.enabled === true);
 

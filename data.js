@@ -56,8 +56,9 @@ const SITE_DATA = {
       upLeft:    "look-up-left.png",
       up:        "look-up.png",
       upRight:   "look-up-right.png",
-      deadZone: 60,        // px: ближе к центру спрайта — взгляд прямо
-      hysteresis: 8        // градусы запаса, чтобы не мигало на стыке секторов
+      deadZone: 120,       // px: ближе к центру спрайта — взгляд прямо
+      hysteresis: 14,      // градусы запаса, чтобы не мигало на стыке секторов
+      minSwitchMs: 120     // не чаще одного переключения направления
     },
     plate: "MIRA",                           // плашка под рамкой
     alt: "Pixel-art character: a girl with long dark hair, glasses and a black hoodie",
