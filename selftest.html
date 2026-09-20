@@ -483,15 +483,14 @@
          $$("#content-title").length <= 1, $$("#content-title").length + " с таким id");
       ok(isNarrow ? "фокус на кнопке закрытия модалки" : "фокус на BACK",
          document.activeElement === (isNarrow ? $("#modal-close") : $('[data-action="back"]')));
-      ok("полный текст в .sr-only",
-         $$(".sr-only p", dRoot).map(function (p) { return p.textContent; }).join("|") ===
+      ok("текст детали лежит в DOM целиком, без печати",
+         $$(".detail__text p", dRoot).map(function (p) { return p.textContent; }).join("|") ===
          SITE_DATA.sections[2].items[1].detail.text.join("|"));
-      ok("печатающийся слой скрыт от SR", $(".detail__text").getAttribute("aria-hidden") === "true");
+      ok("в правой панели нет печатающегося слоя",
+         $$(".typed, .typed__ink, .typed__ghost", dRoot).length === 0);
+      ok("текст детали не спрятан от скринридера",
+         !$(".detail__text", dRoot).hasAttribute("aria-hidden"));
       ok("нет aria-live", !$("#content [aria-live]"));
-      ok("печать идёт", $(".typed__ink").textContent.length < $(".typed__ghost").textContent.length);
-      $(".detail__text").click(); await tick(60);
-      ok("клик допечатывает", $$(".typed__ink").every(function (n, i) {
-        return n.textContent === $$(".typed__ghost")[i].textContent; }));
 
       key("Escape"); await tick(160);
       ok("Esc возвращает на сетку", !!$("#content .cards") && location.hash === "#projects");
@@ -773,9 +772,83 @@
          $$(".tag--alt").length > 0 && $$(".tag--plain").length > 0,
          "alt=" + $$(".tag--alt").length + " plain=" + $$(".tag--plain").length);
       ok("вводное предложение крупнее остального текста",
-         parseFloat(getComputedStyle($(".detail__text > .typed:first-child")).fontSize) >
-         parseFloat(getComputedStyle($$(".detail__text > .typed")[1]).fontSize));
+         parseFloat(getComputedStyle($(".detail__text > p:first-child")).fontSize) >
+         parseFloat(getComputedStyle($$(".detail__text > p")[1]).fontSize));
       ok("карточка проекта из правой панели убрана", $$(".featured").length === 0);
+
+      // ==================== ГОЛОС ПЕРСОНАЖА ====================
+      head("голос персонажа");
+      var bubbleInk = $("#bubble-ink"), bubbleSr = $("#bubble-sr");
+
+      ok("параметры голоса лежат в data.js",
+         !!SITE_DATA.character.voice && typeof SITE_DATA.character.voice.note === "number",
+         JSON.stringify(SITE_DATA.character.voice));
+      ok("скорость печати в диапазоне 25-35мс",
+         SITE_DATA.character.voice.speed >= 25 && SITE_DATA.character.voice.speed <= 35,
+         SITE_DATA.character.voice.speed);
+      ok("длительность blip'а 20-40мс",
+         SITE_DATA.character.voice.dur >= 0.02 && SITE_DATA.character.voice.dur <= 0.04,
+         SITE_DATA.character.voice.dur);
+      ok("blip играет не на каждый символ", SITE_DATA.character.voice.every >= 2,
+         SITE_DATA.character.voice.every);
+      ok("высота гуляет, а не телеграф", SITE_DATA.character.voice.detune > 0);
+
+      // Печатается ТОЛЬКО реплика. Строку задаём сами и длинную: между
+      // play() и первым кадром есть окно, где печать уже идёт, а каретки
+      // ещё нет — на коротких репликах проверка попадала в него и флейкала.
+      M.character.say("TESTING THE VOICE WITH A DELIBERATELY LONG SENTENCE RIGHT HERE");
+      await tick(140);
+      ok("реплика печатается по буквам",
+         M.character.isSpeaking() &&
+         bubbleInk.textContent.length < bubbleSr.textContent.length,
+         bubbleInk.textContent.length + "/" + bubbleSr.textContent.length);
+      ok("во время печати есть каретка", bubbleInk.classList.contains("is-typing"));
+
+      // клик по окну реплики допечатывает и глушит остаток голоса
+      $(".hero__bubble").click();
+      ok("клик по окну реплики мгновенно допечатывает",
+         bubbleInk.textContent === bubbleSr.textContent && !M.character.isSpeaking(),
+         "«" + bubbleInk.textContent + "»");
+      ok("каретка снята после завершения", !bubbleInk.classList.contains("is-typing"));
+
+      ok("нигде больше текст не печатается: слоёв .typed на странице нет",
+         $$(".typed, .typed__ghost").length === 0);
+      ok("строка обратной связи не печатается",
+         $("#act-feedback").textContent.length > 0 &&
+         $$("#act-feedback .typed").length === 0);
+
+      // своя интонация у действий
+      head("интонация действий");
+      var vThink = store_action("think").voice, vHi = store_action("sayhi").voice;
+      function store_action(id) { return SITE_DATA.actions.items.filter(
+        function (a) { return a.id === id; })[0]; }
+      ok("у SAY HI голос выше базового",
+         store_action("sayhi").voice.note > SITE_DATA.character.voice.note,
+         store_action("sayhi").voice.note + " vs " + SITE_DATA.character.voice.note);
+      ok("у THINK голос ниже базового",
+         store_action("think").voice.note < SITE_DATA.character.voice.note,
+         store_action("think").voice.note);
+      ok("у THINK печать медленнее базовой",
+         store_action("think").voice.speed > SITE_DATA.character.voice.speed,
+         store_action("think").voice.speed);
+
+      // звуковые эффекты действий
+      head("звуки действий");
+      ok("у TAKE PHOTO есть свой эффект", store_action("photo").sfx === "shutter");
+      ok("у ENERGY есть свой эффект", store_action("energy").sfx === "can");
+      ok("эффекты зарегистрированы в audio.js",
+         ["shutter", "can", "bug", "wave", "think"].every(function (n) {
+           return M.audio.hasSfx(n); }));
+      ok("звуковых файлов в проекте нет — всё генерируется кодом",
+         M.audio.hasSfx("shutter") && typeof M.audio.sfx === "function");
+
+      // всё подчиняется единому MUTE
+      var wasMuted = M.audio.isMuted();
+      if (!wasMuted) { M.audio.toggle(); await tick(40); }
+      ok("при MUTE эффект действия не играет", M.audio.sfx("shutter") === false);
+      ok("при MUTE голос молчит (blip не создаёт узлов)",
+         M.audio.voice({ note: 440 }) === undefined && M.audio.isMuted());
+      if (!wasMuted) { M.audio.toggle(); await tick(40); }
 
       // ==================== МОБИЛЬНАЯ РАСКЛАДКА ====================
       head("мобильная раскладка");

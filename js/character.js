@@ -106,13 +106,32 @@
     },
 
     /* Одна реплика за раз. Полный текст сразу кладём в .sr-only,
-       печатается только видимый слой. */
-    say: function (text) {
+       печатается только видимый слой — и только здесь, больше нигде.
+       voice: { note, detune, dur, type, every, speed } */
+    say: function (text, voice) {
       text = text || "";
       if (bubbleSr.textContent === text && !typer.isRunning()) return;
       bubbleSr.textContent = text;
-      typer.play([{ ink: bubbleInk, text: text }], { speed: 18 });
+
+      var v = voice || cfg.voice || {};
+      var every = Math.max(1, v.every || 1);
+      var spoken = 0;
+
+      typer.play([{ ink: bubbleInk, text: text }], {
+        speed: v.speed || 30,
+        onChar: function (ch) {
+          // Пробелы и пунктуация молчат, иначе трещит
+          if (!ch || !/[0-9A-Za-z\u00C0-\u024F]/.test(ch)) return;
+          spoken++;
+          if (spoken % every !== 0) return;
+          M.audio.voice(v);
+        }
+      });
     },
+
+    /* Мгновенно допечатать реплику; оставшиеся blip'ы просто не сыграют */
+    finishLine: function () { typer.complete(); },
+    isSpeaking: function () { return typer.isRunning(); },
 
     /* Состояние сцены — это класс на обёртке, а не на <img>.
        Анимации крутятся на ней, src картинки остаётся за gaze.js. */

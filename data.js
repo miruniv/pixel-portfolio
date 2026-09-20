@@ -64,6 +64,17 @@ const SITE_DATA = {
     alt: "Pixel-art character: a girl with long dark hair, glasses and a black hoodie",
     idleBubble: "NICE TO MEET YOU!",
 
+    /* Голос персонажа. Работает ТОЛЬКО в верхнем окне реплики: нигде больше
+       текст по буквам не печатается и blip'ы не играют. */
+    voice: {
+      note: 420,      // базовая нота, Гц
+      detune: 2,      // разброс высоты в полутонах — иначе выходит телеграф
+      dur: 0.03,      // длительность blip'а, сек
+      type: "triangle",
+      every: 2,       // играть через каждые N озвученных символов
+      speed: 30       // мс на символ
+    },
+
     /* Состояния сцены. Класс вешается на обёртку #stage, НЕ на <img>:
        src картинки принадлежит gaze.js, он подставляет туда направление
        взгляда. Так персонаж одновременно следит за курсором и дышит. */
@@ -126,27 +137,31 @@ const SITE_DATA = {
         feedbackOff: "MUSIC OFF \u00B7 BACK TO WORK"
       },
       { id: "think", label: "THINK", icon: "think",
-        kind: "slot", type: "oneshot", sprites: "think",
+        kind: "slot", type: "oneshot", sprites: "think", sfx: "think",
+        // Ниже и медленнее обычного — своя интонация
+        voice: { note: 300, speed: 46 },
         line: "LET ME THINK ABOUT IT\u2026",
         feedback: "THINK \u00B7 WORKING ON IT",
         overlays: ["dots", "bulb"] },
       { id: "energy", label: "ENERGY", icon: "can",
-        kind: "slot", type: "oneshot", sprites: "drinkEnergydrink",
+        kind: "slot", type: "oneshot", sprites: "drinkEnergydrink", sfx: "can",
         line: "ONE MORE AND I CAN SHIP THIS",
         feedback: "ENERGY \u00B7 +10 ENERGY",
         overlays: ["energy"] },
       { id: "debug", label: "DEBUG", icon: "bug",
-        kind: "slot", type: "oneshot", sprites: "debug",
+        kind: "slot", type: "oneshot", sprites: "debug", sfx: "bug",
         line: "FOUND YOU, LITTLE BUG",
         feedback: "DEBUG \u00B7 ONE LESS BUG",
         overlays: ["bug"] },
       { id: "photo", label: "TAKE PHOTO", icon: "camera",
-        kind: "slot", type: "oneshot", sprites: "takePhoto",
+        kind: "slot", type: "oneshot", sprites: "takePhoto", sfx: "shutter",
         line: "SAY CHEESE!",
         feedback: "TAKE PHOTO \u00B7 SMILE",
         overlays: ["flash"] },
       { id: "sayhi", label: "SAY HI", icon: "wave",
-        kind: "slot", type: "oneshot", sprites: "sayHi",
+        kind: "slot", type: "oneshot", sprites: "sayHi", sfx: "wave",
+        // Выше обычного
+        voice: { note: 560 },
         line: "Hi, I am Mira!",
         feedback: "SAY HI \u00B7 HELLO THERE" },
       { id: "mute", label: "MUTE", icon: "speaker",

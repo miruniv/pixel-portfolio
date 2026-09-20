@@ -38,12 +38,13 @@
     return ctx;
   }
 
-  /* Одна нота: square-волна с мягкой огибающей. */
-  function tone(freq, startAt, dur, peak) {
+  /* Одна нота с мягкой огибающей. Тип волны параметром: голосу идёт
+     треугольник, интерфейсу — квадрат. */
+  function tone(freq, startAt, dur, peak, type) {
     var c = ctx;
     var osc = c.createOscillator();
     var gain = c.createGain();
-    osc.type = "square";
+    osc.type = type || "square";
     osc.frequency.setValueAtTime(freq, startAt);
 
     gain.gain.setValueAtTime(0.0001, startAt);
@@ -101,8 +102,46 @@
     try { window.localStorage.setItem(MUSIC_KEY, music.on ? "on" : "off"); } catch (e) {}
   }
 
+  /* ----------------------------------------------------------- ГОЛОС ----
+     Очень короткий blip на символ, как в диалогах RPG. Играет не на каждый
+     символ и не на пробелы с пунктуацией — иначе получается треск. Высота
+     чуть гуляет, иначе выходит телеграф. */
+  function voiceBlip(v) {
+    if (muted || !ensureCtx()) return;
+    v = v || {};
+    var base = v.note || 440;
+    var spread = v.detune == null ? 2 : v.detune;
+    var semis = (Math.random() * 2 - 1) * spread;
+    var freq = base * Math.pow(2, semis / 12);
+    tone(freq, ctx.currentTime + 0.001, v.dur || 0.03, v.gain || 0.03,
+         v.type || "triangle");
+  }
+
+  /* Короткие эффекты действий. Тоже кодом, без файлов. */
+  var SFX = {
+    shutter: [[1800, 0.02, 0.05, "square"], [900, 0.03, 0.04, "square"]],
+    can:     [[300, 0.05, 0.03, "sawtooth"], [1200, 0.06, 0.025, "triangle"]],
+    bug:     [[220, 0.05, 0.04, "square"], [660, 0.04, 0.045, "square"], [990, 0.06, 0.04, "square"]],
+    wave:    [[660, 0.05, 0.04, "triangle"], [880, 0.07, 0.04, "triangle"]],
+    think:   [[330, 0.09, 0.03, "triangle"], [262, 0.11, 0.03, "triangle"]]
+  };
+
+  function playSfx(name) {
+    var seq = SFX[name];
+    if (!seq || muted || !ensureCtx()) return false;
+    var t = ctx.currentTime + 0.001;
+    for (var i = 0; i < seq.length; i++) {
+      tone(seq[i][0], t, seq[i][1], seq[i][2], seq[i][3]);
+      t += seq[i][1];
+    }
+    return true;
+  }
+
   var api = {
     isMuted: function () { return muted; },
+    voice: voiceBlip,
+    sfx: playSfx,
+    hasSfx: function (n) { return !!SFX[n]; },
 
     music: {
       isPlaying: function () { return music.on; },

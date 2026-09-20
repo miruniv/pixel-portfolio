@@ -110,6 +110,8 @@
         state: a.state || null,
         outfit: a.outfit || null,
         sprites: a.sprites || null,
+        sfx: a.sfx || null,
+        voice: a.voice || null,
         shares: a.shares || null,
         overlays: Array.isArray(a.overlays) ? a.overlays : [],
         line: a.line || "", lineOff: a.lineOff || null,

@@ -39,6 +39,7 @@
     var prevTime = 0;
     var speed = 25;
     var onDone = null;
+    var onChar = null;
 
     function clearCaret() {
       jobs.forEach(function (j) { j.ink.classList.remove("is-typing"); });
@@ -82,8 +83,12 @@
         if (!job) { finish(); return; }
 
         if (charIndex === 0) job.ink.classList.add("is-typing");
+        var ch = job.chars[charIndex];
         charIndex++;
         job.ink.textContent = job.chars.slice(0, charIndex).join("");
+        // Голос озвучивает только напечатанные символы: complete() его не
+        // трогает, поэтому клик по окну реплики глушит остаток сам собой.
+        if (onChar) onChar(ch, charIndex - 1);
 
         if (charIndex >= job.chars.length) {
           job.ink.classList.remove("is-typing");
@@ -102,6 +107,7 @@
         opts = opts || {};
         speed = opts.speed || 25;
         onDone = opts.onDone || null;
+        onChar = opts.onChar || null;
 
         jobs = (items || []).map(function (it) {
           it.ink.textContent = "";

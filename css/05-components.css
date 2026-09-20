@@ -285,10 +285,9 @@
 }
 .detail__hero img { width: 100%; max-width: 384px; height: auto; }
 
-/* ---- Печатающийся текст ----
-   .typed__ghost держит высоту (visibility:hidden), .typed__ink печатается
-   поверх абсолютом. Без «призрака» панель дёргалась бы на каждом символе.
-   Весь блок aria-hidden; полный текст лежит рядом в .sr-only. */
+/* ---- Текст в правой панели ----
+   Печатается только реплика над персонажем, здесь текст появляется целиком,
+   поэтому ни «призрака», ни дубля для скринридера не нужно. */
 .detail__text {
   display: grid;
   gap: var(--sp-4);
@@ -297,11 +296,9 @@
   color: var(--ink-2);
 }
 /* Первый абзац — вводное предложение: крупнее и темнее остального */
-.detail__text > .typed:first-child { font-size: var(--fs-lead); color: var(--ink); }
-.typed { position: relative; }
-.typed__ghost { visibility: hidden; }
-.typed__ink { position: absolute; inset: 0; }
-.typed__ink.is-typing::after {
+.detail__text > p:first-child { font-size: var(--fs-lead); color: var(--ink); }
+/* Каретка в окне реплики, пока персонаж «говорит» */
+#bubble-ink.is-typing::after {
   content: "";
   display: inline-block;
   width: 0.5em;

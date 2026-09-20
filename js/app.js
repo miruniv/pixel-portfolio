@@ -16,7 +16,6 @@
   var ui = store.ui || {};
 
   var refs = {};
-  var typer = M.createTypewriter();
   var state = { sectionId: null, itemId: null };
   var gridScroll = {};     // sectionId -> scrollTop сетки, чтобы BACK возвращал на место
   var lastCard = {};       // sectionId -> itemId, чтобы BACK возвращал фокус на карточку
@@ -57,8 +56,6 @@
   }
 
   function apply(next, meta) {
-    typer.cancel();
-
     // Запоминаем позицию сетки до того, как уйдём с неё.
     if (state.sectionId && !state.itemId && refs.content) {
       gridScroll[state.sectionId] = scroller().scrollTop;
@@ -99,8 +96,6 @@
     }
 
     if (item) lastCard[section.id] = item.id;
-
-    if (jobs.length) typer.play(jobs, { speed: 25 });
 
     if (meta && meta.fromUser) moveFocus(section, item, wasDetail, mobileDetail);
   }
@@ -179,29 +174,39 @@
   /* Одна реплика за раз. Приоритет: временная (наведение, фокус, нажатие)
      -> включённый переключатель -> реплика текущего раздела -> дефолт. */
   var transientLine = null;
+  var transientVoice = null;
   var transientTimer = 0;
   var musicOn = false;
 
-  function currentLine() {
-    if (transientLine) return transientLine;
+  /* Реплика и интонация ходят парой: у действия может быть свой голос. */
+  function currentSpeech() {
+    if (transientLine) return { text: transientLine, voice: transientVoice };
     if (musicOn) {
       var m = store.actions.byId.music;
-      if (m) return m.line;
+      if (m) return { text: m.line, voice: m.voice };
     }
     var s = store.section(state.sectionId);
-    return (s && s.bubble) || (store.character && store.character.idleBubble) || "";
+    return {
+      text: (s && s.bubble) || (store.character && store.character.idleBubble) || "",
+      voice: null
+    };
   }
 
-  function refreshBubble() { M.character.say(currentLine()); }
+  function refreshBubble() {
+    var sp = currentSpeech();
+    M.character.say(sp.text, sp.voice);
+  }
 
-  function showLine(text, holdMs) {
+  function showLine(text, holdMs, voice) {
     window.clearTimeout(transientTimer);
     transientTimer = 0;
     transientLine = text || null;
+    transientVoice = text ? (voice || null) : null;
     refreshBubble();
     if (text && holdMs) {
       transientTimer = window.setTimeout(function () {
         transientLine = null;
+        transientVoice = null;
         refreshBubble();
       }, holdMs);
     }
@@ -229,7 +234,7 @@
     refs.bubble.classList.toggle("is-music", on);
     M.character.setState(on ? (a && a.state) || "dance" : "idle");
     setFeedback(on ? a.feedback : a.feedbackOff);
-    showLine(on ? a.line : a.lineOff, on ? 0 : 2600);
+    showLine(on ? a.line : a.lineOff, on ? 0 : 2600, a.voice);
   }
 
   function activateAction(node) {
@@ -253,13 +258,15 @@
       node.setAttribute("aria-pressed", on ? "true" : "false");
       M.character.setState(on ? a.state : "idle");
       setFeedback(on ? a.feedback : null);
-      showLine(a.line, on ? 0 : 2600);
+      if (a.sfx) audio.sfx(a.sfx);
+      showLine(a.line, on ? 0 : 2600, a.voice);
       return;
     }
-    // Ссылки и одноразовые: мигаем и показываем реплику, навигация — своим ходом
+    // Ссылки и одноразовые: мигаем, играем эффект действия и говорим
     flash(node);
+    if (a.sfx) audio.sfx(a.sfx);
     setFeedback(a.feedback);
-    showLine(a.line, 2600);
+    showLine(a.line, 2600, a.voice);
   }
 
   function goBack() {
@@ -447,9 +454,9 @@
 
       if (onActivate(t)) return;
 
-      // Клик по тексту мгновенно допечатывает остаток.
-      if (typer.isRunning() && (t.closest("#content") || t.closest("#modal-body"))) {
-        typer.complete();
+      // Клик по окну реплики мгновенно допечатывает и глушит остаток голоса
+      if (t.closest(".hero__bubble")) {
+        M.character.finishLine();
       }
     });
 
@@ -463,7 +470,7 @@
       var over = t.closest(".act");
       if (over && !over.disabled) {
         var ao = store.actions.byId[over.dataset.action];
-        if (ao) showLine(ao.line, 0);
+        if (ao) showLine(ao.line, 0, ao.voice);
       }
     });
 
@@ -474,7 +481,7 @@
       var a = t.closest(".act");
       if (a && !a.disabled) {
         var ao = store.actions.byId[a.dataset.action];
-        if (ao) showLine(ao.line, 0);
+        if (ao) showLine(ao.line, 0, ao.voice);
       }
     });
     d.on(document, "focusout", function (e) {
@@ -522,7 +529,7 @@
     else mqMobile.addListener(onMq);
 
     /* --- Реакция на смену системной настройки анимации --- */
-    var onRm = function () { if (d.reducedMotion() && typer.isRunning()) typer.complete(); };
+    var onRm = function () { if (d.reducedMotion()) M.character.finishLine(); };
     if (d.rmQuery.addEventListener) d.rmQuery.addEventListener("change", onRm);
 
     collapseStats(false);

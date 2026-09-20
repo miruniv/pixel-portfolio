@@ -249,23 +249,12 @@
 
     var texts = Array.isArray(data.text) ? data.text : [];
     if (texts.length) {
-      // Видимый слой печатается и целиком скрыт от скринридера...
-      var wrap = el("div", { class: "detail__text", "aria-hidden": "true" });
-      texts.forEach(function (t) {
-        var ink = el("span", { class: "typed__ink" });
-        wrap.appendChild(el("p", { class: "typed" }, [
-          // «Призрак» держит высоту, иначе панель дёргалась бы на каждом символе
-          el("span", { class: "typed__ghost", text: t }),
-          ink
-        ]));
-        jobs.push({ ink: ink, text: t });
-      });
+      // Обычные абзацы: голос персонажа звучит только в верхнем окне реплики,
+      // здесь текст появляется целиком. Значит и «призрак» с дублем для
+      // скринридера больше не нужны — текст сразу настоящий.
+      var wrap = el("div", { class: "detail__text" });
+      texts.forEach(function (t) { wrap.appendChild(el("p", { text: t })); });
       frag.appendChild(wrap);
-
-      // ...а полный текст лежит рядом и читается сразу и один раз.
-      var sr = el("div", { class: "sr-only" });
-      texts.forEach(function (t) { sr.appendChild(el("p", { text: t })); });
-      frag.appendChild(sr);
     }
 
     if (Array.isArray(data.tags) && data.tags.length) {
