@@ -87,27 +87,30 @@
       <section class="acts px-box px-double" id="actions" aria-labelledby="act-title"></section>
     </div>
 
-    <!-- Колонка 2: персонаж -->
-    <div class="hero">
+    <!-- Колонка 2: персонаж.
+         ОДНА панель с ОДНОЙ рамкой. Внутри — окно реплики и сцена, у каждого
+         своя полная рамка; профиль идёт без рамки, как в макете. -->
+    <section class="hero px-box" id="hero" aria-label="Character">
       <div class="hero__bubble px-box px-bubble">
         <span id="bubble-ink" aria-hidden="true"></span>
         <span class="sr-only" id="bubble-sr"></span>
       </div>
 
-      <div class="hero__display display px-box px-double">
+      <div class="hero__stage display px-box">
         <div class="display__inner">
           <!-- #stage — обёртка под анимации состояний. Всё, что внутри .char,
                принадлежит gaze.js: он подставляет туда направление взгляда. -->
           <div class="stage" id="stage" data-state="idle">
             <div class="char" id="char"></div>
           </div>
+          <div class="overlays" id="overlays" aria-hidden="true"></div>
         </div>
       </div>
 
-      <!-- Карточка профиля: имя, стрелки, LVL, шкала XP и строки статуса.
+      <!-- Имя и LVL, шкала XP, разделитель, строки статуса.
            Собирается в app.js из SITE_DATA.profile и SITE_DATA.character -->
-      <section class="charstats px-box" id="charstats" aria-label="Character profile"></section>
-    </div>
+      <div class="charstats" id="charstats"></div>
+    </section>
 
     <!-- Колонка 3: контент.
          Контур .px-box рисуется снаружи, поэтому скроллит вложенный #content. -->
@@ -264,7 +267,7 @@
           im.onload = function () { r(im.naturalWidth); };
           im.onerror = function () { r(0); };
           setTimeout(function () { r(im.naturalWidth || 0); }, 3000);
-          im.src = "./assets/sprites/" + n + ".png";
+          im.src = SITE_DATA.character.gaze.base + n + ".png";
         });
       }));
       ok("все 9 спрайтов загружаются", loaded.every(function (w) { return w > 0; }),
@@ -849,6 +852,91 @@
       ok("при MUTE голос молчит (blip не создаёт узлов)",
          M.audio.voice({ note: 440 }) === undefined && M.audio.isMuted());
       if (!wasMuted) { M.audio.toggle(); await tick(40); }
+
+      // ==================== РАМКИ ЗАМКНУТЫ ====================
+      head("рамки");
+      // Все коробки со своей рамкой. Шапка окна намеренно отделена только
+      // нижней линией — это разделитель внутри окна, а не отдельная коробка.
+      // .tag--plain — намеренно без чипа и без рамки: это значение строкой
+      var framedSel = ".px-box, .tag:not(.tag--plain) .tag__val, .lvlbar__cell";
+      function sideWidths(n) {
+        var cs = getComputedStyle(n);
+        return ["Top", "Right", "Bottom", "Left"].map(function (s) {
+          return parseFloat(cs["border" + s + "Width"]) || 0;
+        });
+      }
+      function visible(n) {
+        var r = n.getBoundingClientRect();
+        return r.width > 0 && r.height > 0;
+      }
+      var framed = $$(framedSel).filter(visible);
+      ok("на странице есть коробки с рамками", framed.length > 10, framed.length);
+
+      var openSides = framed.filter(function (n) {
+        var w = sideWidths(n);
+        return w.some(function (x) { return x === 0; });
+      });
+      ok("у каждой коробки рамка со всех четырёх сторон", openSides.length === 0,
+         openSides.slice(0, 5).map(function (n) {
+           return n.className.split(" ")[0] + "[" + sideWidths(n).join(",") + "]"; }).join(" "));
+
+      var uneven = framed.filter(function (n) {
+        var w = sideWidths(n);
+        return Math.max.apply(null, w) !== Math.min.apply(null, w);
+      });
+      ok("толщина рамки одинакова со всех сторон", uneven.length === 0,
+         uneven.slice(0, 5).map(function (n) {
+           return n.className.split(" ")[0] + "[" + sideWidths(n).join(",") + "]"; }).join(" "));
+
+      var fractional = framed.filter(function (n) {
+        return sideWidths(n).some(function (x) { return Math.abs(x - Math.round(x)) > 0.01; });
+      });
+      ok("толщины рамок ложатся на целые пиксели", fractional.length === 0,
+         fractional.slice(0, 5).map(function (n) {
+           return n.className.split(" ")[0] + "[" + sideWidths(n).join(",") + "]"; }).join(" "));
+
+      // Углы: border по определению смыкается, но проверим, что рамку не
+      // срезает overflow: hidden у какого-нибудь родителя.
+      var clipped = framed.filter(function (n) {
+        var r = n.getBoundingClientRect();
+        var p = n.parentElement;
+        while (p && p !== document.body) {
+          var cs = getComputedStyle(p);
+          var scrolls = p.scrollWidth > p.clientWidth + 1 || p.scrollHeight > p.clientHeight + 1;
+          if (!scrolls && cs.overflow !== "visible" && cs.overflowX !== "visible") {
+            var pr = p.getBoundingClientRect();
+            if (r.left < pr.left - 0.5 || r.right > pr.right + 0.5 ||
+                r.top < pr.top - 0.5 || r.bottom > pr.bottom + 0.5) return true;
+          }
+          p = p.parentElement;
+        }
+        return false;
+      });
+      ok("рамки не срезаются overflow:hidden у родителей", clipped.length === 0,
+         clipped.slice(0, 4).map(function (n) { return n.className.split(" ")[0]; }).join(" "));
+
+      // Двойная рамка — border плюс кольца, а не стопка из трёх теней
+      var dbl = $$(".px-double").filter(visible);
+      ok("двойная рамка построена на border, а не только на тенях",
+         dbl.length > 0 && dbl.every(function (n) {
+           return sideWidths(n).every(function (x) { return x > 0; }); }),
+         dbl.length + " элементов");
+
+      ok("перечисленные в задании коробки на месте и с рамкой",
+         [".screen", ".hero", ".hero__bubble", ".hero__stage", ".acts",
+          ".stat", ".act", ".actions__feedback", ".content-frame",
+          ".tag:not(.tag--plain) .tag__val"]
+           .every(function (sel) {
+             var n = $(sel);
+             return n && sideWidths(n).every(function (x) { return x > 0; });
+           }),
+         [".screen", ".hero", ".hero__bubble", ".hero__stage", ".acts",
+          ".stat", ".act", ".actions__feedback", ".content-frame",
+          ".tag:not(.tag--plain) .tag__val"]
+           .filter(function (sel) {
+             var n = $(sel);
+             return !n || sideWidths(n).some(function (x) { return x === 0; });
+           }).join(" ") || "все");
 
       // ==================== МОБИЛЬНАЯ РАСКЛАДКА ====================
       head("мобильная раскладка");

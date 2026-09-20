@@ -16,47 +16,51 @@
 .px-box {
   --px-fill: var(--panel);
   --px-line: var(--ink);
-  --px-gap: transparent;         /* прослойка второго кольца */
-  --px-line2: transparent;       /* третье кольцо */
   --px-hi: transparent;          /* фаска: светлая грань сверху-слева */
   --px-lo: transparent;          /* фаска: тёмная грань снизу-справа */
-  --px-drop-x: 0;
-  --px-drop-y: 0;
+  --px-gap-w: 0px;               /* прослойка двойной рамки */
+  --px-gap-c: transparent;
+  --px-line2-w: 0px;             /* внешнее кольцо двойной рамки */
+  --px-line2-c: transparent;
+  --px-drop-x: 0px;
+  --px-drop-y: 0px;
   --px-drop-c: transparent;
-  --px-ring-w: 0px;
+  --px-ring-w: 0px;              /* кольцо фокуса */
   --px-ring-c: transparent;
+
   position: relative;
   background: var(--px-fill);
+
+  /* Рамка — настоящий border, а не стопка теней: он есть со всех четырёх
+     сторон и по определению смыкается в углах. Прежние три кольца через
+     box-shadow оставляли углы открытыми и местами расходились. */
+  border: var(--bd) solid var(--px-line);
+
   box-shadow:
-    /* кольцо 1 — вплотную к боксу */
-    0 calc(-1 * var(--bd)) 0 0 var(--px-line),
-    0 var(--bd)            0 0 var(--px-line),
-    calc(-1 * var(--bd)) 0 0 0 var(--px-line),
-    var(--bd)            0 0 0 var(--px-line),
-    /* кольцо 2 — перекрывается первым, поэтому видна только полоса 4..8px */
-    0 calc(-2 * var(--bd)) 0 0 var(--px-gap),
-    0 calc(2 * var(--bd))  0 0 var(--px-gap),
-    calc(-2 * var(--bd)) 0 0 0 var(--px-gap),
-    calc(2 * var(--bd))  0 0 0 var(--px-gap),
-    /* кольцо 3 — видна полоса 8..12px */
-    0 calc(-3 * var(--bd)) 0 0 var(--px-line2),
-    0 calc(3 * var(--bd))  0 0 var(--px-line2),
-    calc(-3 * var(--bd)) 0 0 0 var(--px-line2),
-    calc(3 * var(--bd))  0 0 0 var(--px-line2),
-    /* пиксельная тень: смещённая копия без размытия. Идёт последней,
-       поэтому кольца рисуются поверх неё. Смещение кратно --bd, иначе
-       тень целиком спряталась бы под первым кольцом. */
+    /* Одно ровное кольцо для двойной рамки: прослойка, следом внешняя
+       линия. Обе через spread, поэтому тоже замкнуты по углам. */
+    0 0 0 var(--px-gap-w) var(--px-gap-c),
+    0 0 0 calc(var(--px-gap-w) + var(--px-line2-w)) var(--px-line2-c),
+    /* Пиксельная тень: смещённая копия без размытия */
     var(--px-drop-x) var(--px-drop-y) 0 0 var(--px-drop-c),
-    /* кольцо фокуса: box-shadow, а не outline — Safari не повторяет
+    /* Кольцо фокуса: box-shadow, а не outline — Safari не повторяет
        outline'ом форму пиксельной рамки */
     0 0 0 var(--px-ring-w) var(--px-ring-c),
-    /* фаска */
+    /* Фаска */
     inset var(--bd) var(--bd) 0 0 var(--px-hi),
     inset calc(-1 * var(--bd)) calc(-1 * var(--bd)) 0 0 var(--px-lo);
 }
 
-/* Пиксельная тень для кнопок. Панели пользуются .px-drop (filter), потому
-   что у них контур уходит на 12px и смещённая копия под него бы не вылезла. */
+/* Двойная рамка: border + белая прослойка + внешняя линия. Ровно два
+   кольца поверх border'а, а не три подряд. */
+.px-double {
+  --px-gap-w: var(--bd);
+  --px-gap-c: var(--frame-gap);
+  --px-line2-w: var(--bd);
+  --px-line2-c: var(--ink);
+}
+
+/* Пиксельная тень для кнопок. Смещение кратно --bd. */
 .px-shadow {
   --px-drop-x: calc(var(--bd) * 2);
   --px-drop-y: calc(var(--bd) * 2);
@@ -64,44 +68,7 @@
 }
 .px-shadow--soft { --px-drop-c: var(--tile-lo); }
 
-/* Двойная рамка: тёмная снаружи, белая прослойка, тёмная внутри.
-   Порядок в box-shadow = порядок наложения: первая тень сверху, поэтому
-   кольца, перечисленные позже, видны только там, где их не закрыли ранние.
-   ВНИМАНИЕ: контур теперь выходит на 12px за бокс, а не на 4.
-   У родителей должен быть padding или gap не меньше 12px. */
-.px-double {
-  --px-gap: var(--frame-gap);
-  --px-line2: var(--ink);
-}
-
-/* Объёмная кнопка-плитка */
-.px-bevel {
-  --px-hi: var(--tile-hi);
-  --px-lo: var(--tile-lo);
-}
-
-/* Нажатое / активное состояние: фаска инвертируется, кнопка «проваливается» */
-.px-bevel:active,
-.px-bevel.is-pressed {
-  --px-hi: var(--tile-lo);
-  --px-lo: var(--tile-hi);
-  transform: translate(2px, 2px);
-}
-
-/* Утопленная поверхность (поле дисплея, поле ввода) */
-.px-inset {
-  --px-hi: var(--tile-lo);
-  --px-lo: var(--tile-hi);
-}
-
-/* Нейтральная светлая кнопка (BACK, mute, стрелки) */
-.px-face {
-  --px-fill: var(--face);
-  --px-hi: var(--face-hi);
-  --px-lo: var(--face-lo);
-}
-
-/* Пиксельная «тень» окна: drop-shadow повторяет силуэт со срезанными углами,
+/* Пиксельная «тень» окна: drop-shadow повторяет силуэт,
    в отличие от box-shadow, который нарисовал бы прямоугольник. */
 .px-drop { filter: drop-shadow(var(--sp-2) var(--sp-2) 0 var(--shadow)); }
 
@@ -128,8 +95,74 @@
   content: "";
   position: absolute;
   left: 50%;
+  /* border лежит внутри бокса: отсчитываем от края padding-box плюс его
+     толщину, иначе хвостик начинался бы из-под линии */
+  margin-left: calc(-3.5 * var(--bd));
+  bottom: calc(-5 * var(--bd));
+  width: calc(7 * var(--bd));     /* 28px: четыре ступени по 4px */
+  height: calc(4 * var(--bd));    /* 16px */
+  background: var(--px-line);
+  clip-path: polygon(
+    0 0, 100% 0,
+    100% 25%, 85.714% 25%,
+    85.714% 50%, 71.429% 50%,
+    71.429% 75%, 57.143% 75%,
+    57.143% 100%, 42.857% 100%,
+    42.857% 75%, 28.571% 75%,
+    28.571% 50%, 14.286% 50%,
+    14.286% 25%, 0 25%
+  );
+}
+
+/* Заливка повторяет тот же силуэт, вложенный на толщину рамки, и
+   прорезает нижнюю грань там, где крепится хвостик. */
+.px-bubble::before {
+  content: "";
+  position: absolute;
+  left: 50%;
   margin-left: calc(-2.5 * var(--bd));
-  bottom: calc(-3 * var(--bd));
+  bottom: calc(-4 * var(--bd));
+  width: calc(5 * var(--bd));
+  height: calc(3 * var(--bd));
+  background: var(--px-fill);
+  clip-path: polygon(
+    0 0, 100% 0,
+    100% 33.34%, 80% 33.34%,
+    80% 66.67%, 60% 66.67%,
+    60% 100%, 40% 100%,
+    40% 66.67%, 20% 66.67%,
+    20% 33.34%, 0 33.34%
+  );
+  z-index: 1;
+}
+
+/* ---------- Точечный паттерн ----------
+   Инлайновый SVG: 4x4 точка в тайле 16x16. Хрустящие края (у radial-gradient
+   они сглаживаются). Цвет = --dot, продублирован хексом: CSS-переменные
+   внутри data-URI не подставляются. */
+.px-dots {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12'%3E%3Crect x='4' y='4' width='4' height='4' fill='%23E9B2CF'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+}
+
+/* ---------- Спич-бабл ----------
+   Хвостик — ступенчатый треугольник вниз-влево, как в references/Image 53.jpg.
+   ::after рисует контур, ::before кладёт заливку поверх нижней грани, чтобы
+   рамка в месте стыка «открылась» и хвост не выглядел приклеенным. */
+.px-bubble { position: relative; }
+
+/* Контур хвостика: ступенчатый треугольник ВНИЗ, по центру бабла —
+   указывает прямо на персонажа под ним.
+   Ряд 0 (12px шириной) совпадает с нижней гранью бабла и сливается с ней,
+   ряд 1 (4px по центру) торчит наружу и образует остриё. */
+.px-bubble::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  margin-left: calc(-2.5 * var(--bd));
+  /* border лежит внутри бокса, поэтому хвостик отсчитывается от края
+     padding-box плюс толщина рамки — иначе он вылезал бы из-под линии */
+  bottom: calc(-4 * var(--bd));
   width: calc(5 * var(--bd));     /* 20px: три ступени по 4px с каждой стороны */
   height: calc(3 * var(--bd));    /* 12px */
   background: var(--px-line);
@@ -150,7 +183,7 @@
   position: absolute;
   left: 50%;
   margin-left: calc(-1.5 * var(--bd));
-  bottom: calc(-2 * var(--bd));
+  bottom: calc(-3 * var(--bd));
   width: calc(3 * var(--bd));
   height: calc(2 * var(--bd));
   background: var(--px-fill);

@@ -46,7 +46,8 @@ const SITE_DATA = {
     // Слежение за курсором. Девять картинок по сторонам света + взгляд прямо.
     // Уберите этот блок (или поставьте null), чтобы вернуться к sprite/плейсхолдеру.
     gaze: {
-      base: "./assets/sprites/",
+      // Папка со спрайтами слежения. gaze.js берёт путь отсюда.
+      base: "./assets/sprites/cursorWatcher/",
       center:    "look-center.png",
       right:     "look-right.png",
       downRight: "look-down-right.png",
@@ -61,7 +62,7 @@ const SITE_DATA = {
       minSwitchMs: 120     // не чаще одного переключения направления
     },
     plate: "MIRA",                           // плашка под рамкой
-    alt: "Pixel-art character: a girl with long dark hair, glasses and a black hoodie",
+    alt: "Pixel-art character: a girl with brown hair, glasses, a green sweater and jeans",
     idleBubble: "NICE TO MEET YOU!",
 
     /* Голос персонажа. Работает ТОЛЬКО в верхнем окне реплики: нигде больше
@@ -172,6 +173,24 @@ const SITE_DATA = {
         line: "SHH\u2026", lineOff: "SOUND IS BACK",
         feedback: "MUTE \u00B7 SOUND OFF", feedbackOff: "MUTE \u00B7 SOUND ON" }
     ],
+
+    /* Кадры анимаций действий.
+       Папка указана у действия в поле sprites, порядок кадров — здесь.
+       Пока список пуст, действие работает без анимации: реплика, звук и
+       накладки играют, спрайт остаётся тем, что подставил gaze.
+       Как заполнять — в README, раздел «Кадры действий». */
+    frames: {
+      playMusic: [],
+      think: [],
+      drinkEnergydrink: [],
+      debug: [],
+      takePhoto: [],
+      sayHi: []
+    },
+
+    /* Повторный клик во время проигрывания перезапускает анимацию с начала
+       (а не игнорируется): так действие всегда откликается на нажатие. */
+    restartOnRepeat: true,
 
     /* Накладки поверх сцены: живут секунду-полторы и исчезают.
        В спрайт не вшиты, рисуются отдельными элементами. */

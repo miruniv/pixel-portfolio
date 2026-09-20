@@ -50,7 +50,29 @@ def run_one(browser, label, width, height):
     return total, fails, errors
 
 
+def check_markup_is_current():
+    """selftest.html — это index.html плюс впрыснутый блок проверок.
+    Если разметку правили только в index.html, набор тихо гоняется по
+    устаревшей копии и часть проверок теряет смысл. Один раз это уже
+    случилось, поэтому сверяем перед прогоном."""
+    idx = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
+    tst = open(os.path.join(ROOT, "selftest.html"), encoding="utf-8").read()
+    cut = tst.find('<pre id="RESULTS"')
+    if cut < 0:
+        return "в selftest.html нет блока проверок"
+    head_idx = idx[:idx.rfind("</body>")].rstrip()
+    head_tst = tst[:cut].rstrip()
+    if head_idx != head_tst:
+        return ("разметка selftest.html отстала от index.html — "
+                "пересоберите набор из актуального index.html")
+    return None
+
+
 def main():
+    stale = check_markup_is_current()
+    if stale:
+        print("ОСТАНОВКА:", stale)
+        return 1
     bad = 0
     with sync_playwright() as pw:
         for engine in ENGINES:

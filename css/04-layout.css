@@ -99,8 +99,10 @@ body {
   min-height: 0;
 }
 .hero > * { min-width: 0; }
-/* Бабл придвинут к персонажу: между ними только хвостик */
-.hero__bubble { grid-row: 1; width: 100%; margin-bottom: calc(-1 * var(--sp-2)); }
+/* Бабл придвинут к персонажу: между ними ровно хвостик. Он выходит на
+   16px ниже рамки, поэтому просвет должен быть не меньше — иначе сцена
+   накрывает остриё. z-index держит хвостик поверх сцены. */
+.hero__bubble { grid-row: 1; width: 100%; z-index: 1; }
 .hero__stage  { grid-row: 2; width: 100%; }
 .charstats    { grid-row: 3; width: 100%; }
 
@@ -112,9 +114,7 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  margin: var(--sp-4);   /* 12px на двойную рамку + 4px запаса:
-                            fr-колонки дают дробную ширину и срезают
-                            внешнее кольцо на пиксель */
+  margin: var(--sp-3);   /* двойная рамка выходит на 8px за бокс */
 }
 .content {
   flex: 1 1 auto;

@@ -107,7 +107,7 @@
   /* Сцена ужимается по высоте: на 390x844 без этого не помещается
      связка «персонаж + реплика + кнопка действия». Блоки не выкидываем
      и порядок не меняем — только поля. */
-  .hero { gap: var(--sp-3); padding: var(--sp-3); margin: var(--sp-3); }
+  .hero { gap: var(--sp-4); padding: var(--sp-3); margin: var(--sp-3); }
   .charstats { gap: var(--sp-3); padding: var(--sp-3); }
 
   .hero__bubble { max-width: 420px; justify-self: center; }
