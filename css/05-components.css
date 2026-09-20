@@ -82,9 +82,10 @@
   padding: 0;
 }
 
-/* Персонаж по центру по обеим осям. Поля заданы одним padding-block,
-   поэтому равны по определению. --stage-pad подобран так, чтобы спрайт
-   занимал примерно три четверти высоты сцены, как в макете.
+/* Множитель и поля считает js/character.js -> fitSprite(): в CSS нельзя
+   взять целочисленный floor от отношения размеров. Здесь только
+   выравнивание; вертикальные поля приходят целыми пикселями на самой
+   картинке, поэтому она не встаёт на дробную позицию.
    gaze.js меряет сам <img>, так что центр уезжает вместе со спрайтом. */
 /* Персонаж по центру по горизонтали и чуть НИЖЕ центра по вертикали:
    сверху воздуха больше, чем под ногами. Сдвиг задан лишним верхним
@@ -92,11 +93,9 @@
 .display__inner {
   position: relative;
   display: grid;
-  place-items: center;
-  padding-top: calc(var(--stage-pad) + var(--stage-bias));
-  padding-bottom: var(--stage-pad);
+  justify-items: center;
+  align-items: start;
   padding-inline: var(--sp-2);
-  min-height: calc(var(--char-size) * var(--char-scale) + var(--stage-pad) * 2);
 }
 
 /* Накладки поверх сцены: `...`, лампочка, +10 ENERGY, вспышка */
@@ -108,20 +107,16 @@
   pointer-events: none;
 }
 
-.char {
-  width: calc(var(--char-size) * var(--char-scale));
-  height: calc(var(--char-size) * var(--char-scale));
-  display: grid;
-  place-items: center;
-}
+/* Обёртки не задают размер: его ставит fitSprite() прямо на <img> */
+.char { display: contents; }
 .char svg { width: 100%; height: 100%; shape-rendering: crispEdges; }
 
 /* Слежение за курсором: один <img>, меняется только src.
    Затухание нужно для мягкого возврата к взгляду прямо, когда курсор
    уходит за пределы окна. */
 .char__img {
-  width: 100%;
-  height: 100%;
+  /* width/height проставляются в целых пикселях из fitSprite() */
+  display: block;
   image-rendering: pixelated;
   -webkit-user-drag: none;
   user-select: none;

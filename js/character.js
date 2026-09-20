@@ -32,6 +32,8 @@
 
   var charEl = null;
   var stageEl = null;            // обёртка, на которой живут анимации состояний
+  var innerEl = null;            // сцена: по ней считается множитель
+  var fitPending = 0;
   var gazeOn = false;
   var curState = "idle";
   var bubbleInk = null;
@@ -76,6 +78,113 @@
     charEl.setAttribute("aria-label", cfg.alt || "Character");
   }
 
+  /* ------------------------------------------------- РАЗМЕР СПРАЙТА ----
+     Множитель обязан быть ЦЕЛЫМ, иначе пиксели размывает. Поэтому не
+     clamp() и не проценты, а ступенька: берём наибольшее N, при котором
+     спрайт ещё влезает в сцену с полями, и зажимаем в 3..6.
+     Поля и смещение — тоже целые пиксели: дробная позиция размывает
+     картинку ровно так же, как дробный масштаб. */
+  var FIT = {
+    min: 3, max: 6,
+    marginY: 0.08,   // поля сверху и снизу, доля высоты сцены
+    marginX: 0.03,   // боковой зазор до рамки
+    minBottom: 0.05,   // нижнее поле не тоньше этой доли высоты сцены...
+    minBottomPx: 16,   // ...и не тоньше этого в пикселях: на низкой сцене
+                       //    5% вырождаются в пару пикселей воздуха под ногами
+    bias: 0.07,      // насколько центр спрайта ниже центра сцены
+    flowQuery: "(max-width: 900px)"  // ниже — колонка растёт по содержимому
+  };
+  var lastFit = null;
+
+  function fitSprite() {
+    if (!innerEl) return null;
+    var img = charEl && charEl.querySelector(".char__img");
+    if (!img || !img.naturalWidth) return null;
+
+    var stageBox = innerEl.closest(".hero__stage");
+    var hero = innerEl.closest(".hero");
+    if (!stageBox || !hero) return null;
+
+    /* Высоту берём НЕ у самой сцены: она равна своему содержимому, и
+       измерять её — значит измерять собственный прошлый результат.
+       Считаем, сколько колонка вообще может отдать: её внутренняя высота
+       минус братья сцены и зазоры между ними. */
+    var hcs = getComputedStyle(hero);
+    var gap = parseFloat(hcs.rowGap) || 0;
+    var avail = hero.clientHeight
+              - parseFloat(hcs.paddingTop) - parseFloat(hcs.paddingBottom);
+    var kids = hero.children;
+    for (var i = 0; i < kids.length; i++) {
+      if (kids[i] !== stageBox) avail -= kids[i].getBoundingClientRect().height;
+    }
+    avail -= gap * Math.max(0, kids.length - 1);
+
+    var scs = getComputedStyle(stageBox);
+    avail -= parseFloat(scs.borderTopWidth) + parseFloat(scs.borderBottomWidth);
+
+    var ics = getComputedStyle(innerEl);
+    var W = innerEl.clientWidth
+          - parseFloat(ics.paddingLeft) - parseFloat(ics.paddingRight);
+    var H = Math.max(0, avail);
+
+    /* Ниже 900px колонка перестаёт быть ограниченной по высоте: строки
+       грида растут под содержимое, и «доступная высота» там не значит
+       ничего. Ограничителем остаётся только ширина. */
+    var flow = !!(window.matchMedia && window.matchMedia(FIT.flowQuery).matches);
+
+    var byW = (W * (1 - 2 * FIT.marginX)) / img.naturalWidth;
+    var byH = (H * (1 - 2 * FIT.marginY)) / img.naturalHeight;
+    var n = Math.floor(flow ? byW : Math.min(byH, byW));
+    if (!isFinite(n)) n = FIT.min;
+    var nRaw = n;
+    n = Math.max(FIT.min, Math.min(FIT.max, n));
+
+    /* Минимум 3 — требование к чёткости, но рамку он переполнять не
+       должен: если 3× не влезает, опускаемся ниже минимума. */
+    while (n > 1 && (img.naturalWidth * n > W ||
+                     (!flow && img.naturalHeight * n > H))) n--;
+
+    var sw = img.naturalWidth * n;
+    var sh = img.naturalHeight * n;
+    img.style.width = sw + "px";
+    img.style.height = sh + "px";
+
+    /* Свободное место делим так, чтобы центр спрайта был ниже центра
+       сцены на bias. Всё в целых пикселях: дробная позиция размывает
+       картинку так же, как дробный масштаб. */
+    var minPad = Math.round(sh * FIT.marginY / (1 - 2 * FIT.marginY));
+    var stageH = flow ? sh + 2 * minPad : Math.round(H);
+    var free = stageH - sh;
+    var half = Math.round(free / 2);
+    /* Смещение вниз и толстое нижнее поле тянут в разные стороны: сдвиг
+       на 7% высоты забирает ровно эти 7% снизу. Сдвигаем настолько,
+       насколько позволяет нижнее поле, а не на сколько хочется. */
+    var floor = Math.max(Math.round(stageH * FIT.minBottom), FIT.minBottomPx);
+    var shift = Math.min(Math.round(stageH * FIT.bias), Math.max(0, half - floor));
+    var top = half + shift;
+    var bottom = free - top;
+
+    img.style.marginTop = top + "px";
+    img.style.marginBottom = bottom + "px";
+    innerEl.style.minHeight = (sh + top + bottom) + "px";
+
+    lastFit = { n: n, nRaw: nRaw, spriteW: sw, spriteH: sh,
+                availH: Math.round(H), availW: Math.round(W),
+                stageH: stageH, top: top, bottom: bottom,
+                flow: flow, shift: shift,
+                boundBy: flow ? "ширина" : (byH < byW ? "высота" : "ширина") };
+    return lastFit;
+  }
+
+  function scheduleFit() {
+    if (fitPending) return;
+    fitPending = requestAnimationFrame(function () {
+      fitPending = 0;
+      fitSprite();
+      if (M.gaze && M.gaze.update) M.gaze.update();
+    });
+  }
+
   M.character = {
     init: function (opts) {
       charEl = opts.charEl;
@@ -93,6 +202,14 @@
       if (gazeOn) renderGaze();
       else if (cfg.sprite) renderSprite(cfg.sprite);
       else renderPlaceholder();
+
+      innerEl = charEl.closest(".display__inner");
+      var img0 = charEl.querySelector(".char__img");
+      if (img0) {
+        if (img0.complete && img0.naturalWidth) fitSprite();
+        else img0.addEventListener("load", fitSprite, { once: true });
+      }
+      window.addEventListener("resize", scheduleFit);
       return this;
     },
 
@@ -145,6 +262,10 @@
       else stageEl.removeAttribute("data-motion");
     },
     state: function () { return curState; },
+
+    fit: fitSprite,
+    lastFit: function () { return lastFit; },
+    fitConfig: FIT,
 
     stop: function () {
       if (typer) typer.cancel();

@@ -7,11 +7,11 @@
        Дробный scale ломает pixelated: часть «пикселей» станет 3px, часть 4px. --- */
 /* Масштаб спрайта — только целые множители, и поля сцены вместе с ним:
    дробные значения ломают и pixelated, и попадание рамок на целый пиксель. */
-@media (max-width: 1100px) { :root { --char-scale: 2; --stage-pad: 32px; --stage-bias: 60px; } }
+@media (max-width: 1100px) { :root { --char-scale: 2; } }
 /* Низкий вьюпорт ограничивает масштаб так же, как узкий: иначе спрайт
    не оставляет сцене места и колонка перестаёт помещаться в окно. */
 @media (max-height: 900px) {
-  :root { --char-scale: 2; --stage-pad: 32px; --stage-bias: 60px; }
+  :root { --char-scale: 2; }
 
   /* На низком экране панели ужимаются отступами, а не размерами кнопок:
      высоты кнопок навигации и слотов заданы макетом (58-62px) и трогать
@@ -26,7 +26,7 @@
   .hero { margin: var(--sp-2); padding: var(--sp-2); gap: var(--sp-3); }
   .content-frame { margin: var(--sp-2); }
 }
-@media (max-width: 560px)  { :root { --char-scale: 1; --stage-pad: 16px; --stage-bias: 24px; } }
+@media (max-width: 560px)  { :root { --char-scale: 1; } }
 
 /* ============ <= 900px: три колонки складываются вертикально ============ */
 @media (max-width: 900px) {

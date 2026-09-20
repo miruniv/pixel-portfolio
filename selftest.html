@@ -722,7 +722,11 @@
       ok("gaze поднимается при активном танце", stDance.enabled === true);
 
       var dr = img.getBoundingClientRect();
-      move((dr.left + dr.right) / 2 + 300, (dr.top + dr.bottom) / 2); G.update();
+      // Не «центр + 300»: размер спрайта считается под экран, и с крупным
+      // множителем такая точка оказывается внутри сцены, где gaze по своему
+      // правилу отдаёт CENTER. Отступаем от рамки сцены на мёртвую зону.
+      var dsr = $(".display").getBoundingClientRect();
+      move(dsr.right + gcfg.deadZone + 40, (dr.top + dr.bottom) / 2); G.update();
       ok("gaze продолжает управлять src во время танца",
          fileOf(img) === "look-right.png", fileOf(img));
       ok("танец при этом не сбросился", stageEl.dataset.state === "dance");
@@ -1035,19 +1039,68 @@
          "hero__bubble,hero__stage,charstats",
          kids.map(function (n) { return n.className.split(" ")[0]; }).join(","));
 
-      // персонаж ниже центра сцены
+      // ---- размер и положение персонажа ----
       var stInner = $(".display__inner").getBoundingClientRect();
-      var imgR = $(".char__img").getBoundingClientRect();
+      var imgEl = $(".char__img");
+      var imgR = imgEl.getBoundingClientRect();
+      var frameR = $(".hero__stage").getBoundingClientRect();
+      var fit = MIRA.character.lastFit();
+      var cfg = MIRA.character.fitConfig;
       var padTop = imgR.top - stInner.top, padBottom = stInner.bottom - imgR.bottom;
       var bias = (padTop - padBottom) / 2 / stInner.height * 100;
-      ok("персонаж смещён ниже центра сцены на 6-8% её высоты",
-         bias >= 6 && bias <= 8, bias.toFixed(1) + "% (сверху " + Math.round(padTop) +
+      var botPct = padBottom / stInner.height * 100;
+
+      ok("масштаб персонажа посчитан", !!fit, fit ? "N=" + fit.n : "fitSprite ничего не вернул");
+
+      ok("множитель — целое число в пределах 1.." + cfg.max,
+         !!fit && fit.n === Math.round(fit.n) && fit.n >= 1 && fit.n <= cfg.max,
+         fit ? String(fit.n) : "-");
+
+      ok("экранный размер = исходник x множитель",
+         !!fit && Math.round(imgR.width) === imgEl.naturalWidth * fit.n &&
+                  Math.round(imgR.height) === imgEl.naturalHeight * fit.n,
+         Math.round(imgR.width) + "x" + Math.round(imgR.height) +
+         " при исходнике " + imgEl.naturalWidth + "x" + imgEl.naturalHeight);
+
+      // Ниже минимума опускаемся только вынужденно: переполнить рамку хуже,
+      // чем потерять один шаг чёткости.
+      ok("множитель ниже минимума " + cfg.min + " — только когда " + cfg.min + "x не влезает",
+         !!fit && (fit.n >= cfg.min || imgEl.naturalWidth * cfg.min > fit.availW),
+         fit ? "N=" + fit.n + ", доступно " + fit.availW + "px, нужно " +
+               (imgEl.naturalWidth * cfg.min) + "px" : "-");
+
+      ok("спрайт целиком внутри рамки сцены по вертикали",
+         imgR.top >= frameR.top - 0.5 && imgR.bottom <= frameR.bottom + 0.5,
+         "спрайт " + Math.round(imgR.top) + ".." + Math.round(imgR.bottom) +
+         ", рамка " + Math.round(frameR.top) + ".." + Math.round(frameR.bottom));
+
+      ok("спрайт целиком внутри рамки сцены по горизонтали",
+         imgR.left >= frameR.left - 0.5 && imgR.right <= frameR.right + 0.5,
+         "спрайт " + Math.round(imgR.left) + ".." + Math.round(imgR.right) +
+         ", рамка " + Math.round(frameR.left) + ".." + Math.round(frameR.right));
+
+      // Дробная позиция размывает пиксели ровно так же, как дробный масштаб.
+      var frac = function (v) { return Math.abs(v - Math.round(v)) > 0.01; };
+      ok("спрайт стоит и мерится в целых пикселях",
+         !frac(imgR.top) && !frac(imgR.left) && !frac(imgR.width) && !frac(imgR.height),
+         [imgR.left, imgR.top, imgR.width, imgR.height].map(function (v) {
+           return v.toFixed(2); }).join(" / "));
+
+      ok("поля сцены заданы целыми пикселями",
+         !frac(parseFloat(imgEl.style.marginTop)) &&
+         !frac(parseFloat(imgEl.style.marginBottom)),
+         imgEl.style.marginTop + " / " + imgEl.style.marginBottom);
+
+      ok("персонаж ниже центра сцены", bias > 0,
+         bias.toFixed(1) + "% (сверху " + Math.round(padTop) +
          ", снизу " + Math.round(padBottom) + ", сцена " + Math.round(stInner.height) + ")");
 
-      ok("спрайт масштабируется целым множителем",
-         Math.round(imgR.width) % $(".char__img").naturalWidth === 0 &&
-         Math.round(imgR.width) === Math.round(imgR.height),
-         Math.round(imgR.width) + " при исходнике " + $(".char__img").naturalWidth);
+      // Смещение вниз и нижнее поле спорят за одно и то же место: когда
+      // свободного места мало, поле важнее — иначе персонаж липнет к рамке.
+      ok("смещение 6-8% либо подрезано нижним полем",
+         (bias >= 6 && bias <= 8) || botPct <= cfg.minBottom * 100 + 1.5,
+         "смещение " + bias.toFixed(1) + "%, нижнее поле " + botPct.toFixed(1) +
+         "% при минимуме " + (cfg.minBottom * 100) + "%");
 
       // ==================== МОБИЛЬНАЯ РАСКЛАДКА ====================
       head("мобильная раскладка");

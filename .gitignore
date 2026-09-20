@@ -14,3 +14,7 @@ references/
 
 # Временные файлы
 *.log
+
+# Python
+__pycache__/
+*.pyc
