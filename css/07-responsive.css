@@ -81,8 +81,11 @@
   .card__thumb img { width: 48px; height: 48px; }
   .ribbon { margin-left: 0; width: 100%; }
 
-  /* Подвал в столбик, чтобы копирайт не жался к иконкам */
+  /* Подвал в столбик, чтобы копирайт не жался к иконкам.
+     На тач-ширинах иконки обязаны быть не мельче 44px. */
   .footer { flex-direction: column; align-items: flex-start; }
+  .footer__link { width: var(--tap); height: var(--tap); }
+  .footer__link svg { width: 24px; height: 24px; }
   .charstats__rows { gap: var(--sp-1) var(--sp-2); }
 }
 

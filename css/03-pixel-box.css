@@ -20,6 +20,9 @@
   --px-line2: transparent;       /* третье кольцо */
   --px-hi: transparent;          /* фаска: светлая грань сверху-слева */
   --px-lo: transparent;          /* фаска: тёмная грань снизу-справа */
+  --px-drop-x: 0;
+  --px-drop-y: 0;
+  --px-drop-c: transparent;
   position: relative;
   background: var(--px-fill);
   box-shadow:
@@ -38,10 +41,23 @@
     0 calc(3 * var(--bd))  0 0 var(--px-line2),
     calc(-3 * var(--bd)) 0 0 0 var(--px-line2),
     calc(3 * var(--bd))  0 0 0 var(--px-line2),
+    /* пиксельная тень: смещённая копия без размытия. Идёт последней,
+       поэтому кольца рисуются поверх неё. Смещение кратно --bd, иначе
+       тень целиком спряталась бы под первым кольцом. */
+    var(--px-drop-x) var(--px-drop-y) 0 0 var(--px-drop-c),
     /* фаска */
     inset var(--bd) var(--bd) 0 0 var(--px-hi),
     inset calc(-1 * var(--bd)) calc(-1 * var(--bd)) 0 0 var(--px-lo);
 }
+
+/* Пиксельная тень для кнопок. Панели пользуются .px-drop (filter), потому
+   что у них контур уходит на 12px и смещённая копия под него бы не вылезла. */
+.px-shadow {
+  --px-drop-x: calc(var(--bd) * 2);
+  --px-drop-y: calc(var(--bd) * 2);
+  --px-drop-c: var(--ink);
+}
+.px-shadow--soft { --px-drop-c: var(--tile-lo); }
 
 /* Двойная рамка: тёмная снаружи, белая прослойка, тёмная внутри.
    Порядок в box-shadow = порядок наложения: первая тень сверху, поэтому

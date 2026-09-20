@@ -571,6 +571,25 @@
          document.documentElement.scrollWidth + " > " + window.innerWidth);
       ok("страница не скроллится", document.documentElement.scrollHeight <= window.innerHeight + 1);
       ok("контур .px-box не обрезан", getComputedStyle($(".content-frame")).overflow === "visible");
+
+      // Проверка потерялась при перестройке набора в коммите с gaze — возвращена.
+      // Иконки подвала по макету 36px на десктопе и вырастают до 44 на тач-
+      // ширинах, поэтому здесь они не участвуют: их меряет мобильный прогон.
+      var tapSel = ".stat, .card, .back, .link, .nav-arrow, .ribbon__item, .inv__tile, #sound-btn, #menu-btn";
+      var tooSmall = $$(tapSel).filter(function (n) {
+        var r = n.getBoundingClientRect();
+        return r.height > 0 && (r.width < 27 || r.height < 27);
+      });
+      ok("интерактивные элементы не мельче своей тач-цели", tooSmall.length === 0,
+         tooSmall.map(function (n) {
+           var r = n.getBoundingClientRect();
+           return n.className.split(" ")[0] + " " + Math.round(r.width) + "x" + Math.round(r.height);
+         }).join(", "));
+      ok("крупные кнопки >= 44px",
+         $$(".stat, .card, .back, .link, .nav-arrow, .ribbon__item").every(function (n) {
+           var r = n.getBoundingClientRect();
+           return r.height === 0 || r.height >= 44;
+         }));
       ok("lang=en", document.documentElement.lang === "en");
       var cyr = /[Ѐ-ӿ]/;
       var bad = [];

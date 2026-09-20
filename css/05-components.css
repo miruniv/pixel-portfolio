@@ -39,6 +39,7 @@
   width: 100%;
   min-height: var(--tap);
   padding: var(--sp-2) var(--sp-3);
+  --bd: var(--bd-md);
   --px-fill: var(--tile);
   font-family: var(--font-display);
   font-size: var(--fs-sm);
@@ -139,16 +140,23 @@
 }
 
 /* ============ ПРАВАЯ ПАНЕЛЬ ============ */
+/* Заголовок раздела: крупный, с розовой подчёркивающей полосой по ширине
+   текста — inline-block, чтобы линия не тянулась на всю панель. */
 .content__title {
+  display: inline-block;
   font-family: var(--font-display);
-  font-size: var(--fs-lg);
+  font-size: var(--fs-2xl);
+  line-height: var(--lh-tight);
   letter-spacing: 1px;
-  margin-bottom: var(--sp-3);
+  padding-bottom: var(--sp-2);
+  margin-bottom: var(--sp-5);
+  border-bottom: var(--bd) solid var(--accent-soft);
 }
 .content__intro {
   color: var(--ink-2);
   font-size: var(--fs-md);
-  margin-bottom: var(--sp-4);
+  line-height: var(--lh-body);
+  margin-bottom: var(--sp-5);
 }
 
 /* Пустое состояние */
@@ -174,6 +182,7 @@
 .card {
   display: grid;
   width: 100%;
+  --bd: var(--bd-md);
   gap: var(--sp-2);
   justify-items: center;
   padding: var(--sp-3);
@@ -217,6 +226,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--sp-2);
+  --bd: var(--bd-md);
   padding: var(--sp-2) var(--sp-3);
   min-height: var(--tap);
   font-family: var(--font-display);
@@ -230,16 +240,20 @@
   display: grid;
   place-items: center;
   width: var(--tap); height: var(--tap);
+  --bd: var(--bd-sm);
   --px-fill: var(--tile);
 }
 .ribbon__item img, .ribbon__item svg { width: 24px; height: 24px; }
 .ribbon__item[aria-current="true"] { --px-fill: var(--accent-soft); }
 
 .detail__title {
+  display: inline-block;
   font-family: var(--font-display);
-  font-size: var(--fs-lg);
-  line-height: 1.5;
+  font-size: var(--fs-xl);
+  line-height: var(--lh-tight);
   letter-spacing: 1px;
+  padding-bottom: var(--sp-2);
+  border-bottom: var(--bd) solid var(--accent-soft);
 }
 .detail__sub { color: var(--ink-2); font-size: var(--fs-md); margin-top: var(--sp-2); }
 
@@ -255,7 +269,7 @@
    .typed__ghost держит высоту (visibility:hidden), .typed__ink печатается
    поверх абсолютом. Без «призрака» панель дёргалась бы на каждом символе.
    Весь блок aria-hidden; полный текст лежит рядом в .sr-only. */
-.detail__text { display: grid; gap: var(--sp-3); font-size: var(--fs-md); }
+.detail__text { display: grid; gap: var(--sp-4); font-size: var(--fs-md); line-height: var(--lh-body); }
 .typed { position: relative; }
 .typed__ghost { visibility: hidden; }
 .typed__ink { position: absolute; inset: 0; }
@@ -297,15 +311,19 @@
 }
 .tag__label {
   font-family: var(--font-display);
-  font-size: var(--fs-xs);
-  letter-spacing: 1px;
+  font-size: var(--fs-label);
+  letter-spacing: 1.5px;
   color: var(--ink-2);
 }
 .tag__val {
-  padding: 2px var(--sp-2);
-  background: var(--mint);
-  box-shadow: 0 -2px 0 var(--ink), 0 2px 0 var(--ink), -2px 0 0 var(--ink), 2px 0 0 var(--ink);
+  padding: 3px var(--sp-2);
+  background: var(--chip-mint);
+  box-shadow:
+    0 calc(-1 * var(--bd-sm)) 0 var(--ink), 0 var(--bd-sm) 0 var(--ink),
+    calc(-1 * var(--bd-sm)) 0 0 var(--ink), var(--bd-sm) 0 0 var(--ink);
 }
+/* Второй тон чипов — для рядов вроде ALSO, чтобы они не сливались со STACK */
+.tag--alt .tag__val { background: var(--chip-blue); }
 
 /* ---- Ссылки ---- */
 .links { display: flex; flex-wrap: wrap; gap: var(--sp-3); padding: var(--sp-1); }
@@ -313,6 +331,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--sp-2);
+  --bd: var(--bd-md);
   min-height: var(--tap);
   padding: var(--sp-2) var(--sp-3);
   font-family: var(--font-display);
@@ -355,6 +374,7 @@
   display: grid;
   place-items: center;
   height: 100%;
+  --bd: var(--bd-sm);
   --px-fill: var(--tile);
 }
 .inv__tile svg { width: 62%; height: 62%; }
@@ -426,6 +446,7 @@
   flex: 0 0 auto;
   display: grid;
   place-items: center;
+  --bd: var(--bd-md);
   width: var(--tap);
   height: auto;
   min-height: var(--tap);
@@ -438,14 +459,15 @@
 .footer__link {
   display: grid;
   place-items: center;
-  width: var(--tap);
-  height: var(--tap);
+  width: 36px;
+  height: 36px;
+  --bd: var(--bd-md);
   --px-fill: var(--accent-soft);
 }
-.footer__link svg { width: 24px; height: 24px; }
+.footer__link svg { width: 20px; height: 20px; }
 .footer__link:hover { --px-fill: var(--accent-hi); }
 .footer__copy {
-  font-size: var(--fs-xs);
+  font-size: var(--fs-copy);
   letter-spacing: 1px;
   color: var(--ink-2);
 }
