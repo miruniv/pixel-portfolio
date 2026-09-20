@@ -39,15 +39,10 @@
   /* Список статов сворачивается гамбургером, чтобы контент был ближе */
   .stats[data-collapsed="true"] .stats__list { display: none; }
 
-  /* Инвентарь уходит под список статов и раскладывается по 4 в ряд.
-     Панель статов персонажа остаётся на месте, в центральной колонке. */
+  /* Панель действий уходит под список статов. Панель статов персонажа
+     остаётся на месте, в центральной колонке. */
   .col-left { grid-template-rows: auto auto; }
-  /* Тач: плитки обязаны быть не мельче 44px, тут места по высоте вдоволь */
-  .inv__grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    grid-auto-rows: minmax(var(--tap), auto);
-  }
-  .inv__tile { aspect-ratio: 1; }
+  .actions__grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
   .hero__bubble { max-width: 420px; justify-self: center; }
   .hero__plate  { max-width: 420px; justify-self: center; }

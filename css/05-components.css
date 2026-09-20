@@ -410,64 +410,218 @@
 }
 .featured__cta svg { width: 14px; height: 14px; }
 
-/* ============ ИНВЕНТАРЬ ============ */
-.inv {
+/* ============ ПАНЕЛЬ ДЕЙСТВИЙ ============ */
+.acts {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-3);
-  padding: var(--sp-3);
-  margin: var(--sp-3);            /* место под двойную рамку */
+  gap: var(--sp-4);
+  padding: var(--sp-4);
+  margin: var(--sp-3);
   min-height: 0;
 }
-.inv__title {
+.actions__title {
   display: flex;
   align-items: center;
   gap: var(--sp-3);
   font-family: var(--font-display);
   font-size: var(--fs-sm);
-  letter-spacing: 1px;
+  letter-spacing: 1.5px;
 }
-.inv__rule { flex: 1 1 auto; height: var(--bd); background: var(--accent-soft); }
-
-/* Строки тянутся и ужимаются вместе с колонкой: при низком вьюпорте
-   плитки становятся ниже, но остаются видимыми целиком. Жёсткий
-   aspect-ratio здесь резал бы нижний ряд. */
-.inv__grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-auto-rows: minmax(36px, 1fr);
-  gap: var(--sp-3);
-  min-height: 0;
-}
-.inv__tile {
-  display: grid;
-  place-items: center;
-  height: 100%;
-  --bd: var(--bd-sm);
-  --px-fill: var(--tile);
-}
-.inv__tile svg { width: 62%; height: 62%; }
-
-/* Незакрытая ячейка: пунктир вместо рамки и знак вопроса */
-.inv__tile--locked {
-  --px-fill: transparent;
-  --px-line: transparent;
-  border: var(--bd) dashed var(--ink-2);
-  opacity: 0.75;
-}
-.inv__q {
-  font-family: var(--font-display);
-  font-size: var(--fs-lg);
-  color: var(--ink-2);
-}
-
-.inv__count {
+.actions__rule { flex: 1 1 auto; height: var(--bd-sm); background: var(--accent-soft); }
+.actions__hint {
   font-family: var(--font-display);
   font-size: var(--fs-xs);
   letter-spacing: 1px;
-  margin-top: auto;               /* прижимаем к низу панели */
+  color: var(--ink-2);
+  white-space: nowrap;
 }
-.inv__hint { font-size: var(--fs-sm); color: var(--ink-2); }
+
+.actions__primary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-3); }
+.actions__grid    { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-3); }
+
+/* ---- Общая плитка действия ---- */
+.act {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: var(--sp-2);
+  width: 100%;
+  min-height: var(--tap);
+  padding: var(--sp-3) var(--sp-2);
+  text-align: center;
+  text-decoration: none;
+  transition: transform 80ms steps(2);
+}
+
+/* ---- Primary: насыщенная заливка, рамка 3px, выраженная тень ---- */
+.act--primary {
+  --bd: var(--bd-md);
+  --px-fill: var(--accent-soft);
+  --px-hi: var(--accent-hi);
+  --px-lo: var(--accent-lo);
+  min-height: 76px;
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
+  letter-spacing: 1px;
+}
+.act--primary .act__icon svg { width: 24px; height: 24px; }
+/* Второе primary-действие в своём, фиолетовом тоне */
+.act--primary[data-action="outfit"] {
+  --px-fill: var(--violet);
+  --px-hi: var(--violet-hi);
+  --px-lo: var(--violet-lo);
+}
+
+/* ---- Slot: заливка ближе к фону панели, рамка 2px, тень слабее ---- */
+.act--slot {
+  --bd: var(--bd-sm);
+  --px-fill: var(--slot);
+  --px-hi: var(--face-hi);
+  --px-lo: var(--face-lo);
+  --px-drop-x: var(--bd-sm);
+  --px-drop-y: var(--bd-sm);
+  --px-drop-c: var(--tile-lo);
+  aspect-ratio: 1;
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.5px;
+}
+.act--slot .act__icon svg { width: 18px; height: 18px; }
+
+/* Единственный жёлтый элемент на сайте */
+.act--secret {
+  --px-fill: var(--secret);
+  --px-line: var(--secret-line);
+  --px-hi: transparent;
+  --px-lo: transparent;
+  border: var(--bd-sm) dashed var(--secret-line);
+}
+
+.act__label { line-height: var(--lh-tight); }
+.act__icon { display: grid; place-items: center; }
+
+/* Бейдж ON: только у включённого переключателя. Абсолютное позиционирование
+   здесь — украшение, не структура. */
+.act__badge {
+  display: none;
+  position: absolute;
+  top: calc(-1 * var(--bd-md));
+  right: calc(-1 * var(--bd-md));
+  padding: 1px var(--sp-1);
+  background: var(--ink);
+  color: var(--panel);
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  letter-spacing: 1px;
+}
+.act[aria-pressed="true"] .act__badge { display: block; }
+
+/* ---- Состояния контролов ---- */
+.act:hover {
+  transform: translateY(-2px);
+  --px-drop-y: calc(var(--bd) * 2 + 2px);
+}
+.act--slot:hover { --px-fill: var(--panel); }
+
+.act:active,
+.act.is-pressed {
+  transform: translateY(2px);
+  --px-drop-x: 0px;
+  --px-drop-y: 0px;
+}
+
+/* Переключатель остаётся подсвеченным, пока включён */
+.act[aria-pressed="true"] {
+  --px-fill: var(--accent-soft);
+  --px-hi: var(--accent-lo);
+  --px-lo: var(--accent-hi);
+}
+
+.act[disabled],
+.act[aria-disabled="true"] {
+  opacity: 0.55;
+  filter: saturate(0.5);
+  transform: none;
+  --px-drop-x: 0px;
+  --px-drop-y: 0px;
+}
+
+/* ---- Строка обратной связи под сеткой ---- */
+.actions__feedback {
+  --bd: var(--bd-sm);
+  --px-fill: var(--panel);
+  --px-line: var(--accent-soft);
+  margin-top: auto;
+  padding: var(--sp-2) var(--sp-3);
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  letter-spacing: 1px;
+  line-height: var(--lh-tight);
+  color: var(--accent);
+}
+
+/* ============ СОСТОЯНИЯ ПЕРСОНАЖА ============
+   Анимации живут на обёртке #stage. Сам <img> не трогаем: его src
+   подставляет gaze.js, и он продолжает следить за курсором пока идёт
+   дыхание или танец. Только transform — никаких width/top по таймеру. */
+.stage {
+  display: grid;
+  place-items: center;
+  transform-origin: 50% 100%;   /* вращение от ног, а не от середины тела */
+}
+.stage[data-state="idle"]  { animation: breathe 2.4s ease-in-out infinite; }
+.stage[data-state="dance"] { animation: dance 0.9s ease-in-out infinite; }
+.stage[data-motion="off"]  { animation: none !important; }
+
+@keyframes breathe {
+  50% { transform: translateY(-2px); }
+}
+@keyframes dance {
+  0%   { transform: rotate(-5deg) translateY(0); }
+  25%  { transform: rotate(0deg)  translateY(-4px); }
+  50%  { transform: rotate(5deg)  translateY(0); }
+  75%  { transform: rotate(0deg)  translateY(-4px); }
+  100% { transform: rotate(-5deg) translateY(0); }
+}
+
+/* ============ ДИАЛОГОВОЕ ОКНО: МУЗЫКА ============ */
+.hero__bubble { position: relative; }
+.eq {
+  display: none;
+  position: absolute;
+  left: var(--sp-3);
+  bottom: var(--sp-2);
+  gap: 2px;
+  align-items: flex-end;
+  height: 10px;
+}
+.hero__bubble.is-music .eq { display: flex; }
+.eq__bar {
+  width: 3px;
+  height: 10px;
+  background: var(--accent);
+  transform-origin: 50% 100%;
+  animation: eq 0.8s ease-in-out infinite;
+}
+.eq__bar:nth-child(2) { animation-delay: 0.2s; }
+.eq__bar:nth-child(3) { animation-delay: 0.4s; }
+.eq__bar:nth-child(4) { animation-delay: 0.1s; }
+@keyframes eq {
+  0%, 100% { transform: scaleY(0.4); }
+  50%      { transform: scaleY(1); }
+}
+
+.bubble__note {
+  display: none;
+  position: absolute;
+  right: var(--sp-3);
+  top: var(--sp-2);
+  width: 12px;
+  height: 12px;
+  opacity: 0.5;
+}
+.hero__bubble.is-music .bubble__note { display: block; }
 
 /* ============ СТАТЫ ПЕРСОНАЖА ============ */
 .charstats {

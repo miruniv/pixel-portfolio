@@ -101,6 +101,18 @@
       ["a",9,3,1,3],["a",8,6,1,3],["a",7,9,1,3]
     ],
     badge: [["i",6,2,4,4],["f",7,3,2,2],["i",3,8,10,6],["f",4,9,8,4]],
+    note: [
+      ["i",10,2,2,9],["i",12,2,3,3],["i",12,5,2,2],
+      ["i",6,10,6,4]
+    ],
+    shirt: [
+      ["i",6,2,4,3],["i",2,3,12,4],["i",4,5,8,9],
+      ["f",5,6,6,7],["a",6,10,4,2]
+    ],
+    clock: [
+      ["i",2,2,12,12],["f",3,3,10,10],
+      ["i",7,5,2,4],["i",9,8,3,2]
+    ],
     document: [
       ["i",3,1,10,14],["f",4,2,8,12],
       ["a",5,4,6,1],["a",5,6,6,1],["a",5,8,6,1],["a",5,10,4,1]
@@ -317,37 +329,95 @@
     return frag;
   }
 
-  /* ------------------------------------------------------ ИНВЕНТАРЬ ---- */
-  function inventory(inv) {
+  /* ------------------------------------------------------- ДЕЙСТВИЯ ---- */
+  function actionNode(a, onBadge) {
+    var isLink = a.type === "link" && a.href;
+    var external = isLink && /^https?:/i.test(a.href);
+    var disabled = a.enabled === false;
+
+    var kids = [
+      el("span", { class: "act__icon", "aria-hidden": "true" },
+         d.pixelArt(ICONS[a.icon] || ICONS.item, 16)),
+      el("span", { class: "act__label", text: a.label })
+    ];
+    // Бейдж ON живёт всегда, показывается только у включённого переключателя
+    if (a.type === "toggle") {
+      kids.unshift(el("span", { class: "act__badge", "aria-hidden": "true", text: onBadge }));
+    }
+
+    var cls = "act act--" + a.kind + " px-box px-bevel" +
+              (a.kind === "primary" ? " px-shadow" : "") +
+              (a.tone ? " act--" + a.tone : "");
+
+    var attrs = {
+      class: cls,
+      dataset: { action: a.id, type: a.type },
+      title: disabled ? a.label + " \u2014 " + a.disabledNote : a.label,
+      "aria-label": disabled ? a.label + " \u2014 " + a.disabledNote : a.label
+    };
+
+    var node;
+    if (disabled) {
+      attrs.type = "button";
+      attrs.disabled = true;
+      attrs["aria-disabled"] = "true";
+      node = el("button", attrs, kids);
+    } else if (isLink) {
+      attrs.href = a.href;
+      if (external) { attrs.target = "_blank"; attrs.rel = "noopener noreferrer"; }
+      node = el("a", attrs, kids);
+    } else {
+      attrs.type = "button";
+      if (a.type === "toggle") attrs["aria-pressed"] = "false";
+      node = el("button", attrs, kids);
+    }
+    return node;
+  }
+
+  function actions(act) {
     var frag = document.createDocumentFragment();
 
-    frag.appendChild(el("h2", { class: "inv__title", id: "inv-title" }, [
-      el("span", { text: inv.title }),
-      el("span", { class: "inv__rule", "aria-hidden": "true" })
+    frag.appendChild(el("h2", { class: "actions__title", id: "act-title" }, [
+      el("span", { text: act.title }),
+      el("span", { class: "actions__rule", "aria-hidden": "true" }),
+      act.hint ? el("span", { class: "actions__hint", text: act.hint }) : null
     ]));
 
-    var grid = el("ul", { class: "inv__grid" });
-    inv.items.forEach(function (it) {
-      var locked = it.unlocked === false;
-      var name = it.label || it.id;
-      // Подсказка нативная (title) + то же самое в aria-label для скринридера.
-      var label = locked ? inv.lockedLabel + ": " + name : name;
-      var tile = el("span", {
-        class: "inv__tile px-box" + (locked ? " inv__tile--locked" : " px-bevel"),
-        role: "img",
-        title: label,
-        "aria-label": label
-      }, locked
-        ? el("span", { class: "inv__q", "aria-hidden": "true", text: "?" })
-        : d.pixelArt(ICONS[it.icon] || ICONS.item, 16));
-      grid.appendChild(el("li", null, tile));
-    });
-    frag.appendChild(grid);
+    var primary = act.items.filter(function (a) { return a.kind === "primary"; });
+    var slots = act.items.filter(function (a) { return a.kind !== "primary"; });
 
-    // Счётчик всегда из данных, руками не пишется.
-    frag.appendChild(el("p", { class: "inv__count", id: "inv-count" },
-      inv.unlocked + " / " + inv.total + " " + inv.countLabel));
-    if (inv.hint) frag.appendChild(el("p", { class: "inv__hint", text: inv.hint }));
+    if (primary.length) {
+      var top = el("div", { class: "actions__primary" });
+      primary.forEach(function (a) { top.appendChild(actionNode(a, act.onBadge)); });
+      frag.appendChild(top);
+    }
+    if (slots.length) {
+      var grid = el("ul", { class: "actions__grid" });
+      slots.forEach(function (a) {
+        grid.appendChild(el("li", null, actionNode(a, act.onBadge)));
+      });
+      frag.appendChild(grid);
+    }
+
+    // role="status" — строка обратной связи читается сама, без фокуса
+    frag.appendChild(el("p", {
+      class: "actions__feedback px-box",
+      id: "act-feedback",
+      role: "status",
+      text: act.feedbackIdle
+    }));
+    return frag;
+  }
+
+  /* Эквалайзер и вторая нота в углу диалогового окна. Живут всегда,
+     показываются только когда играет музыка (класс на самом окне). */
+  function bubbleDecor() {
+    var frag = document.createDocumentFragment();
+    var eq = el("span", { class: "eq", "aria-hidden": "true" });
+    for (var i = 0; i < 4; i++) eq.appendChild(el("span", { class: "eq__bar" }));
+    frag.appendChild(eq);
+    frag.appendChild(el("span", { class: "bubble__note", "aria-hidden": "true" },
+                        d.pixelArt(ICONS.note, 16)));
     return frag;
   }
 
@@ -456,7 +526,8 @@
   M.render = {
     stats: stats, hint: hint, grid: grid, page: page, detail: detail,
     appIcon: appIcon, icons: ICONS,
-    inventory: inventory, charStats: charStats, footer: footer,
-    navArrow: navArrow, featured: featured
+    charStats: charStats, footer: footer,
+    navArrow: navArrow, featured: featured,
+    actions: actions, bubbleDecor: bubbleDecor
   };
 })(window.MIRA);

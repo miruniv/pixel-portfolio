@@ -61,7 +61,36 @@ const SITE_DATA = {
     },
     plate: "MIRA",                           // плашка под рамкой
     alt: "Pixel-art character: a girl with long dark hair, glasses and a black hoodie",
-    idleBubble: "hi! pick a stat to begin ♥"
+    idleBubble: "NICE TO MEET YOU!",
+
+    /* Состояния сцены. Класс вешается на обёртку #stage, НЕ на <img>:
+       src картинки принадлежит gaze.js, он подставляет туда направление
+       взгляда. Так персонаж одновременно следит за курсором и дышит. */
+    states: {
+      idle:   { line: "NICE TO MEET YOU!" },
+      dance:  { line: "\u266A LET'S DANCE! \u266A" },
+      outfit: { line: "THIS IS HOW YOU SEE ME ON LECTURES" }
+    },
+
+    /* Второй комплект спрайтов под CHANGE OUTFIT. Пока файлов нет —
+       enabled: false, и кнопка выводится недоступной. Что положить и как
+       включить, описано в README, раздел «Второй комплект спрайтов». */
+    outfits: {
+      lecture: {
+        enabled: false,
+        label: "Lecture outfit",
+        base: "./assets/sprites/lecture/",
+        center:    "look-center.png",
+        right:     "look-right.png",
+        downRight: "look-down-right.png",
+        down:      "look-down.png",
+        downLeft:  "look-down-left.png",
+        left:      "look-left.png",
+        upLeft:    "look-up-left.png",
+        up:        "look-up.png",
+        upRight:   "look-up-right.png"
+      }
+    }
   },
 
   /* ------------------------------------------------- СТАТЫ ПЕРСОНАЖА -- */
@@ -77,24 +106,47 @@ const SITE_DATA = {
     ]
   },
 
-  /* ---------------------------------------------------------- ИНВЕНТАРЬ -- */
-  /* Сетка в левой колонке. Строка «N / M COLLECTED» считается по unlocked,
-     руками её писать не нужно. Иконки — имена из ICONS в js/render.js. */
-  inventory: {
-    title: "INVENTORY",
-    hint: "Hover an item to inspect",
-    countLabel: "COLLECTED",
-    lockedLabel: "Locked",
+  /* ------------------------------------------------------------ ДЕЙСТВИЯ -- */
+  /* Панель в левой колонке. Два primary сверху, шесть слотов снизу.
+     line — реплика в диалоговом окне; показывается по наведению, по фокусу
+     и при нажатии. feedback — строка под сеткой. */
+  actions: {
+    title: "ACTIONS",
+    hint: "TAP TO USE",
+    feedbackIdle: "PICK AN ACTION",
+    onBadge: "ON",
     items: [
-      { id: "keyboard",   label: "Mechanical keyboard", icon: "keyboard",   unlocked: true },
-      { id: "mouse",      label: "Trackball mouse",     icon: "mouse",      unlocked: true },
-      { id: "coffee",     label: "Third coffee today",  icon: "coffee",     unlocked: true },
-      { id: "floppy",     label: "Floppy disk",         icon: "floppy",     unlocked: true },
-      { id: "headphones", label: "Headphones",          icon: "headphones", unlocked: true },
-      { id: "book",       label: "CSS reference book",  icon: "book",       unlocked: true },
-      { id: "cassette",   label: "Chiptune cassette",   icon: "cassette",   unlocked: true },
-      { id: "plant",      label: "Desk plant",          icon: "plant",      unlocked: true },
-      { id: "secret",     label: "Not found yet",       icon: null,         unlocked: false }
+      {
+        id: "music", label: "PLAY MUSIC", icon: "note",
+        kind: "primary", type: "toggle", state: "dance",
+        line: "\u266A LET'S DANCE! \u266A",
+        lineOff: "OK, BACK TO WORK",
+        feedback: "PLAY MUSIC \u00B7 SHE'S DANCING NOW",
+        feedbackOff: "MUSIC OFF \u00B7 BACK TO WORK"
+      },
+      {
+        id: "outfit", label: "CHANGE OUTFIT", icon: "shirt",
+        kind: "primary", type: "toggle", state: "outfit",
+        outfit: "lecture",
+        line: "THIS IS HOW YOU SEE ME ON LECTURES",
+        feedback: "CHANGE OUTFIT \u00B7 LECTURE LOOK",
+        enabled: false,
+        disabledNote: "coming soon"
+      },
+      { id: "projects", label: "PROJECTS", icon: "briefcase", kind: "slot", type: "link",
+        href: "#projects", line: "TAKE A LOOK AT MY WORK", feedback: "PROJECTS \u00B7 OPENED" },
+      { id: "resume", label: "RESUME", icon: "document", kind: "slot", type: "link",
+        href: "./cv.pdf", line: "WANT MY CV?", feedback: "RESUME \u00B7 OPENED" },
+      { id: "github", label: "GITHUB", icon: "code", kind: "slot", type: "link",
+        href: "https://github.com/example", line: "SEE WHAT I'M BUILDING",
+        feedback: "GITHUB \u00B7 OPENED" },
+      { id: "contact", label: "CONTACT", icon: "envelope", kind: "slot", type: "link",
+        href: "#contacts", line: "LET'S TALK!", feedback: "CONTACT \u00B7 OPENED" },
+      { id: "now", label: "NOW", icon: "clock", kind: "slot", type: "link",
+        href: "#extra", line: "WHAT I'M UP TO LATELY", feedback: "NOW \u00B7 OPENED" },
+      { id: "secret", label: "SECRET", icon: null, kind: "slot", type: "oneshot",
+        tone: "secret", line: "YOU FOUND SOMETHING\u2026",
+        feedback: "SECRET \u00B7 NICE FIND" }
     ]
   },
 

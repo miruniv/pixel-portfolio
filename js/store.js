@@ -78,18 +78,43 @@
 
     if (!sections.length) console.error("[data.js] Нет ни одной валидной секции.");
 
-    /* ---- Инвентарь ---- */
-    var invRaw = SITE_DATA.inventory || {};
-    var invItems = (Array.isArray(invRaw.items) ? invRaw.items : []).filter(function (it, i) {
-      if (!it || !it.id || !ID_RE.test(it.id)) {
-        warn("inventory.items[" + i + "]: id обязателен (a-z, 0-9, дефис). Плитка пропущена.");
+    /* ---- Действия ---- */
+    var actRaw = SITE_DATA.actions || {};
+    var actItems = (Array.isArray(actRaw.items) ? actRaw.items : []).filter(function (a, i) {
+      if (!a || !a.id || !ID_RE.test(a.id)) {
+        warn("actions.items[" + i + "]: id обязателен (a-z, 0-9, дефис). Действие пропущено.");
         return false;
       }
-      if (!it.label) warn('inventory.items[' + i + '] ("' + it.id + '"): нет label — подсказка будет пустой.');
+      if (!a.label) warn('actions.items[' + i + '] ("' + a.id + '"): нет label.');
+      if (!a.line) warn('actions.items[' + i + '] ("' + a.id + '"): нет line — реплика будет пустой.');
+      if (a.type === "link" && !a.href) {
+        warn('actions.items[' + i + '] ("' + a.id + '"): type "link" без href. Действие пропущено.');
+        return false;
+      }
       return true;
+    }).map(function (a) {
+      // Действие с нарядом остаётся недоступным, пока нет второго комплекта
+      var outfit = a.outfit && SITE_DATA.character &&
+                   SITE_DATA.character.outfits && SITE_DATA.character.outfits[a.outfit];
+      var enabled = a.enabled !== false && (!a.outfit || (outfit && outfit.enabled === true));
+      if (a.outfit && !enabled) {
+        warn('actions "' + a.id + '": комплект "' + a.outfit +
+             '" выключен или отсутствует — кнопка выводится недоступной.');
+      }
+      return {
+        id: a.id, label: a.label || a.id, icon: a.icon || null,
+        kind: a.kind === "primary" ? "primary" : "slot",
+        type: a.type || "oneshot",
+        tone: a.tone || null,
+        href: a.href || null,
+        state: a.state || null,
+        outfit: a.outfit || null,
+        line: a.line || "", lineOff: a.lineOff || null,
+        feedback: a.feedback || "", feedbackOff: a.feedbackOff || null,
+        enabled: enabled,
+        disabledNote: a.disabledNote || "coming soon"
+      };
     });
-    // Счётчик считается по данным, а не пишется руками.
-    var unlocked = invItems.filter(function (it) { return it.unlocked !== false; }).length;
 
     /* ---- Подвал ---- */
     var footRaw = SITE_DATA.footer || {};
@@ -115,14 +140,13 @@
         total: total,
         rows: Array.isArray(prof.rows) ? prof.rows : []
       },
-      inventory: {
-        title: invRaw.title || "INVENTORY",
-        hint: invRaw.hint || "",
-        countLabel: invRaw.countLabel || "COLLECTED",
-        lockedLabel: invRaw.lockedLabel || "Locked",
-        items: invItems,
-        unlocked: unlocked,
-        total: invItems.length
+      actions: {
+        title: actRaw.title || "ACTIONS",
+        hint: actRaw.hint || "",
+        feedbackIdle: actRaw.feedbackIdle || "",
+        onBadge: actRaw.onBadge || "ON",
+        items: actItems,
+        byId: actItems.reduce(function (m, a) { m[a.id] = a; return m; }, {})
       },
       footer: {
         copyright: footRaw.copyright || "",

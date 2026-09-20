@@ -82,9 +82,9 @@
         <ul class="stats__list" id="stat-list"></ul>
       </nav>
 
-      <!-- Заполняется из SITE_DATA.inventory. Счётчик COLLECTED считается
-           по данным, см. js/store.js -->
-      <section class="inv px-box px-double" id="inventory" aria-labelledby="inv-title"></section>
+      <!-- Панель действий. Заполняется из SITE_DATA.actions:
+           два primary сверху, шесть слотов снизу, строка обратной связи. -->
+      <section class="acts px-box px-double" id="actions" aria-labelledby="act-title"></section>
     </div>
 
     <!-- Колонка 2: персонаж -->
@@ -96,7 +96,11 @@
 
       <div class="hero__display display px-box px-double">
         <div class="display__inner">
-          <div class="char" id="char"></div>
+          <!-- #stage — обёртка под анимации состояний. Всё, что внутри .char,
+               принадлежит gaze.js: он подставляет туда направление взгляда. -->
+          <div class="stage" id="stage" data-state="idle">
+            <div class="char" id="char"></div>
+          </div>
         </div>
       </div>
 

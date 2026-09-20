@@ -71,6 +71,7 @@
 
     updateStats(next.sectionId);
     M.character.set(section);
+    refreshBubble();
     docTitle(section, item);
 
     var jobs = [];
@@ -172,6 +173,86 @@
   }
 
   /* ====================================================== НАВИГАЦИЯ ==== */
+
+  /* ====================================================== ДЕЙСТВИЯ ==== */
+  /* Одна реплика за раз. Приоритет: временная (наведение, фокус, нажатие)
+     -> включённый переключатель -> реплика текущего раздела -> дефолт. */
+  var transientLine = null;
+  var transientTimer = 0;
+  var musicOn = false;
+
+  function currentLine() {
+    if (transientLine) return transientLine;
+    if (musicOn) {
+      var m = store.actions.byId.music;
+      if (m) return m.line;
+    }
+    var s = store.section(state.sectionId);
+    return (s && s.bubble) || (store.character && store.character.idleBubble) || "";
+  }
+
+  function refreshBubble() { M.character.say(currentLine()); }
+
+  function showLine(text, holdMs) {
+    window.clearTimeout(transientTimer);
+    transientTimer = 0;
+    transientLine = text || null;
+    refreshBubble();
+    if (text && holdMs) {
+      transientTimer = window.setTimeout(function () {
+        transientLine = null;
+        refreshBubble();
+      }, holdMs);
+    }
+  }
+
+  function setFeedback(text) {
+    if (refs.feedback) refs.feedback.textContent = text || store.actions.feedbackIdle || "";
+  }
+
+  /* Одноразовые действия мигают нажатым состоянием и возвращаются */
+  function flash(node) {
+    node.classList.add("is-pressed");
+    window.setTimeout(function () { node.classList.remove("is-pressed"); }, 150);
+  }
+
+  function setMusic(on, node) {
+    // Сначала реально запускаем звук. Если браузер отказал (нет
+    // AudioContext), кнопка не должна врать, что музыка играет.
+    if (on) { if (!audio.music.start()) on = false; }
+    else audio.music.stop();
+
+    musicOn = on;
+    var a = store.actions.byId.music;
+    if (node) node.setAttribute("aria-pressed", on ? "true" : "false");
+    refs.bubble.classList.toggle("is-music", on);
+    M.character.setState(on ? (a && a.state) || "dance" : "idle");
+    setFeedback(on ? a.feedback : a.feedbackOff);
+    showLine(on ? a.line : a.lineOff, on ? 0 : 2600);
+  }
+
+  function activateAction(node) {
+    var a = store.actions.byId[node.dataset.action];
+    if (!a || a.enabled === false) return;
+
+    if (a.id === "music") {
+      // Нажатие — это и есть пользовательский жест, которого ждёт браузер
+      setMusic(!musicOn, node);
+      return;
+    }
+    if (a.type === "toggle") {
+      var on = node.getAttribute("aria-pressed") !== "true";
+      node.setAttribute("aria-pressed", on ? "true" : "false");
+      M.character.setState(on ? a.state : "idle");
+      setFeedback(on ? a.feedback : null);
+      showLine(a.line, on ? 0 : 2600);
+      return;
+    }
+    // Ссылки и одноразовые: мигаем и показываем реплику, навигация — своим ходом
+    flash(node);
+    setFeedback(a.feedback);
+    showLine(a.line, 2600);
+  }
 
   /* Стрелки листают статы по кругу и пишут хэш — ровно как обычный клик
      по стату, поэтому история, deeplink и подсветка работают сами собой. */
@@ -278,7 +359,9 @@
   function init() {
     refs.screen = d.qs("#screen");
     refs.workspace = d.qs("#workspace");
-    refs.inventory = d.qs("#inventory");
+    refs.actions = d.qs("#actions");
+    refs.stage = d.qs("#stage");
+    refs.bubble = d.qs(".hero__bubble");
     refs.charstats = d.qs("#charstats");
     refs.footer = d.qs("#footer");
     refs.stats = d.qs("#stats");
@@ -312,7 +395,9 @@
     refs.statList.appendChild(render.stats(store.sections));
 
     // Инвентарь, статы персонажа и подвал — статичны, рисуем один раз
-    refs.inventory.appendChild(render.inventory(store.inventory));
+    refs.actions.appendChild(render.actions(store.actions));
+    refs.feedback = d.qs("#act-feedback");
+    refs.bubble.appendChild(render.bubbleDecor());
     refs.charstats.appendChild(render.charStats(store.profile, {
       name: (store.character && store.character.plate) || "",
       prevLabel: ui.prevSection,
@@ -323,6 +408,7 @@
     // Персонаж
     M.character.init({
       charEl: d.qs("#char"),
+      stageEl: refs.stage,
       bubbleInk: d.qs("#bubble-ink"),
       bubbleSr: d.qs("#bubble-sr")
     });
@@ -340,6 +426,9 @@
 
       var arrow = t.closest(".nav-arrow");
       if (arrow) { stepSection(Number(arrow.dataset.step)); return; }
+
+      var act = t.closest(".act");
+      if (act) { audio.click(); activateAction(act); return; }
       if (t.closest("#menu-btn")) {
         audio.click();
         collapseStats(refs.stats.dataset.collapsed !== "true");
@@ -359,7 +448,35 @@
     d.on(document, "pointerover", function (e) {
       var t = e.target;
       if (!(t instanceof Element)) return;
-      if (t.closest(".stat, .card, .link, .back, .ribbon__item, .tbtn, .nav-arrow, .footer__link")) audio.hover();
+      if (t.closest(".stat, .card, .link, .back, .ribbon__item, .tbtn, .nav-arrow, .footer__link, .act")) audio.hover();
+
+      // Реплика обновляется и по наведению, и по фокусу (тач hover не даёт)
+      var over = t.closest(".act");
+      if (over && !over.disabled) {
+        var ao = store.actions.byId[over.dataset.action];
+        if (ao) showLine(ao.line, 0);
+      }
+    });
+
+    /* --- Реплика обновляется по фокусу: на тач-устройствах hover'а нет --- */
+    d.on(document, "focusin", function (e) {
+      var t = e.target;
+      if (!(t instanceof Element)) return;
+      var a = t.closest(".act");
+      if (a && !a.disabled) {
+        var ao = store.actions.byId[a.dataset.action];
+        if (ao) showLine(ao.line, 0);
+      }
+    });
+    d.on(document, "focusout", function (e) {
+      var t = e.target;
+      if (t instanceof Element && t.closest(".act")) showLine(null);
+    });
+    d.on(document, "pointerout", function (e) {
+      var t = e.target;
+      if (!(t instanceof Element)) return;
+      var a = t.closest(".act");
+      if (a && !(e.relatedTarget instanceof Node && a.contains(e.relatedTarget))) showLine(null);
     });
 
     /* --- Клавиатура --- */

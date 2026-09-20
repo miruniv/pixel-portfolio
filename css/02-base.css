@@ -77,6 +77,23 @@ button:disabled, [aria-disabled="true"] {
   z-index: 5;
 }
 
+/* У пиксельных боксов кольцо рисуется box-shadow'ом: outline в Safari
+   не повторяет их форму. :focus оставлен фолбэком для браузеров без
+   :focus-visible и гасится там, где :focus-visible поддерживается. */
+.px-box:focus,
+.px-box:focus-visible {
+  outline: none;
+  --px-ring-w: calc(var(--bd) + 3px);
+  --px-ring-c: var(--accent);
+  z-index: 5;
+}
+@supports selector(:focus-visible) {
+  .px-box:focus:not(:focus-visible) {
+    --px-ring-w: 0px;
+    --px-ring-c: transparent;
+  }
+}
+
 /* ---------- Утилиты ---------- */
 
 /* Полный текст для скринридеров, пока на экране идёт посимвольная печать */

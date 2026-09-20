@@ -23,6 +23,8 @@
   --px-drop-x: 0;
   --px-drop-y: 0;
   --px-drop-c: transparent;
+  --px-ring-w: 0px;
+  --px-ring-c: transparent;
   position: relative;
   background: var(--px-fill);
   box-shadow:
@@ -45,6 +47,9 @@
        поэтому кольца рисуются поверх неё. Смещение кратно --bd, иначе
        тень целиком спряталась бы под первым кольцом. */
     var(--px-drop-x) var(--px-drop-y) 0 0 var(--px-drop-c),
+    /* кольцо фокуса: box-shadow, а не outline — Safari не повторяет
+       outline'ом форму пиксельной рамки */
+    0 0 0 var(--px-ring-w) var(--px-ring-c),
     /* фаска */
     inset var(--bd) var(--bd) 0 0 var(--px-hi),
     inset calc(-1 * var(--bd)) calc(-1 * var(--bd)) 0 0 var(--px-lo);

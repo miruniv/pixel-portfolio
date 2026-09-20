@@ -82,9 +82,9 @@
         <ul class="stats__list" id="stat-list"></ul>
       </nav>
 
-      <!-- Заполняется из SITE_DATA.inventory. Счётчик COLLECTED считается
-           по данным, см. js/store.js -->
-      <section class="inv px-box px-double" id="inventory" aria-labelledby="inv-title"></section>
+      <!-- Панель действий. Заполняется из SITE_DATA.actions:
+           два primary сверху, шесть слотов снизу, строка обратной связи. -->
+      <section class="acts px-box px-double" id="actions" aria-labelledby="act-title"></section>
     </div>
 
     <!-- Колонка 2: персонаж -->
@@ -96,7 +96,11 @@
 
       <div class="hero__display display px-box px-double">
         <div class="display__inner">
-          <div class="char" id="char"></div>
+          <!-- #stage — обёртка под анимации состояний. Всё, что внутри .char,
+               принадлежит gaze.js: он подставляет туда направление взгляда. -->
+          <div class="stage" id="stage" data-state="idle">
+            <div class="char" id="char"></div>
+          </div>
         </div>
       </div>
 
@@ -324,6 +328,10 @@
       // ==================== СЦЕНА: ЦЕНТРИРОВАНИЕ И ЦЕНТР ДЛЯ GAZE ====================
       head("сцена персонажа");
       var stage = $(".display__inner");
+      // Замораживаем анимацию обёртки: дыхание даёт субпиксельный сдвиг и
+      // геометрию мерить в его середине бессмысленно. Проверяем вёрстку.
+      var animHost = $("#stage");
+      animHost.style.animation = "none";
       var ir = img.getBoundingClientRect(), sr = stage.getBoundingClientRect();
       var padTop = ir.top - sr.top, padBottom = sr.bottom - ir.bottom;
       var padLeft = ir.left - sr.left, padRight = sr.right - ir.right;
@@ -336,9 +344,10 @@
       ok("центр спрайта совпадает с центром рамки по обеим осям",
          Math.abs((ir.left + ir.right) / 2 - (sr.left + sr.right) / 2) <= 1 &&
          Math.abs((ir.top + ir.bottom) / 2 - (sr.top + sr.bottom) / 2) <= 1);
+      var w = Math.round(ir.width), hh = Math.round(ir.height);
       ok("спрайт выводится целым множителем исходного размера",
-         ir.width === ir.height && ir.width % SITE_DATA.character.frameSize === 0,
-         ir.width + "x" + ir.height + " при исходнике " + SITE_DATA.character.frameSize);
+         w === hh && w % SITE_DATA.character.frameSize === 0,
+         w + "x" + hh + " при исходнике " + SITE_DATA.character.frameSize);
 
       // gaze меряет сам <img>, поэтому после центрирования его центр —
       // это середина рамки. Проверяем от неё, а не от прежнего низа.
@@ -365,6 +374,7 @@
       ok("после resize gaze берёт новый центр, а не старый",
          fileOf(img) === "look-center.png", fileOf(img));
       stage.style.paddingTop = "";
+      animHost.style.animation = "";     // возвращаем дыхание
       window.dispatchEvent(new Event("resize"));
       G.update();
 
@@ -460,60 +470,6 @@
       $("#menu-btn").click(); await tick(20);
 
 
-      // ==================== ИНВЕНТАРЬ ====================
-      head("инвентарь");
-      var invItems = SITE_DATA.inventory.items;
-      var tiles = $$(".inv__tile");
-      ok("плиток столько же, сколько в данных", tiles.length === invItems.length,
-         tiles.length + " != " + invItems.length);
-      ok("у ВСЕХ плиток есть aria-label",
-         tiles.every(function (t) { return (t.getAttribute("aria-label") || "").trim().length > 0; }),
-         tiles.filter(function (t) { return !t.getAttribute("aria-label"); }).length + " без label");
-      ok("у всех плиток есть нативная подсказка title",
-         tiles.every(function (t) { return (t.getAttribute("title") || "").trim().length > 0; }));
-      ok("aria-label совпадает с title",
-         tiles.every(function (t) { return t.getAttribute("aria-label") === t.getAttribute("title"); }));
-      ok("подпись плитки берётся из label в данных",
-         tiles[0].getAttribute("aria-label") === invItems[0].label,
-         tiles[0].getAttribute("aria-label"));
-
-      var lockedData = invItems.filter(function (i) { return i.unlocked === false; });
-      var lockedTiles = $$(".inv__tile--locked");
-      ok("закрытых плиток столько же, сколько в данных",
-         lockedTiles.length === lockedData.length, lockedTiles.length + " != " + lockedData.length);
-      ok("закрытая плитка рисуется пунктиром",
-         lockedTiles.length > 0 &&
-         getComputedStyle(lockedTiles[0]).borderTopStyle === "dashed",
-         lockedTiles.length ? getComputedStyle(lockedTiles[0]).borderTopStyle : "нет плитки");
-      ok("на закрытой плитке знак вопроса",
-         lockedTiles.length > 0 && lockedTiles[0].textContent.indexOf("?") > -1);
-      ok("у закрытой плитки в подписи указано, что она закрыта",
-         lockedTiles[0].getAttribute("aria-label").indexOf(SITE_DATA.inventory.lockedLabel) === 0,
-         lockedTiles[0].getAttribute("aria-label"));
-
-      // счётчик считается из данных, а не зашит
-      var unlockedCount = invItems.filter(function (i) { return i.unlocked !== false; }).length;
-      var countText = $(".inv__count").textContent.replace(/\s+/g, " ").trim();
-      var expected = unlockedCount + " / " + invItems.length + " " + SITE_DATA.inventory.countLabel;
-      ok("счётчик COLLECTED совпадает с данными", countText === expected,
-         "«" + countText + "» ожидалось «" + expected + "»");
-
-      // и меняется, если поменять данные
-      var savedUnlocked = invItems[0].unlocked;
-      invItems[0].unlocked = false;
-      var rebuilt = MIRA.render.inventory({
-        title: "X", hint: "", countLabel: SITE_DATA.inventory.countLabel, lockedLabel: "Locked",
-        items: invItems,
-        unlocked: invItems.filter(function (i) { return i.unlocked !== false; }).length,
-        total: invItems.length
-      });
-      var probe = document.createElement("div");
-      probe.appendChild(rebuilt);
-      ok("счётчик пересчитывается, а не захардкожен",
-         probe.querySelector(".inv__count").textContent.indexOf((unlockedCount - 1) + " / ") === 0,
-         probe.querySelector(".inv__count").textContent);
-      invItems[0].unlocked = savedUnlocked;
-
       // ==================== СТАТЫ ПЕРСОНАЖА ====================
       head("статы персонажа");
       var cells = $$(".lvlbar__cell");
@@ -607,6 +563,144 @@
          }), ribs.map(function (b) {
            var r = b.getBoundingClientRect(); return Math.round(r.width) + "x" + Math.round(r.height);
          }).join(" "));
+
+      // ==================== ПАНЕЛЬ ДЕЙСТВИЙ ====================
+      head("панель действий");
+      var acts = $$(".act");
+      ok("действий столько же, сколько в данных",
+         acts.length === SITE_DATA.actions.items.length, acts.length);
+      ok("два primary и шесть слотов",
+         $$(".act--primary").length === 2 && $$(".act--slot").length === 6,
+         $$(".act--primary").length + " / " + $$(".act--slot").length);
+      ok("у всех действий есть aria-label и title",
+         acts.every(function (n) { return n.getAttribute("aria-label") && n.getAttribute("title"); }));
+      ok("строка обратной связи есть и объявляется",
+         $("#act-feedback") && $("#act-feedback").getAttribute("role") === "status");
+      ok("секретный слот — единственный жёлтый элемент",
+         $$(".act--secret").length === 1 &&
+         getComputedStyle($(".act--secret")).backgroundColor ===
+           getComputedStyle(document.documentElement).getPropertyValue("--secret").trim()
+             .replace(/^#(..)(..)(..)$/, function (_, r, g, b) {
+               return "rgb(" + parseInt(r,16) + ", " + parseInt(g,16) + ", " + parseInt(b,16) + ")";
+             }),
+         getComputedStyle($(".act--secret")).backgroundColor);
+      ok("primary толще слотов по рамке",
+         parseFloat(getComputedStyle($(".act--primary")).getPropertyValue("--bd")) >
+         parseFloat(getComputedStyle($(".act--slot")).getPropertyValue("--bd")),
+         getComputedStyle($(".act--primary")).getPropertyValue("--bd") + " vs " +
+         getComputedStyle($(".act--slot")).getPropertyValue("--bd"));
+
+      // ---- CHANGE OUTFIT: заглушка ----
+      var outfitBtn = $('.act[data-action="outfit"]');
+      ok("CHANGE OUTFIT выглядит как primary", outfitBtn.classList.contains("act--primary"));
+      ok("CHANGE OUTFIT недоступна", outfitBtn.disabled === true &&
+         outfitBtn.getAttribute("aria-disabled") === "true");
+      ok("в подписи CHANGE OUTFIT сказано про coming soon",
+         /coming soon/i.test(outfitBtn.getAttribute("title")) &&
+         /coming soon/i.test(outfitBtn.getAttribute("aria-label")),
+         outfitBtn.getAttribute("title"));
+      ok("в данных заведён второй комплект спрайтов",
+         !!SITE_DATA.character.outfits &&
+         Object.keys(SITE_DATA.character.outfits.lecture).length >= 10 &&
+         SITE_DATA.character.outfits.lecture.enabled === false);
+      ok("реплика про лекции заведена в данных",
+         SITE_DATA.character.states.outfit.line === "THIS IS HOW YOU SEE ME ON LECTURES");
+
+      // ==================== МУЗЫКА И СОСТОЯНИЯ ====================
+      head("музыка и состояния персонажа");
+      var stageEl = $("#stage");
+      var musicBtn = $('.act[data-action="music"]');
+      var imgSrcBefore = img.getAttribute("src");
+
+      ok("музыка не включается сама при загрузке", M.audio.music.isPlaying() === false);
+      ok("состояние по умолчанию — idle", stageEl.dataset.state === "idle", stageEl.dataset.state);
+      ok("кнопка музыки не нажата", musicBtn.getAttribute("aria-pressed") === "false");
+
+      musicBtn.click(); await tick(120);
+      ok("клик включает музыку", M.audio.music.isPlaying() === true);
+      ok("aria-pressed стал true", musicBtn.getAttribute("aria-pressed") === "true");
+      ok("состояние сцены стало dance", stageEl.dataset.state === "dance", stageEl.dataset.state);
+      ok("реплика сменилась на танцевальную",
+         $("#bubble-sr").textContent === SITE_DATA.character.states.dance.line,
+         $("#bubble-sr").textContent);
+      ok("строка обратной связи обновилась",
+         $("#act-feedback").textContent === SITE_DATA.actions.items[0].feedback,
+         $("#act-feedback").textContent);
+      ok("бейдж ON показан", getComputedStyle($(".act__badge")).display !== "none");
+      ok("окно диалога получило класс музыки", $(".hero__bubble").classList.contains("is-music"));
+      ok("эквалайзер виден", getComputedStyle($(".eq")).display !== "none");
+
+      // src картинки остаётся за gaze, музыка его не трогает
+      ok("переключение музыки не тронуло src спрайта",
+         img.getAttribute("src") === imgSrcBefore, img.getAttribute("src"));
+      // К этому месту gaze был уже уничтожен тестами тач-устройства,
+      // поэтому поднимаем его заново — проверяем именно сосуществование
+      // слежения и танца, а не живучесть предыдущего инстанса.
+      window.matchMedia = function (q) {
+        if (/hover|pointer/.test(q)) {
+          return { matches: true, media: q, addEventListener: function () {}, addListener: function () {} };
+        }
+        return realMM.call(window, q);
+      };
+      var stDance = G.init({ img: img, cfg: gcfg });
+      window.matchMedia = realMM;
+      ok("gaze поднимается при активном танце", stDance.enabled === true);
+
+      var dr = img.getBoundingClientRect();
+      move((dr.left + dr.right) / 2 + 300, (dr.top + dr.bottom) / 2); G.update();
+      ok("gaze продолжает управлять src во время танца",
+         fileOf(img) === "look-right.png", fileOf(img));
+      ok("танец при этом не сбросился", stageEl.dataset.state === "dance");
+      G.destroy();
+      ok("одно состояние за раз: у сцены ровно один data-state",
+         stageEl.dataset.state === "dance" && $$("[data-state]").length === 1);
+
+      musicBtn.click(); await tick(120);
+      ok("повторный клик выключает музыку", M.audio.music.isPlaying() === false);
+      ok("aria-pressed вернулся в false", musicBtn.getAttribute("aria-pressed") === "false");
+      ok("состояние вернулось в idle", stageEl.dataset.state === "idle");
+      ok("реплика сменилась на «музыка выключена»",
+         $("#bubble-sr").textContent === SITE_DATA.actions.items[0].lineOff,
+         $("#bubble-sr").textContent);
+      ok("класс музыки снят", !$(".hero__bubble").classList.contains("is-music"));
+
+      // ---- реплика по фокусу, а не только по наведению ----
+      var ghBtn = $('.act[data-action="github"]');
+      ghBtn.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
+      await tick(80);
+      ok("реплика обновляется по фокусу",
+         $("#bubble-sr").textContent === SITE_DATA.actions.items[4].line,
+         $("#bubble-sr").textContent);
+      ghBtn.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
+      await tick(80);
+
+      // ---- одноразовое действие мигает нажатым состоянием ----
+      var secretBtn = $('.act[data-action="secret"]');
+      secretBtn.click();
+      ok("одноразовое действие мигает нажатым состоянием",
+         secretBtn.classList.contains("is-pressed"));
+      await tick(220);
+      ok("нажатое состояние снимается само",
+         !secretBtn.classList.contains("is-pressed"));
+      ok("реплика секрета показана",
+         $("#bubble-sr").textContent === SITE_DATA.actions.items[7].line,
+         $("#bubble-sr").textContent);
+
+      // ---- prefers-reduced-motion: анимации не навешиваются ----
+      var realRM2 = M.dom.reducedMotion;
+      M.dom.reducedMotion = function () { return true; };
+      M.character.setState("dance");
+      ok("при reduced-motion анимация сцены отключена",
+         stageEl.dataset.motion === "off" &&
+         getComputedStyle(stageEl).animationName === "none",
+         stageEl.dataset.motion + " / " + getComputedStyle(stageEl).animationName);
+      ok("музыка при этом остаётся доступной", typeof M.audio.music.start === "function");
+      M.dom.reducedMotion = realRM2;
+      M.character.setState("idle");
+      ok("после возврата анимация снова назначена",
+         !stageEl.hasAttribute("data-motion") &&
+         getComputedStyle(stageEl).animationName !== "none",
+         getComputedStyle(stageEl).animationName);
 
       // ==================== FEATURED PROJECT ====================
       head("карточка избранного проекта");

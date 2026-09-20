@@ -66,8 +66,75 @@
     });
   }
 
+  /* ---------------------------------------------------------- МУЗЫКА ----
+     Короткая зацикленная мелодия на тех же square-осцилляторах, без mp3.
+     Ноты планируются барами вперёд по ctx.currentTime: setInterval сам по
+     себе для музыки не годится — он плывёт и дросселируется во вкладке.
+
+     Автостарта нет и быть не может: браузер блокирует звук до жеста
+     пользователя. Кнопка PLAY MUSIC и есть этот жест. Состояние пишем в
+     localStorage, но при следующем заходе НЕ восстанавливаем — Safari
+     молча откажет, и кнопка будет врать о том, что играет. */
+  var MUSIC_KEY = "mira.music";
+  var NOTES = [523.25, 659.25, 783.99, 659.25, 587.33, 698.46, 880.00, 698.46];
+  var BEAT = 0.22;
+  var music = { on: false, timer: 0, nextAt: 0, listeners: [] };
+
+  function scheduleBar(at) {
+    for (var i = 0; i < NOTES.length; i++) {
+      tone(NOTES[i], at + i * BEAT, BEAT * 0.75, 0.04);
+      if (i % 2 === 0) tone(NOTES[i] / 2, at + i * BEAT, BEAT * 0.9, 0.018);
+    }
+    return at + NOTES.length * BEAT;
+  }
+
+  function pump() {
+    if (!music.on || !ctx) return;
+    // планируем на полсекунды вперёд, чтобы петля не рвалась
+    while (music.nextAt < ctx.currentTime + 0.5) {
+      music.nextAt = scheduleBar(Math.max(music.nextAt, ctx.currentTime + 0.05));
+    }
+  }
+
+  function musicChanged() {
+    music.listeners.forEach(function (fn) { fn(music.on); });
+    try { window.localStorage.setItem(MUSIC_KEY, music.on ? "on" : "off"); } catch (e) {}
+  }
+
   var api = {
     isMuted: function () { return muted; },
+
+    music: {
+      isPlaying: function () { return music.on; },
+      onChange: function (fn) { music.listeners.push(fn); },
+
+      start: function () {
+        // Нажатие на PLAY MUSIC — это и есть разрешение на звук,
+        // поэтому заодно снимаем общий mute, иначе кнопка молчала бы.
+        if (muted) api.toggle();
+        if (!ensureCtx()) return false;
+        if (music.on) return true;
+        music.on = true;
+        music.nextAt = ctx.currentTime + 0.05;
+        pump();
+        music.timer = window.setInterval(pump, 200);
+        musicChanged();
+        return true;
+      },
+
+      stop: function () {
+        if (!music.on) return;
+        music.on = false;
+        window.clearInterval(music.timer);
+        music.timer = 0;
+        musicChanged();
+      },
+
+      toggle: function () {
+        if (music.on) { api.music.stop(); return false; }
+        return api.music.start();
+      }
+    },
 
     toggle: function () {
       muted = !muted;

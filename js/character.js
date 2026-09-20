@@ -31,7 +31,9 @@
   ];
 
   var charEl = null;
+  var stageEl = null;            // обёртка, на которой живут анимации состояний
   var gazeOn = false;
+  var curState = "idle";
   var bubbleInk = null;
   var bubbleSr = null;
   var typer = null;
@@ -72,6 +74,7 @@
   M.character = {
     init: function (opts) {
       charEl = opts.charEl;
+      stageEl = opts.stageEl || null;
       bubbleInk = opts.bubbleInk;
       bubbleSr = opts.bubbleSr;
       cfg = M.store.character || {};
@@ -88,30 +91,36 @@
       return this;
     },
 
-    /* Поза и реплика меняются вместе — при смене стата и при возврате в IDLE. */
+    /* Поза меняется только когда слежение выключено: иначе картинкой
+       владеет gaze.js и пересоздавать её нельзя. */
     set: function (section) {
-      // Когда включено слежение, картинкой владеет gaze.js — позы игнорируются.
       if (!gazeOn) {
         var pose = (section && section.pose) || cfg.sprite;
         if (pose) renderSprite(pose); else renderPlaceholder();
       }
+    },
 
-      var text = (section && section.bubble) || cfg.idleBubble || "";
+    /* Одна реплика за раз. Полный текст сразу кладём в .sr-only,
+       печатается только видимый слой. */
+    say: function (text) {
+      text = text || "";
+      if (bubbleSr.textContent === text && !typer.isRunning()) return;
       bubbleSr.textContent = text;
       typer.play([{ ink: bubbleInk, text: text }], { speed: 18 });
     },
 
-    /* Персонаж реагирует на наведение — короткая реплика, потом всё как было. */
-    tease: function (text, restoreSection) {
-      var self = this;
-      bubbleSr.textContent = text;
-      typer.play([{ ink: bubbleInk, text: text }], {
-        speed: 18,
-        onDone: function () {
-          window.setTimeout(function () { self.set(restoreSection); }, 1200);
-        }
-      });
+    /* Состояние сцены — это класс на обёртке, а не на <img>.
+       Анимации крутятся на ней, src картинки остаётся за gaze.js. */
+    setState: function (name) {
+      curState = name || "idle";
+      if (!stageEl) return;
+      stageEl.dataset.state = curState;
+      // При системной настройке «меньше движения» анимацию не навешиваем
+      // вовсе: остаётся статичная поза, но состояние всё равно известно.
+      if (M.dom.reducedMotion()) stageEl.dataset.motion = "off";
+      else stageEl.removeAttribute("data-motion");
     },
+    state: function () { return curState; },
 
     stop: function () {
       if (typer) typer.cancel();
