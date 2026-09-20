@@ -31,7 +31,7 @@
 
 <!-- ======================= BOOT-ЭКРАН ======================= -->
 <div class="boot" id="boot">
-  <div class="boot__window px-box px-drop">
+  <div class="boot__window px-box px-double px-drop">
     <p class="boot__label">LOADING</p>
     <div class="boot__bar px-box px-inset">
       <div class="boot__fill" id="boot-fill"></div>
@@ -40,7 +40,7 @@
 </div>
 
 <!-- ======================= ОКНО ======================= -->
-<div class="screen px-box px-drop" id="screen">
+<div class="screen px-box px-double px-drop" id="screen">
 
   <header class="titlebar">
     <div class="titlebar__left">
@@ -88,8 +88,8 @@
         <span class="sr-only" id="bubble-sr"></span>
       </div>
 
-      <div class="hero__display display px-box">
-        <div class="display__inner px-box px-inset px-dots">
+      <div class="hero__display display px-box px-double">
+        <div class="display__inner">
           <div class="char" id="char"></div>
         </div>
       </div>
@@ -99,7 +99,7 @@
 
     <!-- Колонка 3: контент.
          Контур .px-box рисуется снаружи, поэтому скроллит вложенный #content. -->
-    <div class="content-frame px-box">
+    <div class="content-frame px-box px-double">
       <main class="content scroll-y" id="content"
             role="region" aria-labelledby="content-title" tabindex="-1"></main>
     </div>
@@ -111,7 +111,7 @@
 <div class="modal" id="modal" data-open="false"
      role="dialog" aria-modal="true" aria-labelledby="modal-title">
   <div class="modal__backdrop"></div>
-  <div class="modal__window px-box px-drop">
+  <div class="modal__window px-box px-double px-drop">
     <div class="modal__bar">
       <h2 class="modal__title" id="modal-title"></h2>
       <button type="button" class="modal__close px-box px-face"

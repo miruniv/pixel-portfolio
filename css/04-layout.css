@@ -33,7 +33,7 @@ body {
   align-items: center;
   gap: var(--sp-3);
   padding: 0 var(--sp-3);
-  background: var(--display);
+  background: var(--accent-soft);
   border-bottom: var(--bd) solid var(--ink);
 }
 .titlebar__left  { display: flex; align-items: center; gap: var(--sp-2); justify-self: start; }
@@ -49,7 +49,7 @@ body {
   gap: var(--sp-4);
   padding: var(--sp-4);
   min-height: 0;
-  background-color: var(--panel);
+  background-color: var(--workspace);
 }
 .workspace > * { min-width: 0; min-height: 0; }
 
@@ -81,7 +81,7 @@ body {
   min-height: 0;
 }
 .hero__bubble  { grid-row: 1; width: 100%; }
-.hero__display { grid-row: 2; align-self: center; }
+.hero__display { grid-row: 2; align-self: center; margin: var(--sp-4); }
 .hero__plate   { grid-row: 3; width: 100%; }
 
 /* ---------- Колонка 3: контент ----------
@@ -92,7 +92,9 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  margin: var(--sp-1);
+  margin: var(--sp-4);   /* 12px на двойную рамку + 4px запаса:
+                            fr-колонки дают дробную ширину и срезают
+                            внешнее кольцо на пиксель */
 }
 .content {
   flex: 1 1 auto;
@@ -119,7 +121,7 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  margin: var(--sp-1);
+  margin: var(--sp-4);
 }
 .modal__bar {
   display: flex;
@@ -127,7 +129,7 @@ body {
   justify-content: space-between;
   gap: var(--sp-3);
   padding: var(--sp-2) var(--sp-3);
-  background: var(--display);
+  background: var(--accent-soft);
   border-bottom: var(--bd) solid var(--ink);
 }
 .modal__body { flex: 1 1 auto; min-height: 0; padding: var(--sp-4); }

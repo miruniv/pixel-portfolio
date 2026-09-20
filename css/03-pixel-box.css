@@ -16,17 +16,41 @@
 .px-box {
   --px-fill: var(--panel);
   --px-line: var(--ink);
+  --px-gap: transparent;         /* прослойка второго кольца */
+  --px-line2: transparent;       /* третье кольцо */
   --px-hi: transparent;          /* фаска: светлая грань сверху-слева */
   --px-lo: transparent;          /* фаска: тёмная грань снизу-справа */
   position: relative;
   background: var(--px-fill);
   box-shadow:
-    0 calc(-1 * var(--bd)) 0 0 var(--px-line),   /* верх   */
-    0 var(--bd)            0 0 var(--px-line),   /* низ    */
-    calc(-1 * var(--bd)) 0 0 0 var(--px-line),   /* лево   */
-    var(--bd)            0 0 0 var(--px-line),   /* право  */
+    /* кольцо 1 — вплотную к боксу */
+    0 calc(-1 * var(--bd)) 0 0 var(--px-line),
+    0 var(--bd)            0 0 var(--px-line),
+    calc(-1 * var(--bd)) 0 0 0 var(--px-line),
+    var(--bd)            0 0 0 var(--px-line),
+    /* кольцо 2 — перекрывается первым, поэтому видна только полоса 4..8px */
+    0 calc(-2 * var(--bd)) 0 0 var(--px-gap),
+    0 calc(2 * var(--bd))  0 0 var(--px-gap),
+    calc(-2 * var(--bd)) 0 0 0 var(--px-gap),
+    calc(2 * var(--bd))  0 0 0 var(--px-gap),
+    /* кольцо 3 — видна полоса 8..12px */
+    0 calc(-3 * var(--bd)) 0 0 var(--px-line2),
+    0 calc(3 * var(--bd))  0 0 var(--px-line2),
+    calc(-3 * var(--bd)) 0 0 0 var(--px-line2),
+    calc(3 * var(--bd))  0 0 0 var(--px-line2),
+    /* фаска */
     inset var(--bd) var(--bd) 0 0 var(--px-hi),
     inset calc(-1 * var(--bd)) calc(-1 * var(--bd)) 0 0 var(--px-lo);
+}
+
+/* Двойная рамка: тёмная снаружи, белая прослойка, тёмная внутри.
+   Порядок в box-shadow = порядок наложения: первая тень сверху, поэтому
+   кольца, перечисленные позже, видны только там, где их не закрыли ранние.
+   ВНИМАНИЕ: контур теперь выходит на 12px за бокс, а не на 4.
+   У родителей должен быть padding или gap не меньше 12px. */
+.px-double {
+  --px-gap: var(--frame-gap);
+  --px-line2: var(--ink);
 }
 
 /* Объёмная кнопка-плитка */
@@ -65,7 +89,7 @@
    они сглаживаются). Цвет = --dot, продублирован хексом: CSS-переменные
    внутри data-URI не подставляются. */
 .px-dots {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Crect x='4' y='4' width='4' height='4' fill='%23F7C8DE'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12'%3E%3Crect x='4' y='4' width='4' height='4' fill='%23E9B2CF'/%3E%3C/svg%3E");
   background-repeat: repeat;
 }
 

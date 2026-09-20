@@ -50,14 +50,14 @@
 .stat__icon svg, .stat__icon img { width: 100%; height: 100%; }
 .stat__label { flex: 1 1 auto; }
 
-.stat:hover { --px-fill: #B4BEEE; }
+.stat:hover { --px-fill: var(--tile-hover); }
 
 /* Активный стат: инвертированная фаска + акцентная заливка.
    Текст всегда --ink на --accent-soft = 9.3:1. */
 .stat[aria-current="true"] {
   --px-fill: var(--accent-soft);
-  --px-hi: var(--tile-lo);
-  --px-lo: var(--tile-hi);
+  --px-hi: var(--accent-lo);     /* инверсия: тёмная грань сверху-слева */
+  --px-lo: var(--accent-hi);
   transform: translate(2px, 2px);
 }
 .stat[aria-current="true"] .stat__label { text-shadow: 0 0 0 var(--ink); }
@@ -74,13 +74,13 @@
   align-items: center;
 }
 
-.display { padding: var(--sp-1); }
-.display__inner {
+.display {
   --px-fill: var(--display);
+  padding: var(--sp-4);
+}
+.display__inner {
   display: grid;
   place-items: center;
-  padding: var(--sp-3);
-  background-color: var(--display);
 }
 
 .char {
@@ -180,7 +180,7 @@
   --px-fill: var(--tile);
   text-align: center;
 }
-.card:hover { --px-fill: #B4BEEE; }
+.card:hover { --px-fill: var(--tile-hover); }
 .card__thumb {
   --px-fill: var(--panel-2);
   display: grid;
