@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mira — Portfolio</title>
+<meta name="description" content="Frontend developer and pixel artist. Portfolio.">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#F9A8D0">
+
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23F9A8D0'/%3E%3Cpath d='M4 3h3v1H4zM9 3h3v1H9zM3 4h10v3H3zM4 7h8v1H4zM5 8h6v1H5zM6 9h4v1H6zM7 10h2v1H7z' fill='%232B2260'/%3E%3C/svg%3E">
+
+<!-- Порядок важен: 07-responsive.css идёт последним и переопределяет остальное -->
+<link rel="stylesheet" href="./css/01-tokens.css">
+<link rel="stylesheet" href="./css/02-base.css">
+<link rel="stylesheet" href="./css/03-pixel-box.css">
+<link rel="stylesheet" href="./css/04-layout.css">
+<link rel="stylesheet" href="./css/05-components.css">
+<link rel="stylesheet" href="./css/06-sky.css">
+<link rel="stylesheet" href="./css/07-responsive.css">
+</head>
+
+<body>
+
+<!-- ======================= ФОН: небо с облаками ======================= -->
+<div class="sky" aria-hidden="true">
+  <div class="sky__layer sky__layer--far"></div>
+  <div class="sky__layer sky__layer--mid"></div>
+  <div class="sky__layer sky__layer--near"></div>
+</div>
+
+<!-- ======================= BOOT-ЭКРАН ======================= -->
+<div class="boot" id="boot">
+  <div class="boot__window px-box px-drop">
+    <p class="boot__label">LOADING</p>
+    <div class="boot__bar px-box px-inset">
+      <div class="boot__fill" id="boot-fill"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================= ОКНО ======================= -->
+<div class="screen px-box px-drop" id="screen">
+
+  <header class="titlebar">
+    <div class="titlebar__left">
+      <span class="titlebar__icon" id="window-icon"></span>
+    </div>
+
+    <h1 class="titlebar__title" id="window-title">HI, I'M MIRA</h1>
+
+    <div class="titlebar__right">
+      <button type="button" class="tbtn tbtn--sound px-box px-face"
+              id="sound-btn" aria-pressed="false" aria-label="Sound off">
+        <span class="tbtn__glyph" id="sound-glyph" aria-hidden="true"></span>
+      </button>
+
+      <!-- Декоративные кнопки окна: вне tab-порядка и невидимы для скринридера -->
+      <span class="tbtn tbtn--min px-box px-face" aria-hidden="true">
+        <span class="tbtn__glyph"></span>
+      </span>
+      <span class="tbtn tbtn--max px-box px-face" aria-hidden="true">
+        <span class="tbtn__glyph"></span>
+      </span>
+
+      <button type="button" class="tbtn tbtn--menu px-box px-face"
+              id="menu-btn" aria-expanded="true" aria-controls="stat-list"
+              aria-label="Toggle menu">
+        <span class="tbtn__glyph" aria-hidden="true"></span>
+      </button>
+    </div>
+  </header>
+
+  <div class="workspace px-dots" id="workspace">
+
+    <!-- Колонка 1: статы.
+         Осознанно nav + aria-current, а НЕ role="tablist": паттерн табов
+         требует roving tabindex (один Tab-стоп, переключение стрелками),
+         а здесь нужен обычный Tab по каждому стату. Стрелки работают сверху. -->
+    <nav class="stats" id="stats" aria-label="Sections">
+      <ul class="stats__list" id="stat-list"></ul>
+    </nav>
+
+    <!-- Колонка 2: персонаж -->
+    <div class="hero">
+      <div class="hero__bubble px-box px-bubble">
+        <span id="bubble-ink" aria-hidden="true"></span>
+        <span class="sr-only" id="bubble-sr"></span>
+      </div>
+
+      <div class="hero__display display px-box">
+        <div class="display__inner px-box px-inset px-dots">
+          <div class="char" id="char"></div>
+        </div>
+      </div>
+
+      <p class="hero__plate px-box"><span id="plate-text"></span></p>
+    </div>
+
+    <!-- Колонка 3: контент.
+         Контур .px-box рисуется снаружи, поэтому скроллит вложенный #content. -->
+    <div class="content-frame px-box">
+      <main class="content scroll-y" id="content"
+            role="region" aria-labelledby="content-title" tabindex="-1"></main>
+    </div>
+
+  </div>
+</div>
+
+<!-- ======================= МОДАЛКА (<=900px) ======================= -->
+<div class="modal" id="modal" data-open="false"
+     role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal__backdrop"></div>
+  <div class="modal__window px-box px-drop">
+    <div class="modal__bar">
+      <h2 class="modal__title" id="modal-title"></h2>
+      <button type="button" class="modal__close px-box px-face"
+              id="modal-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal__body scroll-y" id="modal-body"></div>
+  </div>
+</div>
+
+<!-- ======================= БЕЗ JS =======================
+     Весь контент живёт в data.js, поэтому без JS страница была бы пуста.
+     Совместить «контент только в data.js» и «работает без JS» нельзя —
+     здесь сознательно продублирован минимум. Держите его в синхроне с data.js. -->
+<noscript>
+  <div class="noscript px-box px-drop">
+    <h2 class="content__title">HI, I'M MIRA</h2>
+    <p>Frontend developer and pixel artist.</p>
+    <p>This portfolio needs JavaScript to run. Here are the important bits:</p>
+    <ul class="links">
+      <li><a class="link px-box px-face" href="mailto:mira@example.com">EMAIL</a></li>
+      <li><a class="link px-box px-face" href="https://github.com/example" rel="noopener noreferrer">GITHUB</a></li>
+      <li><a class="link px-box px-face" href="https://t.me/example" rel="noopener noreferrer">TELEGRAM</a></li>
+    </ul>
+  </div>
+</noscript>
+
+<!-- Классические скрипты, без type="module": через file:// модули блокируются CORS.
+     Порядок = порядок зависимостей. -->
+<script src="./data.js"></script>
+<script src="./js/dom.js"></script>
+<script src="./js/store.js"></script>
+<script src="./js/audio.js"></script>
+<script src="./js/typewriter.js"></script>
+<script src="./js/gaze.js"></script>
+<script src="./js/character.js"></script>
+<script src="./js/render.js"></script>
+<script src="./js/router.js"></script>
+<script src="./js/app.js"></script>
+
+<pre id="RESULTS" style="position:fixed;left:0;top:0;z-index:999;background:#fff;font:12px monospace"></pre>
+<script>
+(function () {
+  var out = [], fails = 0, errors = [];
+  function ok(n, c, x) {
+    if (!c) fails++;
+    out.push((c ? "PASS  " : "FAIL  ") + n + (c || x == null ? "" : "  -> " + x));
+    var r = document.getElementById("RESULTS");
+    if (r) r.textContent = out.join("\n");
+  }
+  function head(t) { out.push(""); out.push("== " + t + " =="); }
+  window.addEventListener("error", function (e) { errors.push(String(e.message)); });
+  var w0 = console.warn, e0 = console.error;
+  console.warn = function () { errors.push("warn: " + [].join.call(arguments, " ")); w0.apply(console, arguments); };
+  console.error = function () { errors.push("error: " + [].join.call(arguments, " ")); e0.apply(console, arguments); };
+  function tick(ms) { return new Promise(function (r) { setTimeout(r, ms || 70); }); }
+  function raf() {
+    return new Promise(function (r) {
+      var done = false;
+      function fin() { if (!done) { done = true; r(); } }
+      requestAnimationFrame(function () { requestAnimationFrame(fin); });
+      setTimeout(fin, 90);          // страховка: headless не гарантирует кадры
+    });
+  }
+  var $ = function (s) { return document.querySelector(s); };
+  var $$ = function (s) { return [].slice.call(document.querySelectorAll(s)); };
+  function key(k) { document.dispatchEvent(new KeyboardEvent("keydown", { key: k, bubbles: true })); }
+  function move(x, y) { document.dispatchEvent(new MouseEvent("mousemove", { clientX: x, clientY: y, bubbles: true })); }
+  function fileOf(el) { return (el.getAttribute("src") || "").split("/").pop(); }
+
+  window.addEventListener("load", function () {
+    (async function () {
+      await tick(220);
+      var M = window.MIRA, G = M.gaze;
+
+      // ==================== СЛЕЖЕНИЕ: ВЫБОР СЕКТОРА ====================
+      head("gaze: выбор сектора по углу");
+      var R = 200, D = Math.round(R * 0.7071);
+      var cases = [
+        [ R,  0, "right"], [ D,  D, "downRight"], [ 0,  R, "down"], [-D,  D, "downLeft"],
+        [-R,  0, "left"],  [-D, -D, "upLeft"],    [ 0, -R, "up"],   [ D, -D, "upRight"]
+      ];
+      cases.forEach(function (c) {
+        var got = G.pickDirection(c[0], c[1], null);
+        ok("вектор (" + c[0] + "," + c[1] + ") -> " + c[2], got === c[2], got);
+      });
+      // границы секторов: чуть не доходя до стыка и сразу за ним
+      ok("угол 22° от нуля -> right", G.pickDirection(
+        R * Math.cos(22 * Math.PI / 180), R * Math.sin(22 * Math.PI / 180), null) === "right");
+      ok("угол 24° от нуля -> downRight", G.pickDirection(
+        R * Math.cos(24 * Math.PI / 180), R * Math.sin(24 * Math.PI / 180), null) === "downRight");
+      ok("перелом через 180° (angle wrap) -> left",
+         G.pickDirection(-R, 1, null) === "left" && G.pickDirection(-R, -1, null) === "left");
+
+      // ==================== СЛЕЖЕНИЕ: МЁРТВАЯ ЗОНА ====================
+      head("gaze: мёртвая зона");
+      ok("r=0 -> center", G.pickDirection(0, 0, null) === "center");
+      ok("r=20 -> center", G.pickDirection(14, 14, null) === "center", G.pickDirection(14, 14, null));
+      ok("r=59 -> center (внутри 60px)", G.pickDirection(59, 0, "right") === "center");
+      ok("r=61 из направления -> направление сохраняется",
+         G.pickDirection(61, 0, "right") === "right");
+      ok("r=200 -> направление, не center", G.pickDirection(0, 200, null) === "down");
+      ok("выход из center требует запаса: r=65 остаётся center",
+         G.pickDirection(65, 0, "center") === "center", G.pickDirection(65, 0, "center"));
+      ok("выход из center: r=75 переключает на направление",
+         G.pickDirection(75, 0, "center") === "right", G.pickDirection(75, 0, "center"));
+
+      // ==================== СЛЕЖЕНИЕ: ГИСТЕРЕЗИС ====================
+      head("gaze: гистерезис");
+      function at(deg, cur) {
+        var a = deg * Math.PI / 180;
+        return G.pickDirection(R * Math.cos(a), R * Math.sin(a), cur);
+      }
+      ok("из right: 28° (меньше 22.5+8) остаётся right", at(28, "right") === "right", at(28, "right"));
+      ok("из right: 33° (больше запаса) уходит в downRight",
+         at(33, "right") === "downRight", at(33, "right"));
+      ok("из downRight: 20° остаётся downRight (без гистерезиса было бы right)",
+         at(20, "downRight") === "downRight", at(20, "downRight"));
+      ok("без гистерезиса тот же угол дал бы right", at(20, null) === "right");
+      ok("гистерезис не залипает навсегда: 90° из right -> down",
+         at(90, "right") === "down", at(90, "right"));
+
+      // ==================== СЛЕЖЕНИЕ: ФАЙЛЫ ====================
+      head("gaze: ассеты");
+      var img = $(".char__img");
+      ok("персонаж отрисован одним <img>", !!img && $$(".char__img").length === 1);
+      ok("у спрайта есть alt", img && img.getAttribute("alt"), img && img.getAttribute("alt"));
+      ok("image-rendering: pixelated", getComputedStyle(img).imageRendering === "pixelated",
+         getComputedStyle(img).imageRendering);
+      ok("стартовый кадр — look-center", fileOf(img) === "look-center.png", fileOf(img));
+
+      var names = ["look-center", "look-up", "look-up-right", "look-right", "look-down-right",
+                   "look-down", "look-down-left", "look-left", "look-up-left"];
+      var loaded = await Promise.all(names.map(function (n) {
+        return new Promise(function (r) {
+          var im = new Image();
+          im.onload = function () { r(im.naturalWidth); };
+          im.onerror = function () { r(0); };
+          setTimeout(function () { r(im.naturalWidth || 0); }, 3000);
+          im.src = "./assets/sprites/" + n + ".png";
+        });
+      }));
+      ok("все 9 спрайтов загружаются", loaded.every(function (w) { return w > 0; }),
+         names.filter(function (n, i) { return !loaded[i]; }).join(","));
+      ok("все 9 спрайтов одного размера 128x128",
+         loaded.every(function (w) { return w === 128; }), loaded.join(","));
+
+      // ==================== СЛЕЖЕНИЕ: РАБОТА В DOM ====================
+      head("gaze: поведение на странице");
+      // headless может не отдавать (hover: hover) — подменяем matchMedia,
+      // чтобы проверить именно логику, а не окружение
+      var realMM = window.matchMedia;
+      window.matchMedia = function (q) {
+        if (/hover|pointer/.test(q)) return { matches: true, addEventListener: function () {}, addListener: function () {} };
+        return realMM.call(window, q);
+      };
+      var gcfg = Object.assign({}, SITE_DATA.character.gaze, { returnDelay: 30, fade: 30 });
+      var st = G.init({ img: img, cfg: gcfg });
+      ok("обработчики повешены", st.enabled === true);
+      ok("предзагружены все 9 картинок", st.preload.length === 9, st.preload.length);
+
+      var b = img.getBoundingClientRect();
+      var cx = b.left + b.width / 2, cy = b.top + b.height / 2;
+
+      // headless при --dump-dom не выдаёт кадров, поэтому rAF сам не сработает:
+      // сначала проверяем, что обработчик НИЧЕГО не делает синхронно,
+      // потом форсируем пересчёт через публичный update().
+      move(cx + 400, cy);
+      ok("mousemove сам по себе картинку не меняет (пересчёт вынесен из обработчика)",
+         fileOf(img) === "look-center.png", fileOf(img));
+      G.update();
+      ok("после пересчёта взгляд вправо", fileOf(img) === "look-right.png", fileOf(img));
+
+      move(cx, cy + 400); G.update();
+      ok("курсор снизу -> look-down", fileOf(img) === "look-down.png", fileOf(img));
+      move(cx - 300, cy - 300); G.update();
+      ok("курсор сверху-слева -> look-up-left", fileOf(img) === "look-up-left.png", fileOf(img));
+      move(cx + 300, cy - 300); G.update();
+      ok("курсор сверху-справа -> look-up-right", fileOf(img) === "look-up-right.png", fileOf(img));
+      move(cx - 300, cy + 300); G.update();
+      ok("курсор снизу-слева -> look-down-left", fileOf(img) === "look-down-left.png", fileOf(img));
+      move(cx - 400, cy); G.update();
+      ok("курсор слева -> look-left", fileOf(img) === "look-left.png", fileOf(img));
+      move(cx, cy - 400); G.update();
+      ok("курсор сверху -> look-up", fileOf(img) === "look-up.png", fileOf(img));
+      move(cx + 5, cy + 5); G.update();
+      ok("курсор в мёртвой зоне -> look-center", fileOf(img) === "look-center.png", fileOf(img));
+
+      // возврат в center при уходе курсора за пределы окна
+      move(cx + 400, cy); G.update();
+      ok("подготовка: взгляд вправо", fileOf(img) === "look-right.png", fileOf(img));
+      document.dispatchEvent(new MouseEvent("mouseleave"));
+      await tick(120);
+      ok("после ухода курсора возвращается look-center",
+         fileOf(img) === "look-center.png", fileOf(img));
+      ok("класс затухания снят", !img.classList.contains("is-settling"));
+
+      // пересчёт центра на resize/scroll
+      var dirtyBefore = st.dirty;
+      window.dispatchEvent(new Event("resize"));
+      ok("resize помечает геометрию устаревшей", st.dirty === true, String(dirtyBefore));
+
+      // ==================== reduced-motion ====================
+      head("gaze: prefers-reduced-motion");
+      var realRM = M.dom.reducedMotion;
+      M.dom.reducedMotion = function () { return true; };
+      var st2 = G.init({ img: img, cfg: gcfg });
+      ok("при reduced-motion обработчики НЕ вешаются", st2.enabled === false);
+      ok("isEnabled() === false", G.isEnabled() === false);
+      ok("показан look-center", fileOf(img) === "look-center.png", fileOf(img));
+      move(cx + 400, cy); G.update(); await raf();
+      ok("mousemove при reduced-motion ничего не меняет",
+         fileOf(img) === "look-center.png", fileOf(img));
+      M.dom.reducedMotion = realRM;
+
+      // ==================== тач-устройство ====================
+      head("gaze: тач-устройство");
+      window.matchMedia = function (q) {
+        if (/hover|pointer/.test(q)) return { matches: false, addEventListener: function () {}, addListener: function () {} };
+        return realMM.call(window, q);
+      };
+      var st3 = G.init({ img: img, cfg: gcfg });
+      ok("на тач-устройстве обработчики НЕ вешаются", st3.enabled === false);
+      move(cx + 400, cy); G.update(); await raf();
+      ok("картинка остаётся look-center", fileOf(img) === "look-center.png", fileOf(img));
+      window.matchMedia = realMM;
+      G.destroy();
+
+      // ==================== РЕГРЕСС: ВСЁ ОСТАЛЬНОЕ ====================
+      head("регресс: навигация и состояние");
+      ok("store валиден", M.store.ok);
+      ok("5 кнопок статов", $$(".stat").length === 5);
+      ok("боковая панель — nav, не tablist", !!$("nav.stats") && !$('[role="tablist"]'));
+
+      location.hash = "#projects"; await tick();
+      ok("SECTION: 3 карточки", $$("#content .card").length === 3);
+      ok("SECTION: aria-current", $('.stat[data-section="projects"]').getAttribute("aria-current") === "true");
+
+      var stats = $$(".stat");
+      stats[0].focus(); key("ArrowDown"); await tick(20);
+      ok("ArrowDown двигает фокус", document.activeElement === stats[1]);
+      key("End"); await tick(20);
+      ok("End -> последний", document.activeElement === stats[4]);
+
+      var card = $('.card[data-item="pixel-timer"]');
+      card.focus(); card.click(); await tick(140);
+      ok("DETAIL открылась", $("#content-title").textContent === "PIXEL TIMER");
+      ok("фокус на BACK", document.activeElement === $('[data-action="back"]'));
+      ok("полный текст в .sr-only",
+         $$("#content .sr-only p").map(function (p) { return p.textContent; }).join("|") ===
+         SITE_DATA.sections[2].items[1].detail.text.join("|"));
+      ok("печатающийся слой скрыт от SR", $(".detail__text").getAttribute("aria-hidden") === "true");
+      ok("нет aria-live", !$("#content [aria-live]"));
+      ok("печать идёт", $(".typed__ink").textContent.length < $(".typed__ghost").textContent.length);
+      $(".detail__text").click(); await tick(60);
+      ok("клик допечатывает", $$(".typed__ink").every(function (n, i) {
+        return n.textContent === $$(".typed__ghost")[i].textContent; }));
+
+      key("Escape"); await tick(160);
+      ok("Esc возвращает на сетку", !!$("#content .cards") && location.hash === "#projects");
+      ok("фокус вернулся на карточку", document.activeElement === $('.card[data-item="pixel-timer"]'));
+
+      $("#content").style.maxHeight = "120px";
+      $("#content").scrollTop = 40;
+      var saved = $("#content").scrollTop;
+      $('.card[data-item="site-redesign"]').click(); await tick(140);
+      $('[data-action="back"]').click(); await tick(160);
+      ok("BACK восстанавливает скролл сетки", $("#content").scrollTop === saved,
+         $("#content").scrollTop + " != " + saved);
+      $("#content").style.maxHeight = "";
+
+      $('.card[data-item="site-redesign"]').click(); await tick(140);
+      var len = history.length;
+      $('.ribbon__item[data-item="pixel-timer"]').click(); await tick(140);
+      ok("лента соседей = replace, не push", history.length === len);
+
+      location.hash = "#about"; await tick();
+      ok("PAGE: без BACK и без сетки", !$('[data-action="back"]') && !$("#content .cards"));
+      location.hash = "#nope/nothing"; await tick(140);
+      ok("битый хэш -> IDLE", !!$("#content .hint"));
+      location.hash = "#projects/not-real"; await tick(140);
+      ok("битая карточка -> откат на секцию", location.hash === "#projects" && !!$("#content .cards"));
+
+      ok("звук выключен по умолчанию", M.audio.isMuted());
+      M.audio.toggle(); await tick(20);
+      ok("localStorage запомнил звук", localStorage.getItem("mira.sound") === "on");
+      key("m"); await tick(20);
+      ok("клавиша M выключает", M.audio.isMuted());
+
+      $("#menu-btn").click(); await tick(20);
+      ok("гамбургер сворачивает статы", $("#stats").dataset.collapsed === "true");
+      $("#menu-btn").click(); await tick(20);
+
+      head("регресс: геометрия и тексты");
+      ok("у всех img есть alt", $$("img").every(function (i) { return i.hasAttribute("alt"); }));
+      ok("нет горизонтального скролла",
+         document.documentElement.scrollWidth <= window.innerWidth + 1,
+         document.documentElement.scrollWidth + " > " + window.innerWidth);
+      ok("страница не скроллится", document.documentElement.scrollHeight <= window.innerHeight + 1);
+      ok("контур .px-box не обрезан", getComputedStyle($(".content-frame")).overflow === "visible");
+      ok("lang=en", document.documentElement.lang === "en");
+      var cyr = /[Ѐ-ӿ]/;
+      var bad = [];
+      (function walk(n) {
+        // сам тест написан по-русски — его собственные узлы не считаем
+        if (n.nodeType === 1) {
+          var t = n.tagName;
+          if (t === "SCRIPT" || t === "STYLE" || n.id === "RESULTS") return;
+        }
+        if (n.nodeType === 3 && cyr.test(n.nodeValue)) bad.push(n.nodeValue.trim().slice(0, 40));
+        for (var i = 0; i < n.childNodes.length; i++) walk(n.childNodes[i]);
+      })(document.body);
+      $$("img,[alt],[aria-label],[title]").forEach(function (el) {
+        ["alt", "aria-label", "title"].forEach(function (a) {
+          var v = el.getAttribute(a);
+          if (v && cyr.test(v)) bad.push(a + "=" + v.slice(0, 40));
+        });
+      });
+      ok("на странице нет кириллицы (весь текст сайта — EN)", bad.length === 0, bad.join(" | "));
+
+      ok("нет ошибок и предупреждений в консоли", errors.length === 0, errors.join(" ;; "));
+
+      finish();
+    })().catch(function (e) {
+      out.push("");
+      out.push("ИСКЛЮЧЕНИЕ: " + (e && e.stack ? e.stack : e));
+      fails++;
+      finish();
+    });
+
+    function finish() {
+      var total = out.filter(function (l) { return /^(PASS|FAIL)/.test(l); }).length;
+      out.push("");
+      out.push(fails === 0 ? "ИТОГ: все " + total + " проверок пройдены"
+                           : "ИТОГ: ПРОВАЛЕНО " + fails + " из " + total);
+      $("#RESULTS").textContent = out.join("\n");
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

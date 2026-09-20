@@ -1,0 +1,102 @@
+/* ============================================================
+   03-pixel-box.css — ядро визуального стиля.
+
+   .px-box рисует прямоугольник со СРЕЗАННЫМИ УГЛАМИ 4x4 без border-radius
+   и без лишних DOM-узлов. Приём: контур собирается из четырёх box-shadow'ов,
+   каждый — копия бокса, сдвинутая на --bd в свою сторону. Их объединение
+   даёт рамку, у которой углы остаются пустыми — то самое «ступенчатое» ребро
+   из references/Image 46.jpg.
+
+   ВАЖНО: контур рисуется СНАРУЖИ border-box. Поэтому у любого родителя
+   .px-box должен быть padding или gap >= --bd, иначе рамку срежет.
+   И никогда не вешайте overflow:hidden на сам .px-box — обрежется контур.
+   Для скролла используйте вложенный .scroll-y.
+   ============================================================ */
+
+.px-box {
+  --px-fill: var(--panel);
+  --px-line: var(--ink);
+  --px-hi: transparent;          /* фаска: светлая грань сверху-слева */
+  --px-lo: transparent;          /* фаска: тёмная грань снизу-справа */
+  position: relative;
+  background: var(--px-fill);
+  box-shadow:
+    0 calc(-1 * var(--bd)) 0 0 var(--px-line),   /* верх   */
+    0 var(--bd)            0 0 var(--px-line),   /* низ    */
+    calc(-1 * var(--bd)) 0 0 0 var(--px-line),   /* лево   */
+    var(--bd)            0 0 0 var(--px-line),   /* право  */
+    inset var(--bd) var(--bd) 0 0 var(--px-hi),
+    inset calc(-1 * var(--bd)) calc(-1 * var(--bd)) 0 0 var(--px-lo);
+}
+
+/* Объёмная кнопка-плитка */
+.px-bevel {
+  --px-hi: var(--tile-hi);
+  --px-lo: var(--tile-lo);
+}
+
+/* Нажатое / активное состояние: фаска инвертируется, кнопка «проваливается» */
+.px-bevel:active,
+.px-bevel.is-pressed {
+  --px-hi: var(--tile-lo);
+  --px-lo: var(--tile-hi);
+  transform: translate(2px, 2px);
+}
+
+/* Утопленная поверхность (поле дисплея, поле ввода) */
+.px-inset {
+  --px-hi: var(--tile-lo);
+  --px-lo: var(--tile-hi);
+}
+
+/* Нейтральная светлая кнопка (BACK, mute, стрелки) */
+.px-face {
+  --px-fill: var(--face);
+  --px-hi: var(--face-hi);
+  --px-lo: var(--face-lo);
+}
+
+/* Пиксельная «тень» окна: drop-shadow повторяет силуэт со срезанными углами,
+   в отличие от box-shadow, который нарисовал бы прямоугольник. */
+.px-drop { filter: drop-shadow(var(--sp-2) var(--sp-2) 0 var(--shadow)); }
+
+/* ---------- Точечный паттерн ----------
+   Инлайновый SVG: 4x4 точка в тайле 16x16. Хрустящие края (у radial-gradient
+   они сглаживаются). Цвет = --dot, продублирован хексом: CSS-переменные
+   внутри data-URI не подставляются. */
+.px-dots {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Crect x='4' y='4' width='4' height='4' fill='%23F7C8DE'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+}
+
+/* ---------- Спич-бабл ----------
+   Хвостик — ступенчатый треугольник вниз-влево, как в references/Image 53.jpg.
+   ::after рисует контур, ::before кладёт заливку поверх нижней грани, чтобы
+   рамка в месте стыка «открылась» и хвост не выглядел приклеенным. */
+.px-bubble { position: relative; }
+.px-bubble::after {
+  content: "";
+  position: absolute;
+  left: var(--sp-5);
+  bottom: calc(-3 * var(--bd));
+  width: calc(3 * var(--bd));
+  height: calc(3 * var(--bd));
+  background: var(--px-line);
+  clip-path: polygon(
+    0 0, 100% 0,
+    100% 33.34%, 66.67% 33.34%,
+    66.67% 66.67%, 33.34% 66.67%,
+    33.34% 100%, 0 100%
+  );
+}
+.px-bubble::before {
+  content: "";
+  position: absolute;
+  left: calc(var(--sp-5) + var(--bd));
+  bottom: calc(-2 * var(--bd));
+  width: calc(2 * var(--bd));
+  height: calc(2 * var(--bd));
+  background: var(--px-fill);
+  clip-path: polygon(0 0, 100% 0, 100% 50%, 50% 50%, 50% 100%, 0 100%);
+  z-index: 1;
+}

@@ -1,0 +1,110 @@
+/* ============================================================
+   02-base.css — reset, пиксельные правила рендеринга, курсоры, a11y-утилиты
+   ============================================================ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  /* Скруглений в этом проекте не бывает — углы делаются ступеньками. */
+  border-radius: 0;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  overflow: hidden;                 /* страница не скроллится, скроллятся панели */
+  background: var(--sky-3);         /* фоллбэк, если .sky не отрисовался */
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--fs-md);
+  line-height: 1.6;
+  text-rendering: optimizeSpeed;
+  -webkit-font-smoothing: none;     /* Firefox это свойство игнорирует — ок */
+  -webkit-text-size-adjust: 100%;
+  cursor: url("../assets/cursors/arrow.png") 0 0, auto;
+}
+
+h1, h2, h3, p, ul, ol, figure { margin: 0; padding: 0; }
+ul, ol { list-style: none; }
+
+img, svg { display: block; max-width: 100%; }
+
+/* SVG без width/height схлопывается в 300x150 и ломает иконки.
+   Везде, где svg лежит в размерном контейнере, он должен занимать его целиком. */
+.titlebar__icon svg, .stat__icon svg, .tbtn__glyph svg,
+.ribbon__item svg, .card__thumb svg { width: 100%; height: 100%; }
+
+img {
+  /* Главное правило проекта: спрайты не сглаживаем. */
+  image-rendering: pixelated;
+  image-rendering: -webkit-optimize-contrast;   /* старый фоллбэк */
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  margin: 0;
+  border: 0;
+  background: none;
+  text-align: inherit;
+}
+
+a { color: var(--ink); }
+
+/* ---------- Курсоры ----------
+   Фоллбэк зашит в само объявление: если PNG не загрузился,
+   браузер молча возьмёт системный курсор.
+   Chrome игнорирует cursor-картинки крупнее 32x32 — наши ровно 32x32. */
+button, a, [role="button"], summary, .is-clickable {
+  cursor: url("../assets/cursors/hand.png") 7 0, pointer;
+}
+button:disabled, [aria-disabled="true"] {
+  cursor: url("../assets/cursors/arrow.png") 0 0, default;
+}
+@media (hover: none) {
+  body, button, a, [role="button"], .is-clickable { cursor: auto; }
+}
+
+/* ---------- Фокус ----------
+   Ступенчатая рамка в стиле интерфейса. outline: none не используется нигде. */
+:focus { outline: none; }
+:focus-visible {
+  outline: var(--bd) solid var(--accent);
+  outline-offset: var(--bd);
+  z-index: 5;
+}
+
+/* ---------- Утилиты ---------- */
+
+/* Полный текст для скринридеров, пока на экране идёт посимвольная печать */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.is-hidden { display: none !important; }
+
+::selection { background: var(--accent-soft); color: var(--ink); }
+
+/* Скроллбар в стиле окна (WebKit); Firefox — тонкий цветной */
+.scroll-y {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--tile) var(--panel-2);
+}
+.scroll-y::-webkit-scrollbar { width: 12px; }
+.scroll-y::-webkit-scrollbar-track { background: var(--panel-2); }
+.scroll-y::-webkit-scrollbar-thumb {
+  background: var(--tile);
+  border: 2px solid var(--ink);
+}

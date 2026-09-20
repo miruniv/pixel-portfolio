@@ -1,0 +1,145 @@
+/* ============================================================
+   04-layout.css — сетка «игрового окна».
+
+   Главный принцип: страница не скроллится никогда, скроллится только
+   .content (и .stats на низких вьюпортах). Для этого у КАЖДОГО grid-элемента
+   стоит min-height/min-width: 0 — без этого grid-элемент отказывается
+   сжиматься меньше своего контента и overflow внутри не включается.
+   ============================================================ */
+
+body {
+  display: grid;
+  place-items: center;
+  padding: var(--sp-5);
+}
+
+/* ---------- Окно ---------- */
+.screen {
+  --px-fill: var(--panel);
+  display: grid;
+  grid-template-rows: var(--titlebar-h) minmax(0, 1fr);
+  grid-template-areas: "titlebar" "workspace";
+  width: min(100%, 1280px);
+  height: min(100%, 900px);
+  min-height: 0;
+  isolation: isolate;
+}
+
+/* ---------- Title bar ---------- */
+.titlebar {
+  grid-area: titlebar;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 0 var(--sp-3);
+  background: var(--display);
+  border-bottom: var(--bd) solid var(--ink);
+}
+.titlebar__left  { display: flex; align-items: center; gap: var(--sp-2); justify-self: start; }
+.titlebar__title { grid-column: 2; justify-self: center; white-space: nowrap; }
+.titlebar__right { display: flex; align-items: center; gap: var(--sp-2); justify-self: end; }
+
+/* ---------- Рабочая область ---------- */
+.workspace {
+  grid-area: workspace;
+  display: grid;
+  grid-template-areas: "stats hero content";
+  grid-template-columns: 24fr 32fr 44fr;   /* пропорции со скетча */
+  gap: var(--sp-4);
+  padding: var(--sp-4);
+  min-height: 0;
+  background-color: var(--panel);
+}
+.workspace > * { min-width: 0; min-height: 0; }
+
+/* ---------- Колонка 1: статы ---------- */
+.stats {
+  grid-area: stats;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-1);          /* место под внешний контур .px-box кнопок */
+  min-height: 0;
+}
+.stats__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  min-height: 0;
+}
+
+/* ---------- Колонка 2: персонаж ---------- */
+.hero {
+  grid-area: hero;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: var(--sp-4);
+  align-content: center;
+  justify-items: center;
+  padding: var(--sp-1);
+  min-height: 0;
+}
+.hero__bubble  { grid-row: 1; width: 100%; }
+.hero__display { grid-row: 2; align-self: center; }
+.hero__plate   { grid-row: 3; width: 100%; }
+
+/* ---------- Колонка 3: контент ----------
+   Контур .px-box рисуется снаружи бокса, поэтому overflow:hidden здесь
+   запрещён — скроллит вложенный .content. */
+.content-frame {
+  grid-area: content;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  margin: var(--sp-1);
+}
+.content {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: var(--sp-4);
+}
+
+/* ---------- Модалка (только <900px, см. 07-responsive) ---------- */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: none;
+  padding: var(--sp-4);
+}
+.modal[data-open="true"] { display: grid; place-items: stretch; }
+.modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: var(--shadow);
+}
+.modal__window {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  margin: var(--sp-1);
+}
+.modal__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--display);
+  border-bottom: var(--bd) solid var(--ink);
+}
+.modal__body { flex: 1 1 auto; min-height: 0; padding: var(--sp-4); }
+
+/* ---------- Boot-экран ---------- */
+.boot {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  background: var(--sky-2);
+}
+.boot[hidden] { display: none; }
+.boot__window { display: grid; gap: var(--sp-4); padding: var(--sp-5); min-width: 260px; }

@@ -1,0 +1,61 @@
+/* ============================================================
+   06-sky.css — пиксельное небо заката с плывущими облаками.
+
+   Три слоя движутся с разной скоростью -> параллакс.
+   Каждый слой шире вьюпорта ровно на ширину тайла и едет на эту же
+   ширину: сдвиг на целый тайл при repeat-x всегда бесшовен, в отличие
+   от популярного translateX(-50%), который стыкуется только если
+   ширина вьюпорта кратна тайлу.
+
+   Облака — инлайновые SVG из прямоугольников по 8px-гриду. Когда появятся
+   свои тайлы, достаточно заменить --tile-img на url(../assets/sky/cloud-*.png).
+   ============================================================ */
+
+.sky {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  background: linear-gradient(
+    180deg,
+    var(--sky-1) 0%,
+    var(--sky-2) 32%,
+    var(--sky-3) 68%,
+    var(--sky-4) 100%
+  );
+}
+
+.sky__layer {
+  position: absolute;
+  left: 0;
+  width: calc(100% + var(--cw));
+  background-image: var(--tile-img);
+  background-repeat: repeat-x;
+  background-size: var(--cw) var(--ch);
+  image-rendering: pixelated;
+  will-change: transform;
+  animation: drift var(--dur) linear infinite;
+}
+
+@keyframes drift {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(calc(-1 * var(--cw)), 0, 0); }
+}
+
+.sky__layer--far {
+  --cw: 240px; --ch: 80px; --dur: var(--drift-far);
+  top: 6%; height: 80px;
+  --tile-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='80' shape-rendering='crispEdges'%3E%3Cg fill='%23FFF3F8' opacity='0.5'%3E%3Crect x='40' y='24' width='40' height='8'/%3E%3Crect x='32' y='32' width='64' height='8'/%3E%3Crect x='24' y='40' width='80' height='8'/%3E%3Crect x='152' y='40' width='32' height='8'/%3E%3Crect x='144' y='48' width='56' height='8'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.sky__layer--mid {
+  --cw: 320px; --ch: 120px; --dur: var(--drift-mid);
+  top: 20%; height: 120px;
+  --tile-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='120' shape-rendering='crispEdges'%3E%3Cg fill='%23FFF0F8' opacity='0.75'%3E%3Crect x='72' y='24' width='48' height='8'/%3E%3Crect x='56' y='32' width='80' height='8'/%3E%3Crect x='48' y='40' width='104' height='8'/%3E%3Crect x='40' y='48' width='128' height='16'/%3E%3Crect x='216' y='56' width='40' height='8'/%3E%3Crect x='208' y='64' width='64' height='8'/%3E%3Crect x='200' y='72' width='80' height='16'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.sky__layer--near {
+  --cw: 420px; --ch: 160px; --dur: var(--drift-near);
+  bottom: 4%; height: 160px;
+  --tile-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='160' shape-rendering='crispEdges'%3E%3Cg fill='%23FBD3E6' opacity='0.9'%3E%3Crect x='96' y='40' width='64' height='8'/%3E%3Crect x='80' y='48' width='96' height='8'/%3E%3Crect x='64' y='56' width='128' height='8'/%3E%3Crect x='56' y='64' width='144' height='24'/%3E%3Crect x='272' y='72' width='56' height='8'/%3E%3Crect x='256' y='80' width='88' height='8'/%3E%3Crect x='240' y='88' width='120' height='24'/%3E%3Crect x='0' y='104' width='48' height='8'/%3E%3Crect x='0' y='112' width='64' height='16'/%3E%3C/g%3E%3C/svg%3E");
+}

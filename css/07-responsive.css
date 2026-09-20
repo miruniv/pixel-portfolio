@@ -1,0 +1,107 @@
+/* ============================================================
+   07-responsive.css — брейкпоинты и prefers-reduced-motion.
+   Загружается последним, поэтому переопределяет всё остальное.
+   ============================================================ */
+
+/* --- Масштаб персонажа: ТОЛЬКО целые множители.
+       Дробный scale ломает pixelated: часть «пикселей» станет 3px, часть 4px. --- */
+@media (max-width: 560px) { :root { --char-scale: 1; } }
+
+/* ============ <= 900px: три колонки складываются вертикально ============ */
+@media (max-width: 900px) {
+  body { padding: var(--sp-3); }
+
+  .screen { height: min(100%, 100%); }
+
+  .workspace {
+    grid-template-areas: "hero" "stats" "content";
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    align-content: start;
+    gap: var(--sp-4);
+    overflow-y: auto;                 /* скроллит рабочая область, не страница */
+    overscroll-behavior: contain;
+  }
+
+  /* На десктопе min-height:0 обязателен — без него колонки не сжимаются и
+     внутренний скролл не включается. Здесь он, наоборот, вреден: свободного
+     места отрицательно много, и grid ужимал строку персонажа ниже её
+     содержимого — спрайт наезжал на спич-бабл и на плашку с именем.
+     В вертикальной раскладке строки должны быть по контенту, а скроллит
+     .workspace целиком. */
+  .workspace > * { min-height: auto; }
+  .hero { grid-template-rows: auto auto auto; align-content: start; }
+
+  /* На мобилке правая панель уже не скроллится сама — скроллит .workspace */
+  .content { overflow: visible; }
+  .content-frame { min-height: 200px; }
+
+  /* Список статов сворачивается гамбургером, чтобы контент был ближе */
+  .stats[data-collapsed="true"] .stats__list { display: none; }
+
+  .hero__bubble { max-width: 420px; justify-self: center; }
+  .hero__plate  { max-width: 420px; justify-self: center; }
+
+  /* Карточки в 2 колонки */
+  .cards { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+}
+
+/* Гамбургер виден только на мобилке */
+.tbtn--menu { display: none; }
+@media (max-width: 900px) { .tbtn--menu { display: grid; } }
+
+/* ============ <= 560px ============ */
+@media (max-width: 560px) {
+  :root { --titlebar-h: 48px; }
+
+  /* Симметричное центрирование (1fr auto 1fr) требует, чтобы обе боковые
+     колонки были не уже самой широкой из них. Четыре кнопки справа делали
+     окно шире вьюпорта и обрезали интерфейс. Декоративные убираем. */
+  .tbtn--min, .tbtn--max { display: none; }
+  .titlebar { grid-template-columns: auto 1fr auto; }
+  .titlebar__title { grid-column: 2; justify-self: center; }
+  body { padding: var(--sp-2); }
+  .titlebar__title { font-size: var(--fs-sm); }
+  .titlebar__icon { width: 24px; height: 24px; }
+  .workspace { padding: var(--sp-3); gap: var(--sp-3); }
+  .content { padding: var(--sp-3); }
+  .content__title, .detail__title { font-size: var(--fs-md); }
+  .cards { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+  .card__thumb { width: 72px; height: 72px; }
+  .card__thumb img { width: 48px; height: 48px; }
+  .ribbon { margin-left: 0; width: 100%; }
+}
+
+/* ============ Низкий вьюпорт ============
+   Ниже 640px по высоте пять статов + персонаж + контент физически не влезают.
+   Здесь сознательно отпускаем страницу в скролл — иначе контент был бы обрезан. */
+@media (max-height: 640px) {
+  html, body { overflow: auto; height: auto; min-height: 100%; }
+  body { padding: var(--sp-3); }
+  .screen { height: auto; min-height: 560px; }
+  .workspace { overflow: visible; }
+}
+
+/* ============ prefers-reduced-motion ============
+   Отключаем облака, покачивание, тряску и мигание каретки.
+   Печать текста отключается в JS (typewriter.js), а не здесь. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .sky__layer { animation: none !important; transform: none !important; }
+  .char--placeholder svg { animation: none !important; }
+  .display:hover .char { animation: none !important; }
+  .typed__ink.is-typing::after, .caret { animation: none !important; opacity: 1 !important; }
+  .stat:active, .stat[aria-current="true"],
+  .px-bevel:active, .px-bevel.is-pressed { transform: none !important; }
+}
+
+/* ============ Печать без JS / печать страницы ============ */
+@media print {
+  .sky, .boot, .tbtn, .modal { display: none !important; }
+  html, body { overflow: visible; height: auto; }
+  .screen { height: auto; box-shadow: none; filter: none; }
+}

@@ -1,0 +1,122 @@
+/* ============================================================
+   01-tokens.css — шрифты, палитра, spacing.
+   Единственное место, где меняются цвета и размеры.
+   ============================================================ */
+
+/* ---------- Шрифты (локально, работают офлайн и через file://) ---------- */
+
+/* Press Start 2P — заголовки, кнопки, title bar. Есть кириллица. */
+@font-face {
+  font-family: "Press Start 2P";
+  font-style: normal; font-weight: 400; font-display: block;
+  src: url("../assets/fonts/PressStart2P-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Press Start 2P";
+  font-style: normal; font-weight: 400; font-display: block;
+  src: url("../assets/fonts/PressStart2P-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Press Start 2P";
+  font-style: normal; font-weight: 400; font-display: block;
+  src: url("../assets/fonts/PressStart2P-cyrillic.woff2") format("woff2");
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: "Press Start 2P";
+  font-style: normal; font-weight: 400; font-display: block;
+  src: url("../assets/fonts/PressStart2P-cyrillic-ext.woff2") format("woff2");
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+
+/* Silkscreen — основной текст. ВНИМАНИЕ: кириллицы НЕТ (см. README). */
+@font-face {
+  font-family: "Silkscreen";
+  font-style: normal; font-weight: 400; font-display: block;
+  src: url("../assets/fonts/Silkscreen-400-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Silkscreen";
+  font-style: normal; font-weight: 400; font-display: block;
+  src: url("../assets/fonts/Silkscreen-400-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Silkscreen";
+  font-style: normal; font-weight: 700; font-display: block;
+  src: url("../assets/fonts/Silkscreen-700-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Silkscreen";
+  font-style: normal; font-weight: 700; font-display: block;
+  src: url("../assets/fonts/Silkscreen-700-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+:root {
+  /* ---------- Палитра (снята с references/Image 46.jpg) ---------- */
+  --ink:          #2B2260;   /* ВСЕ обводки и ВЕСЬ основной текст */
+  --ink-2:        #5A4FA8;   /* вторичный текст (6.1:1 на --panel) */
+
+  --panel:        #FFF0F8;   /* основная рабочая область */
+  --panel-2:      #FDE2F0;   /* вложенные / утопленные панели */
+  --display:      #F9A8D0;   /* фон «дисплея» персонажа */
+  --face:         #FDEAF5;   /* нейтральная кнопка: BACK, mute, стрелки */
+
+  --tile:         #A3AEE8;   /* плитки статов и карточек */
+  --tile-hi:      #C8D0F4;   /* фаска: свет сверху-слева */
+  --tile-lo:      #6E79C0;   /* фаска: тень снизу-справа */
+  --face-hi:      #FFFFFF;
+  --face-lo:      #E6B9D4;
+
+  --accent:       #E8609B;   /* ТОЛЬКО обводка / каретка / focus-ring.
+                                Как фон под текст — НЕ проходит 4.5:1 */
+  --accent-soft:  #FFC2D9;   /* заливка активного стата (9.3:1) */
+
+  --mint:         #9FE0C9;   /* чипы тегов (9.3:1) */
+  --gold:         #FFD98E;
+  --dot:          #F7C8DE;   /* точки паттерна */
+  --shadow:       rgba(43, 34, 96, 0.28);
+
+  /* Небо */
+  --sky-1: #B9AEE6;  --sky-2: #C9B6EA;  --sky-3: #F3B9D4;  --sky-4: #FBD9C2;
+
+  /* ---------- Spacing: пиксельный грид, база 4px ---------- */
+  --sp-1: 4px;   --sp-2: 8px;   --sp-3: 12px;  --sp-4: 16px;
+  --sp-5: 24px;  --sp-6: 32px;  --sp-7: 48px;  --sp-8: 64px;
+
+  /* ---------- Размеры ---------- */
+  --bd: 4px;                 /* толщина всех обводок и глубина среза угла */
+  --titlebar-h: 56px;
+  --char-scale: 2;           /* ТОЛЬКО целые: 2 / 1 (см. 07-responsive) */
+  --char-size: 128px;        /* размер кадра спрайта в исходнике */
+  --tap: 44px;               /* минимальная тач-цель */
+
+  /* ---------- Типографика (по 8px em-гриду Press Start 2P) ---------- */
+  --font-display: "Press Start 2P", "Courier New", monospace;
+  --font-body: "Silkscreen", "Press Start 2P", "Courier New", monospace;
+  --fs-xs: 8px;  --fs-sm: 10px;  --fs-md: 12px;
+  --fs-lg: 16px; --fs-xl: 20px;  --fs-2xl: 24px;
+
+  /* ---------- Анимация ---------- */
+  --type-speed: 25ms;        /* мс на символ; читается из JS */
+  --drift-far: 240s;
+  --drift-mid: 150s;
+  --drift-near: 90s;
+}

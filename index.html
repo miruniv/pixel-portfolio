@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mira — Portfolio</title>
+<meta name="description" content="Frontend developer and pixel artist. Portfolio.">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#F9A8D0">
+
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23F9A8D0'/%3E%3Cpath d='M4 3h3v1H4zM9 3h3v1H9zM3 4h10v3H3zM4 7h8v1H4zM5 8h6v1H5zM6 9h4v1H6zM7 10h2v1H7z' fill='%232B2260'/%3E%3C/svg%3E">
+
+<!-- Порядок важен: 07-responsive.css идёт последним и переопределяет остальное -->
+<link rel="stylesheet" href="./css/01-tokens.css">
+<link rel="stylesheet" href="./css/02-base.css">
+<link rel="stylesheet" href="./css/03-pixel-box.css">
+<link rel="stylesheet" href="./css/04-layout.css">
+<link rel="stylesheet" href="./css/05-components.css">
+<link rel="stylesheet" href="./css/06-sky.css">
+<link rel="stylesheet" href="./css/07-responsive.css">
+</head>
+
+<body>
+
+<!-- ======================= ФОН: небо с облаками ======================= -->
+<div class="sky" aria-hidden="true">
+  <div class="sky__layer sky__layer--far"></div>
+  <div class="sky__layer sky__layer--mid"></div>
+  <div class="sky__layer sky__layer--near"></div>
+</div>
+
+<!-- ======================= BOOT-ЭКРАН ======================= -->
+<div class="boot" id="boot">
+  <div class="boot__window px-box px-drop">
+    <p class="boot__label">LOADING</p>
+    <div class="boot__bar px-box px-inset">
+      <div class="boot__fill" id="boot-fill"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================= ОКНО ======================= -->
+<div class="screen px-box px-drop" id="screen">
+
+  <header class="titlebar">
+    <div class="titlebar__left">
+      <span class="titlebar__icon" id="window-icon"></span>
+    </div>
+
+    <h1 class="titlebar__title" id="window-title">HI, I'M MIRA</h1>
+
+    <div class="titlebar__right">
+      <button type="button" class="tbtn tbtn--sound px-box px-face"
+              id="sound-btn" aria-pressed="false" aria-label="Sound off">
+        <span class="tbtn__glyph" id="sound-glyph" aria-hidden="true"></span>
+      </button>
+
+      <!-- Декоративные кнопки окна: вне tab-порядка и невидимы для скринридера -->
+      <span class="tbtn tbtn--min px-box px-face" aria-hidden="true">
+        <span class="tbtn__glyph"></span>
+      </span>
+      <span class="tbtn tbtn--max px-box px-face" aria-hidden="true">
+        <span class="tbtn__glyph"></span>
+      </span>
+
+      <button type="button" class="tbtn tbtn--menu px-box px-face"
+              id="menu-btn" aria-expanded="true" aria-controls="stat-list"
+              aria-label="Toggle menu">
+        <span class="tbtn__glyph" aria-hidden="true"></span>
+      </button>
+    </div>
+  </header>
+
+  <div class="workspace px-dots" id="workspace">
+
+    <!-- Колонка 1: статы.
+         Осознанно nav + aria-current, а НЕ role="tablist": паттерн табов
+         требует roving tabindex (один Tab-стоп, переключение стрелками),
+         а здесь нужен обычный Tab по каждому стату. Стрелки работают сверху. -->
+    <nav class="stats" id="stats" aria-label="Sections">
+      <ul class="stats__list" id="stat-list"></ul>
+    </nav>
+
+    <!-- Колонка 2: персонаж -->
+    <div class="hero">
+      <div class="hero__bubble px-box px-bubble">
+        <span id="bubble-ink" aria-hidden="true"></span>
+        <span class="sr-only" id="bubble-sr"></span>
+      </div>
+
+      <div class="hero__display display px-box">
+        <div class="display__inner px-box px-inset px-dots">
+          <div class="char" id="char"></div>
+        </div>
+      </div>
+
+      <p class="hero__plate px-box"><span id="plate-text"></span></p>
+    </div>
+
+    <!-- Колонка 3: контент.
+         Контур .px-box рисуется снаружи, поэтому скроллит вложенный #content. -->
+    <div class="content-frame px-box">
+      <main class="content scroll-y" id="content"
+            role="region" aria-labelledby="content-title" tabindex="-1"></main>
+    </div>
+
+  </div>
+</div>
+
+<!-- ======================= МОДАЛКА (<=900px) ======================= -->
+<div class="modal" id="modal" data-open="false"
+     role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal__backdrop"></div>
+  <div class="modal__window px-box px-drop">
+    <div class="modal__bar">
+      <h2 class="modal__title" id="modal-title"></h2>
+      <button type="button" class="modal__close px-box px-face"
+              id="modal-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal__body scroll-y" id="modal-body"></div>
+  </div>
+</div>
+
+<!-- ======================= БЕЗ JS =======================
+     Весь контент живёт в data.js, поэтому без JS страница была бы пуста.
+     Совместить «контент только в data.js» и «работает без JS» нельзя —
+     здесь сознательно продублирован минимум. Держите его в синхроне с data.js. -->
+<noscript>
+  <div class="noscript px-box px-drop">
+    <h2 class="content__title">HI, I'M MIRA</h2>
+    <p>Frontend developer and pixel artist.</p>
+    <p>This portfolio needs JavaScript to run. Here are the important bits:</p>
+    <ul class="links">
+      <li><a class="link px-box px-face" href="mailto:mira@example.com">EMAIL</a></li>
+      <li><a class="link px-box px-face" href="https://github.com/example" rel="noopener noreferrer">GITHUB</a></li>
+      <li><a class="link px-box px-face" href="https://t.me/example" rel="noopener noreferrer">TELEGRAM</a></li>
+    </ul>
+  </div>
+</noscript>
+
+<!-- Классические скрипты, без type="module": через file:// модули блокируются CORS.
+     Порядок = порядок зависимостей. -->
+<script src="./data.js"></script>
+<script src="./js/dom.js"></script>
+<script src="./js/store.js"></script>
+<script src="./js/audio.js"></script>
+<script src="./js/typewriter.js"></script>
+<script src="./js/gaze.js"></script>
+<script src="./js/character.js"></script>
+<script src="./js/render.js"></script>
+<script src="./js/router.js"></script>
+<script src="./js/app.js"></script>
+</body>
+</html>
