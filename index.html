@@ -87,27 +87,30 @@
       <section class="acts px-box px-double" id="actions" aria-labelledby="act-title"></section>
     </div>
 
-    <!-- Колонка 2: персонаж -->
-    <div class="hero">
+    <!-- Колонка 2: персонаж.
+         ОДНА панель с ОДНОЙ рамкой. Внутри — окно реплики и сцена, у каждого
+         своя полная рамка; профиль идёт без рамки, как в макете. -->
+    <section class="hero px-box" id="hero" aria-label="Character">
       <div class="hero__bubble px-box px-bubble">
         <span id="bubble-ink" aria-hidden="true"></span>
         <span class="sr-only" id="bubble-sr"></span>
       </div>
 
-      <div class="hero__display display px-box px-double">
+      <div class="hero__stage display px-box">
         <div class="display__inner">
           <!-- #stage — обёртка под анимации состояний. Всё, что внутри .char,
                принадлежит gaze.js: он подставляет туда направление взгляда. -->
           <div class="stage" id="stage" data-state="idle">
             <div class="char" id="char"></div>
           </div>
+          <div class="overlays" id="overlays" aria-hidden="true"></div>
         </div>
       </div>
 
-      <!-- Карточка профиля: имя, стрелки, LVL, шкала XP и строки статуса.
+      <!-- Имя и LVL, шкала XP, разделитель, строки статуса.
            Собирается в app.js из SITE_DATA.profile и SITE_DATA.character -->
-      <section class="charstats px-box" id="charstats" aria-label="Character profile"></section>
-    </div>
+      <div class="charstats" id="charstats"></div>
+    </section>
 
     <!-- Колонка 3: контент.
          Контур .px-box рисуется снаружи, поэтому скроллит вложенный #content. -->

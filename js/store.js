@@ -109,6 +109,9 @@
         href: a.href || null,
         state: a.state || null,
         outfit: a.outfit || null,
+        sprites: a.sprites || null,
+        shares: a.shares || null,
+        overlays: Array.isArray(a.overlays) ? a.overlays : [],
         line: a.line || "", lineOff: a.lineOff || null,
         feedback: a.feedback || "", feedbackOff: a.feedbackOff || null,
         enabled: enabled,
@@ -146,6 +149,7 @@
         feedbackIdle: actRaw.feedbackIdle || "",
         onBadge: actRaw.onBadge || "ON",
         items: actItems,
+        overlays: actRaw.overlays || {},
         byId: actItems.reduce(function (m, a) { m[a.id] = a; return m; }, {})
       },
       footer: {

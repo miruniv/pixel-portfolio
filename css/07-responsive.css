@@ -5,7 +5,10 @@
 
 /* --- Масштаб персонажа: ТОЛЬКО целые множители.
        Дробный scale ломает pixelated: часть «пикселей» станет 3px, часть 4px. --- */
-@media (max-width: 560px) { :root { --char-scale: 1; } }
+/* Масштаб спрайта — только целые множители, и поля сцены вместе с ним:
+   дробные значения ломают и pixelated, и попадание рамок на целый пиксель. */
+@media (max-width: 1100px) { :root { --char-scale: 2; --stage-pad: 40px; } }
+@media (max-width: 560px)  { :root { --char-scale: 1; --stage-pad: 16px; } }
 
 /* ============ <= 900px: три колонки складываются вертикально ============ */
 @media (max-width: 900px) {
@@ -104,11 +107,7 @@
   /* Сцена ужимается по высоте: на 390x844 без этого не помещается
      связка «персонаж + реплика + кнопка действия». Блоки не выкидываем
      и порядок не меняем — только поля. */
-  .display__inner {
-    padding-block: var(--sp-4);
-    min-height: calc(var(--char-size) * var(--char-scale) + var(--sp-4) * 2);
-  }
-  .hero { gap: var(--sp-3); }
+  .hero { gap: var(--sp-3); padding: var(--sp-3); margin: var(--sp-3); }
   .charstats { gap: var(--sp-3); padding: var(--sp-3); }
 
   .hero__bubble { max-width: 420px; justify-self: center; }
@@ -148,9 +147,6 @@
   .footer { flex-direction: column; align-items: flex-start; }
   .footer__link { width: var(--tap); height: var(--tap); }
   .footer__link svg { width: 24px; height: 24px; }
-  /* Стрелки профиля на тач-ширинах дорастают до полноценной цели */
-  .nav-arrow { width: var(--tap); height: var(--tap); }
-  .nav-arrow svg { width: 22px; height: 22px; }
   .charstats__rows { gap: var(--sp-1) var(--sp-2); }
 }
 

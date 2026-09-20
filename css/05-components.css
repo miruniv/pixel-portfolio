@@ -37,12 +37,12 @@
   align-items: center;
   gap: var(--sp-3);
   width: 100%;
-  min-height: var(--tap);
-  padding: var(--sp-2) var(--sp-3);
+  min-height: 60px;
+  padding: var(--sp-3) var(--sp-4);
   --bd: var(--bd-md);
   --px-fill: var(--tile);
   font-family: var(--font-display);
-  font-size: var(--fs-sm);
+  font-size: var(--fs-md);
   line-height: 1.4;
   letter-spacing: 0.5px;
   transition: background-color 80ms steps(2);
@@ -75,22 +75,33 @@
   align-items: center;
 }
 
+/* Сцена: прямоугольник с одной полной рамкой и однотонной заливкой.
+   Никаких внутренних колец — .display__inner больше не px-box. */
 .display {
   --px-fill: var(--display);
-  padding: var(--sp-2);
+  padding: 0;
 }
 
-/* Спрайт стоит по центру рамки по обеим осям. Поля сверху и снизу заданы
-   одним padding-block, поэтому равны по определению — раньше сцена была
-   ровно по размеру спрайта и он упирался в нижнюю грань.
-   gaze.js меряет сам <img> через getBoundingClientRect, так что его центр
-   уезжает вместе со спрайтом и пересчитывать ничего не нужно. */
+/* Персонаж по центру по обеим осям. Поля заданы одним padding-block,
+   поэтому равны по определению. --stage-pad подобран так, чтобы спрайт
+   занимал примерно три четверти высоты сцены, как в макете.
+   gaze.js меряет сам <img>, так что центр уезжает вместе со спрайтом. */
 .display__inner {
+  position: relative;
   display: grid;
   place-items: center;
-  padding-block: var(--sp-7);
-  padding-inline: var(--sp-4);
-  min-height: calc(var(--char-size) * var(--char-scale) + var(--sp-7) * 2);
+  padding-block: var(--stage-pad);
+  padding-inline: var(--sp-2);
+  min-height: calc(var(--char-size) * var(--char-scale) + var(--stage-pad) * 2);
+}
+
+/* Накладки поверх сцены: `...`, лампочка, +10 ENERGY, вспышка */
+.overlays {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
 }
 
 .char {
@@ -360,62 +371,12 @@
 }
 .link:hover { --px-fill: var(--accent-soft); }
 
-/* ============ FEATURED PROJECT ============
-   Идёт сразу под метаданными; свободное место панели уходит вниз,
-   между карточкой и подвалом. */
-.featured {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--sp-4);
-  padding: var(--sp-4);
-  margin-top: calc(var(--sp-4) + var(--sp-1));
-  --bd: var(--bd-md);
-  --px-fill: var(--workspace);
-}
-.featured__icon {
-  display: grid;
-  place-items: center;
-  width: 56px; height: 56px;
-  --bd: var(--bd-sm);
-  --px-fill: var(--panel);
-}
-.featured__icon svg { width: 32px; height: 32px; }
-.featured__body { display: grid; gap: var(--sp-2); min-width: 0; }
-.featured__label {
-  font-family: var(--font-display);
-  font-size: var(--fs-label);
-  letter-spacing: 1.5px;
-  color: var(--ink-2);
-}
-.featured__title {
-  font-family: var(--font-display);
-  font-size: var(--fs-lg);
-  letter-spacing: 1px;
-}
-.featured__text { font-size: var(--fs-sm); color: var(--ink-2); line-height: var(--lh-body); }
-.featured__cta {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sp-2);
-  min-height: var(--tap);
-  padding: var(--sp-2) var(--sp-3);
-  --bd: var(--bd-md);
-  --px-fill: var(--accent-soft);
-  font-family: var(--font-display);
-  font-size: var(--fs-sm);
-  letter-spacing: 1px;
-  text-decoration: none;
-  white-space: nowrap;
-}
-.featured__cta svg { width: 14px; height: 14px; }
-
 /* ============ ПАНЕЛЬ ДЕЙСТВИЙ ============ */
 .acts {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-4);
-  padding: var(--sp-4);
+  gap: var(--sp-3);
+  padding: var(--sp-3);
   margin: var(--sp-3);
   min-height: 0;
 }
@@ -437,7 +398,7 @@
 }
 
 .actions__row     { display: grid; gap: var(--sp-3); min-width: 0; }
-.actions__primary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-3); }
+.actions__primary { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-3); }
 .actions__grid    { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-3); }
 
 /* ---- Общая плитка действия ---- */
@@ -456,14 +417,19 @@
 }
 
 /* ---- Primary: насыщенная заливка, рамка 3px, выраженная тень ---- */
+/* Заметно контрастнее маленьких: насыщенная заливка, рамка толще, тень
+   выраженнее. Занимает всю ширину панели. */
 .act--primary {
   --bd: var(--bd-md);
   --px-fill: var(--accent-soft);
   --px-hi: var(--accent-hi);
   --px-lo: var(--accent-lo);
-  min-height: 76px;
+  grid-auto-flow: column;
+  justify-content: center;
+  gap: var(--sp-3);
+  min-height: 64px;
   font-family: var(--font-display);
-  font-size: var(--fs-sm);
+  font-size: var(--fs-md);
   letter-spacing: 1px;
 }
 .act--primary .act__icon svg { width: 24px; height: 24px; }
@@ -475,6 +441,8 @@
 }
 
 /* ---- Slot: заливка ближе к фону панели, рамка 2px, тень слабее ---- */
+/* Тише главной: заливка близка к фону панели, рамка тоньше, но полная
+   со всех четырёх сторон, тень слабее. */
 .act--slot {
   --bd: var(--bd-sm);
   --px-fill: var(--slot);
@@ -483,10 +451,19 @@
   --px-drop-x: var(--bd-sm);
   --px-drop-y: var(--bd-sm);
   --px-drop-c: var(--tile-lo);
-  aspect-ratio: 1;
+  min-height: 60px;
+  padding: var(--sp-2) var(--sp-1);
+  gap: var(--sp-1);
   font-family: var(--font-display);
   font-size: var(--fs-xs);
   letter-spacing: 0.5px;
+}
+/* Длинная подпись переносится на две строки, а не обрезается */
+.act--slot .act__label {
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.3;
 }
 .act--slot .act__icon svg { width: 18px; height: 18px; }
 
@@ -625,10 +602,11 @@
 .hero__bubble.is-music .bubble__note { display: block; }
 
 /* ============ СТАТЫ ПЕРСОНАЖА ============ */
+/* Профиль идёт внутри общей панели и своей рамки не имеет */
 .charstats {
   display: grid;
   gap: var(--sp-4);
-  padding: var(--sp-4);
+  padding: var(--sp-2) 0 0;
 }
 
 /* Шапка карточки: имя слева, уровень справа, стрелки рядом с именем */
@@ -691,17 +669,6 @@
   color: var(--ink-2);
 }
 .charstats__rows dd { margin: 0; text-align: right; }
-
-/* ============ СТРЕЛКИ У ПЛАШКИ ИМЕНИ ============ */
-.nav-arrow {
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  --bd: var(--bd-sm);
-  width: 32px;
-  height: 32px;
-}
-.nav-arrow svg { width: 18px; height: 18px; }
 
 /* ============ ПОДВАЛ ============ */
 .footer__links { display: flex; gap: var(--sp-3); padding: var(--sp-1); }

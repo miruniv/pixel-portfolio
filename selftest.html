@@ -551,47 +551,6 @@
          $$(".charstats__rows dd").map(function (n) { return n.textContent; }).join("|") ===
          SITE_DATA.profile.rows.map(function (r) { return r.value; }).join("|"));
 
-      // ==================== СТРЕЛКИ ====================
-      head("стрелки листают статы по кругу");
-      var ids = SITE_DATA.sections.map(function (s) { return s.id; });
-      var next = $('.nav-arrow[data-step="1"]');
-      var prev = $('.nav-arrow[data-step="-1"]');
-      ok("обе стрелки на месте", !!next && !!prev);
-      ok("у стрелок есть aria-label",
-         !!next.getAttribute("aria-label") && !!prev.getAttribute("aria-label"),
-         next.getAttribute("aria-label") + " / " + prev.getAttribute("aria-label"));
-
-      location.hash = "#" + ids[0]; await tick();
-      next.click(); await tick(120);
-      ok("→ переводит на следующий стат", location.hash === "#" + ids[1], location.hash);
-      ok("→ обновляет подсветку стата",
-         $('.stat[data-section="' + ids[1] + '"]').getAttribute("aria-current") === "true");
-
-      // до конца списка и через край
-      location.hash = "#" + ids[ids.length - 1]; await tick();
-      next.click(); await tick(120);
-      ok("→ с последнего заворачивается на первый", location.hash === "#" + ids[0], location.hash);
-
-      prev.click(); await tick(120);
-      ok("← с первого заворачивается на последний",
-         location.hash === "#" + ids[ids.length - 1], location.hash);
-
-      prev.click(); await tick(120);
-      ok("← идёт назад по списку",
-         location.hash === "#" + ids[ids.length - 2], location.hash);
-
-      // полный круг возвращает туда же
-      location.hash = "#" + ids[0]; await tick();
-      for (var st = 0; st < ids.length; st++) { next.click(); await tick(90); }
-      ok("полный круг из " + ids.length + " шагов возвращает на старт",
-         location.hash === "#" + ids[0], location.hash);
-
-      // из IDLE
-      location.hash = ""; await tick(120);
-      next.click(); await tick(120);
-      ok("→ из пустого состояния открывает первый стат",
-         location.hash === "#" + ids[0], location.hash);
-
       // ==================== ПОДВАЛ ====================
       head("подвал");
       var flinks = $$(".footer__link");
@@ -630,44 +589,86 @@
       // ==================== ПАНЕЛЬ ДЕЙСТВИЙ ====================
       head("панель действий");
       var acts = $$(".act");
+      var byId = function (id) { return $('.act[data-action="' + id + '"]'); };
       ok("действий столько же, сколько в данных",
          acts.length === SITE_DATA.actions.items.length, acts.length);
-      ok("два primary и шесть слотов",
-         $$(".act--primary").length === 2 && $$(".act--slot").length === 6,
+      ok("одна большая кнопка и шесть маленьких",
+         $$(".act--primary").length === 1 && $$(".act--slot").length === 6,
          $$(".act--primary").length + " / " + $$(".act--slot").length);
+      ok("состав действий по макету",
+         acts.map(function (n) { return n.dataset.action; }).join(",") ===
+         "music,think,energy,debug,photo,sayhi,mute",
+         acts.map(function (n) { return n.dataset.action; }).join(","));
+      // На узком экране действия — горизонтальная лента, там свои размеры
+      var wideActs = window.innerWidth > 900;
+      if (wideActs) {
+        ok("большая кнопка занимает всю ширину панели",
+           Math.abs($(".act--primary").getBoundingClientRect().width -
+                    $(".actions__row").getBoundingClientRect().width) <= 2,
+           Math.round($(".act--primary").getBoundingClientRect().width) + " vs " +
+           Math.round($(".actions__row").getBoundingClientRect().width));
+      } else {
+        ok("в ленте большая кнопка шире маленьких",
+           $(".act--primary").getBoundingClientRect().width >
+           $(".act--slot").getBoundingClientRect().width);
+      }
       ok("у всех действий есть aria-label и title",
          acts.every(function (n) { return n.getAttribute("aria-label") && n.getAttribute("title"); }));
       ok("строка обратной связи есть и объявляется",
          $("#act-feedback") && $("#act-feedback").getAttribute("role") === "status");
-      ok("секретный слот — единственный жёлтый элемент",
-         $$(".act--secret").length === 1 &&
-         getComputedStyle($(".act--secret")).backgroundColor ===
-           getComputedStyle(document.documentElement).getPropertyValue("--secret").trim()
-             .replace(/^#(..)(..)(..)$/, function (_, r, g, b) {
-               return "rgb(" + parseInt(r,16) + ", " + parseInt(g,16) + ", " + parseInt(b,16) + ")";
-             }),
-         getComputedStyle($(".act--secret")).backgroundColor);
-      ok("primary толще слотов по рамке",
+      ok("большая кнопка толще слотов по рамке",
          parseFloat(getComputedStyle($(".act--primary")).getPropertyValue("--bd")) >
-         parseFloat(getComputedStyle($(".act--slot")).getPropertyValue("--bd")),
-         getComputedStyle($(".act--primary")).getPropertyValue("--bd") + " vs " +
-         getComputedStyle($(".act--slot")).getPropertyValue("--bd"));
+         parseFloat(getComputedStyle($(".act--slot")).getPropertyValue("--bd")));
+      ok(wideActs ? "маленькие кнопки 58-62px высотой"
+                  : "в ленте маленькие кнопки 82-104px",
+         $$(".act--slot").every(function (n) {
+           var h = n.getBoundingClientRect().height;
+           return wideActs ? (h >= 58 && h <= 62) : (h >= 82 && h <= 104);
+         }), $$(".act--slot").map(function (n) {
+           return Math.round(n.getBoundingClientRect().height); }).join(" "));
+      ok("длинная подпись TAKE PHOTO переносится, а не обрезается",
+         byId("photo").scrollHeight <= byId("photo").clientHeight + 1 &&
+         getComputedStyle($(".act--slot .act__label")).whiteSpace === "normal");
+      ok("кнопки навигации стали крупнее: 58-62px",
+         $$(".stat").every(function (n) {
+           var h = n.getBoundingClientRect().height;
+           return h >= 58 && h <= 62;
+         }), $$(".stat").map(function (n) {
+           return Math.round(n.getBoundingClientRect().height); }).join(" "));
 
-      // ---- CHANGE OUTFIT: заглушка ----
-      var outfitBtn = $('.act[data-action="outfit"]');
-      ok("CHANGE OUTFIT выглядит как primary", outfitBtn.classList.contains("act--primary"));
-      ok("CHANGE OUTFIT недоступна", outfitBtn.disabled === true &&
-         outfitBtn.getAttribute("aria-disabled") === "true");
-      ok("в подписи CHANGE OUTFIT сказано про coming soon",
-         /coming soon/i.test(outfitBtn.getAttribute("title")) &&
-         /coming soon/i.test(outfitBtn.getAttribute("aria-label")),
-         outfitBtn.getAttribute("title"));
-      ok("в данных заведён второй комплект спрайтов",
-         !!SITE_DATA.character.outfits &&
-         Object.keys(SITE_DATA.character.outfits.lecture).length >= 10 &&
-         SITE_DATA.character.outfits.lecture.enabled === false);
-      ok("реплика про лекции заведена в данных",
-         SITE_DATA.character.states.outfit.line === "THIS IS HOW YOU SEE ME ON LECTURES");
+      // ---- MUTE и кнопка в шапке делят одно состояние ----
+      head("MUTE: одно состояние на две кнопки");
+      var muteBtn = byId("mute"), headBtn = $("#sound-btn");
+      ok("обе кнопки на месте", !!muteBtn && !!headBtn);
+      ok("обе несут aria-pressed",
+         muteBtn.hasAttribute("aria-pressed") && headBtn.hasAttribute("aria-pressed"));
+
+      function muteState() {
+        return { muted: M.audio.isMuted(),
+                 mute: muteBtn.getAttribute("aria-pressed"),
+                 head: headBtn.getAttribute("aria-pressed") };
+      }
+      var s0 = muteState();
+      ok("состояния кнопок согласованы между собой",
+         (s0.mute === "true") === s0.muted && (s0.head === "true") === !s0.muted,
+         JSON.stringify(s0));
+
+      muteBtn.click(); await tick(80);
+      var s1 = muteState();
+      ok("клик по MUTE переключил общее состояние", s1.muted !== s0.muted);
+      ok("клик по MUTE перерисовал и кнопку в шапке",
+         (s1.head === "true") === !s1.muted, JSON.stringify(s1));
+      ok("клик по MUTE перерисовал сам MUTE",
+         (s1.mute === "true") === s1.muted, JSON.stringify(s1));
+
+      headBtn.click(); await tick(80);
+      var s2 = muteState();
+      ok("клик по кнопке в шапке вернул состояние", s2.muted === s0.muted);
+      ok("клик по шапке перерисовал MUTE",
+         (s2.mute === "true") === s2.muted, JSON.stringify(s2));
+      ok("второй независимой переменной нет: обе читают audio.isMuted()",
+         (s2.mute === "true") === M.audio.isMuted() &&
+         (s2.head === "true") === !M.audio.isMuted());
 
       // ==================== МУЗЫКА И СОСТОЯНИЯ ====================
       head("музыка и состояния персонажа");
@@ -728,25 +729,25 @@
       ok("класс музыки снят", !$(".hero__bubble").classList.contains("is-music"));
 
       // ---- реплика по фокусу, а не только по наведению ----
-      var ghBtn = $('.act[data-action="github"]');
+      var ghBtn = $('.act[data-action="sayhi"]');
       ghBtn.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
       await tick(80);
       ok("реплика обновляется по фокусу",
-         $("#bubble-sr").textContent === SITE_DATA.actions.items[4].line,
+         $("#bubble-sr").textContent === SITE_DATA.actions.items[5].line,
          $("#bubble-sr").textContent);
       ghBtn.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
       await tick(80);
 
       // ---- одноразовое действие мигает нажатым состоянием ----
-      var secretBtn = $('.act[data-action="secret"]');
+      var secretBtn = $('.act[data-action="think"]');
       secretBtn.click();
       ok("одноразовое действие мигает нажатым состоянием",
          secretBtn.classList.contains("is-pressed"));
       await tick(220);
       ok("нажатое состояние снимается само",
          !secretBtn.classList.contains("is-pressed"));
-      ok("реплика секрета показана",
-         $("#bubble-sr").textContent === SITE_DATA.actions.items[7].line,
+      ok("реплика одноразового действия показана",
+         $("#bubble-sr").textContent === SITE_DATA.actions.items[1].line,
          $("#bubble-sr").textContent);
 
       // ---- prefers-reduced-motion: анимации не навешиваются ----
@@ -765,26 +766,16 @@
          getComputedStyle(stageEl).animationName !== "none",
          getComputedStyle(stageEl).animationName);
 
-      // ==================== FEATURED PROJECT ====================
-      head("карточка избранного проекта");
-      location.hash = "#about"; await tick(140);
-      var fc = $(".featured");
-      ok("карточка отрисована", !!fc);
-      ok("заголовок из данных",
-         $(".featured__title").textContent === SITE_DATA.sections[0].page.featured.title,
-         $(".featured__title").textContent);
-      ok("карточка идёт сразу после метаданных",
-         fc.previousElementSibling && fc.previousElementSibling.classList.contains("tags"),
-         fc.previousElementSibling && fc.previousElementSibling.className);
-      ok("у ссылки карточки есть aria-label",
-         !!$(".featured__cta").getAttribute("aria-label"),
-         $(".featured__cta").getAttribute("aria-label"));
+      // ==================== МЕТАДАННЫЕ И ВВОДНОЕ ПРЕДЛОЖЕНИЕ ====================
+      head("правая панель");
+      location.hash = "#about"; await tick(160);
       ok("ряды метаданных несут разные тона",
          $$(".tag--alt").length > 0 && $$(".tag--plain").length > 0,
          "alt=" + $$(".tag--alt").length + " plain=" + $$(".tag--plain").length);
       ok("вводное предложение крупнее остального текста",
          parseFloat(getComputedStyle($(".detail__text > .typed:first-child")).fontSize) >
          parseFloat(getComputedStyle($$(".detail__text > .typed")[1]).fontSize));
+      ok("карточка проекта из правой панели убрана", $$(".featured").length === 0);
 
       // ==================== МОБИЛЬНАЯ РАСКЛАДКА ====================
       head("мобильная раскладка");
@@ -836,10 +827,9 @@
         ok("слоты действий в диапазоне 82-104px",
            slotSizes.every(function (w) { return w >= 82 && w <= 104; }),
            slotSizes.join(" "));
-        ok("два главных действия идут первыми",
-           $$(".act")[0].dataset.action === "music" &&
-           $$(".act")[1].dataset.action === "outfit",
-           $$(".act")[0].dataset.action + " " + $$(".act")[1].dataset.action);
+        ok("главное действие идёт первым",
+           $$(".act")[0].dataset.action === "music",
+           $$(".act")[0].dataset.action);
 
         var navRow = $(".stats__list");
         ok("навигация скроллится горизонтально", navRow.scrollWidth > navRow.clientWidth);

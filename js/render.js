@@ -113,6 +113,42 @@
       ["i",2,2,12,12],["f",3,3,10,10],
       ["i",7,5,2,4],["i",9,8,3,2]
     ],
+    think: [
+      ["i",3,3,10,6],["f",4,4,8,4],
+      ["i",5,10,2,2],["i",8,13,2,2]
+    ],
+    can: [
+      ["i",5,2,6,12],["f",6,3,4,10],
+      ["i",6,2,4,1],["a",6,5,4,4]
+    ],
+    bug: [
+      ["i",6,4,4,8],["f",7,5,2,6],
+      ["i",3,5,3,1],["i",10,5,3,1],
+      ["i",3,8,3,1],["i",10,8,3,1],
+      ["i",3,11,3,1],["i",10,11,3,1],
+      ["i",6,2,1,2],["i",9,2,1,2]
+    ],
+    camera: [
+      ["i",2,5,12,8],["f",3,6,10,6],
+      ["i",6,3,4,2],["i",6,7,4,4],["a",7,8,2,2]
+    ],
+    wave: [
+      ["i",5,3,2,6],["i",7,2,2,7],["i",9,3,2,6],
+      ["i",4,8,8,6],["f",5,9,6,4]
+    ],
+    speaker: [
+      ["i",2,6,3,4],["i",5,4,2,8],["i",7,2,2,12],
+      ["a",11,5,2,6],["a",14,3,1,10]
+    ],
+    speakerOff: [
+      ["i",2,6,3,4],["i",5,4,2,8],["i",7,2,2,12],
+      ["a",10,5,2,2],["a",12,7,2,2],["a",14,9,2,2],
+      ["a",14,5,2,2],["a",10,9,2,2]
+    ],
+    bulb: [
+      ["g",5,2,6,7],["i",4,3,1,5],["i",11,3,1,5],
+      ["i",5,1,6,1],["i",6,9,4,1],["i",6,11,4,1],["i",7,13,2,1]
+    ],
     document: [
       ["i",3,1,10,14],["f",4,2,8,12],
       ["a",5,4,6,1],["a",5,6,6,1],["a",5,8,6,1],["a",5,10,4,1]
@@ -245,10 +281,6 @@
         ].concat(vals)));
       });
       frag.appendChild(tags);
-    }
-
-    if (data.featured && data.featured.title) {
-      frag.appendChild(featured(data.featured));
     }
 
     if (Array.isArray(data.links) && data.links.length) {
@@ -438,13 +470,9 @@
     opts = opts || {};
     var frag = document.createDocumentFragment();
 
-    // Шапка: имя со стрелками слева, уровень справа
+    // Имя слева, уровень справа, одной строкой — стрелок в макете нет
     frag.appendChild(el("div", { class: "profile__head" }, [
-      el("div", { class: "profile__ident" }, [
-        navArrow(-1, opts.prevLabel || "Previous section"),
-        el("p", { class: "profile__name", text: opts.name || "" }),
-        navArrow(1, opts.nextLabel || "Next section")
-      ]),
+      el("p", { class: "profile__name", text: opts.name || "" }),
       p.level == null ? null : el("p", { class: "profile__lvl", text: "LVL " + p.level })
     ]));
 
@@ -497,49 +525,10 @@
     return frag;
   }
 
-  /* -------------------------------------------- FEATURED PROJECT ---- */
-  function featured(f) {
-    var external = /^https?:/i.test(f.url || "");
-    var kids = [
-      el("span", { class: "featured__icon px-box" },
-         d.pixelArt(ICONS[f.icon] || ICONS.monitor, 16)),
-      el("div", { class: "featured__body" }, [
-        f.label ? el("p", { class: "featured__label", text: f.label }) : null,
-        el("p", { class: "featured__title", text: f.title }),
-        f.text ? el("p", { class: "featured__text", text: f.text }) : null
-      ])
-    ];
-    if (f.url) {
-      kids.push(el("a", {
-        class: "featured__cta px-box",
-        href: f.url,
-        target: external ? "_blank" : null,
-        rel: external ? "noopener noreferrer" : null,
-        "aria-label": (f.cta || "Open") + ": " + f.title
-      }, [
-        el("span", { text: f.cta || "OPEN" }),
-        external ? d.pixelArt(ICONS.external, 16) : null
-      ]));
-    }
-    return el("div", { class: "featured px-box" }, kids);
-  }
-
-  /* ---------------------------------------- СТРЕЛКИ У ИМЕНИ ---- */
-  function navArrow(dir, label) {
-    return el("button", {
-      type: "button",
-      class: "nav-arrow px-box px-face",
-      dataset: { step: dir > 0 ? "1" : "-1" },
-      title: label,
-      "aria-label": label
-    }, d.pixelArt(dir > 0 ? ICONS.arrowRight : ICONS.arrowLeft, 16));
-  }
-
   M.render = {
     stats: stats, hint: hint, grid: grid, page: page, detail: detail,
     appIcon: appIcon, icons: ICONS,
     charStats: charStats, footer: footer,
-    navArrow: navArrow, featured: featured,
     actions: actions, bubbleDecor: bubbleDecor
   };
 })(window.MIRA);

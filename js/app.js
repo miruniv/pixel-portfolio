@@ -236,6 +236,13 @@
     var a = store.actions.byId[node.dataset.action];
     if (!a || a.enabled === false) return;
 
+    // MUTE — та же переменная, что у кнопки в шапке окна. Своего состояния
+    // у действия нет: переключаем общий mute, а обе кнопки перерисует
+    // подписчик audio.onChange.
+    if (a.shares === "sound") {
+      audio.toggle();
+      return;
+    }
     if (a.id === "music") {
       // Нажатие — это и есть пользовательский жест, которого ждёт браузер
       setMusic(!musicOn, node);
@@ -253,20 +260,6 @@
     flash(node);
     setFeedback(a.feedback);
     showLine(a.line, 2600);
-  }
-
-  /* Стрелки листают статы по кругу и пишут хэш — ровно как обычный клик
-     по стату, поэтому история, deeplink и подсветка работают сами собой. */
-  function stepSection(delta) {
-    var list = store.sections;
-    if (!list.length) return;
-    var i = -1;
-    for (var k = 0; k < list.length; k++) if (list[k].id === state.sectionId) { i = k; break; }
-    var next = i < 0
-      ? (delta > 0 ? 0 : list.length - 1)
-      : (i + delta % list.length + list.length) % list.length;
-    audio.click();
-    router.go(list[next].id, null);
   }
 
   function goBack() {
@@ -347,12 +340,32 @@
 
   /* ========================================================== ЗВУК ==== */
 
+  /* Одно состояние звука на две кнопки: ♪ в шапке и MUTE в панели действий.
+     Обе читают audio.isMuted() и обе перерисовываются здесь. */
   function syncSound() {
     var muted = audio.isMuted();
+
     d.clear(refs.soundGlyph);
     refs.soundGlyph.appendChild(d.pixelArt(muted ? SOUND_OFF : SOUND_ON, 16));
     refs.soundBtn.setAttribute("aria-pressed", muted ? "false" : "true");
-    refs.soundBtn.setAttribute("aria-label", muted ? (ui.soundOff || "Sound off") : (ui.soundOn || "Sound on"));
+    refs.soundBtn.setAttribute("aria-label",
+      muted ? (ui.soundOff || "Sound off") : (ui.soundOn || "Sound on"));
+
+    var muteBtn = d.qs('.act[data-action="mute"]');
+    if (muteBtn) {
+      // MUTE «нажат», когда звук выключен
+      muteBtn.setAttribute("aria-pressed", muted ? "true" : "false");
+      var icon = d.qs(".act__icon", muteBtn);
+      if (icon) {
+        d.clear(icon);
+        icon.appendChild(d.pixelArt(
+          render.icons[muted ? "speakerOff" : "speaker"], 16));
+      }
+      var act = store.actions.byId.mute;
+      if (act && refs.feedback && refs.feedback.dataset.owner === "mute") {
+        refs.feedback.textContent = muted ? act.feedback : act.feedbackOff;
+      }
+    }
   }
 
   /* ========================================================== СТАРТ ==== */
@@ -400,9 +413,7 @@
     refs.feedback = d.qs("#act-feedback");
     refs.bubble.appendChild(render.bubbleDecor());
     refs.charstats.appendChild(render.charStats(store.profile, {
-      name: (store.character && store.character.plate) || "",
-      prevLabel: ui.prevSection,
-      nextLabel: ui.nextSection
+      name: (store.character && store.character.plate) || ""
     }));
     refs.footer.appendChild(render.footer(store.footer));
 
@@ -425,9 +436,6 @@
       if (t.closest("#modal-close") || t.closest(".modal__backdrop")) { goBack(); return; }
       if (t.closest("#sound-btn")) { audio.toggle(); return; }
 
-      var arrow = t.closest(".nav-arrow");
-      if (arrow) { stepSection(Number(arrow.dataset.step)); return; }
-
       var act = t.closest(".act");
       if (act) { audio.click(); activateAction(act); return; }
       if (t.closest("#menu-btn")) {
@@ -449,7 +457,7 @@
     d.on(document, "pointerover", function (e) {
       var t = e.target;
       if (!(t instanceof Element)) return;
-      if (t.closest(".stat, .card, .link, .back, .ribbon__item, .tbtn, .nav-arrow, .footer__link, .act")) audio.hover();
+      if (t.closest(".stat, .card, .link, .back, .ribbon__item, .tbtn, .footer__link, .act")) audio.hover();
 
       // Реплика обновляется и по наведению, и по фокусу (тач hover не даёт)
       var over = t.closest(".act");

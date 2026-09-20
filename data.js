@@ -119,36 +119,54 @@ const SITE_DATA = {
     items: [
       {
         id: "music", label: "PLAY MUSIC", icon: "note",
-        kind: "primary", type: "toggle", state: "dance",
+        kind: "primary", type: "toggle", state: "dance", sprites: "playMusic",
         line: "\u266A LET'S DANCE! \u266A",
         lineOff: "OK, BACK TO WORK",
         feedback: "PLAY MUSIC \u00B7 SHE'S DANCING NOW",
         feedbackOff: "MUSIC OFF \u00B7 BACK TO WORK"
       },
-      {
-        id: "outfit", label: "CHANGE OUTFIT", icon: "shirt",
-        kind: "primary", type: "toggle", state: "outfit",
-        outfit: "lecture",
-        line: "THIS IS HOW YOU SEE ME ON LECTURES",
-        feedback: "CHANGE OUTFIT \u00B7 LECTURE LOOK",
-        enabled: false,
-        disabledNote: "coming soon"
-      },
-      { id: "projects", label: "PROJECTS", icon: "briefcase", kind: "slot", type: "link",
-        href: "#projects", line: "TAKE A LOOK AT MY WORK", feedback: "PROJECTS \u00B7 OPENED" },
-      { id: "resume", label: "RESUME", icon: "document", kind: "slot", type: "link",
-        href: "./cv.pdf", line: "WANT MY CV?", feedback: "RESUME \u00B7 OPENED" },
-      { id: "github", label: "GITHUB", icon: "code", kind: "slot", type: "link",
-        href: "https://github.com/example", line: "SEE WHAT I'M BUILDING",
-        feedback: "GITHUB \u00B7 OPENED" },
-      { id: "contact", label: "CONTACT", icon: "envelope", kind: "slot", type: "link",
-        href: "#contacts", line: "LET'S TALK!", feedback: "CONTACT \u00B7 OPENED" },
-      { id: "now", label: "NOW", icon: "clock", kind: "slot", type: "link",
-        href: "#extra", line: "WHAT I'M UP TO LATELY", feedback: "NOW \u00B7 OPENED" },
-      { id: "secret", label: "SECRET", icon: null, kind: "slot", type: "oneshot",
-        tone: "secret", line: "YOU FOUND SOMETHING\u2026",
-        feedback: "SECRET \u00B7 NICE FIND" }
-    ]
+      { id: "think", label: "THINK", icon: "think",
+        kind: "slot", type: "oneshot", sprites: "think",
+        line: "LET ME THINK ABOUT IT\u2026",
+        feedback: "THINK \u00B7 WORKING ON IT",
+        overlays: ["dots", "bulb"] },
+      { id: "energy", label: "ENERGY", icon: "can",
+        kind: "slot", type: "oneshot", sprites: "drinkEnergydrink",
+        line: "ONE MORE AND I CAN SHIP THIS",
+        feedback: "ENERGY \u00B7 +10 ENERGY",
+        overlays: ["energy"] },
+      { id: "debug", label: "DEBUG", icon: "bug",
+        kind: "slot", type: "oneshot", sprites: "debug",
+        line: "FOUND YOU, LITTLE BUG",
+        feedback: "DEBUG \u00B7 ONE LESS BUG",
+        overlays: ["bug"] },
+      { id: "photo", label: "TAKE PHOTO", icon: "camera",
+        kind: "slot", type: "oneshot", sprites: "takePhoto",
+        line: "SAY CHEESE!",
+        feedback: "TAKE PHOTO \u00B7 SMILE",
+        overlays: ["flash"] },
+      { id: "sayhi", label: "SAY HI", icon: "wave",
+        kind: "slot", type: "oneshot", sprites: "sayHi",
+        line: "Hi, I am Mira!",
+        feedback: "SAY HI \u00B7 HELLO THERE" },
+      { id: "mute", label: "MUTE", icon: "speaker",
+        kind: "slot", type: "toggle",
+        // Состояние звука живёт в js/audio.js и общее с кнопкой в шапке окна.
+        // Отдельной переменной здесь НЕТ намеренно.
+        shares: "sound",
+        line: "SHH\u2026", lineOff: "SOUND IS BACK",
+        feedback: "MUTE \u00B7 SOUND OFF", feedbackOff: "MUTE \u00B7 SOUND ON" }
+    ],
+
+    /* Накладки поверх сцены: живут секунду-полторы и исчезают.
+       В спрайт не вшиты, рисуются отдельными элементами. */
+    overlays: {
+      dots:   { text: "\u2026",          hold: 900 },
+      bulb:   { icon: "bulb",        hold: 700, delay: 800 },
+      energy: { text: "+10 ENERGY",  hold: 1200 },
+      bug:    { icon: "bug",         hold: 900 },
+      flash:  { flash: true,         hold: 220 }
+    }
   },
 
   /* -------------------------------------------------------------- ПОДВАЛ -- */
@@ -189,15 +207,6 @@ const SITE_DATA = {
           { label: "ALSO",      values: ["Figma", "Aseprite", "Three.js"], tone: "alt" },
           { label: "CURRENTLY", values: ["Building small tools \u00B7 Learning Three.js"], tone: "plain" }
         ],
-        // Карточка избранного проекта. Идёт сразу под метаданными.
-        featured: {
-          label: "FEATURED PROJECT",
-          title: "SITE REDESIGN",
-          text: "Bakery site rebuilt by hand \u2014 half the load time.",
-          icon: "monitor",
-          cta: "OPEN",
-          url: "#projects/site-redesign"
-        },
         links: []
       }
     },
