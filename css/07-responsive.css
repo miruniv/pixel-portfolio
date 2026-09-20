@@ -39,6 +39,16 @@
   /* Список статов сворачивается гамбургером, чтобы контент был ближе */
   .stats[data-collapsed="true"] .stats__list { display: none; }
 
+  /* Инвентарь уходит под список статов и раскладывается по 4 в ряд.
+     Панель статов персонажа остаётся на месте, в центральной колонке. */
+  .col-left { grid-template-rows: auto auto; }
+  /* Тач: плитки обязаны быть не мельче 44px, тут места по высоте вдоволь */
+  .inv__grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-auto-rows: minmax(var(--tap), auto);
+  }
+  .inv__tile { aspect-ratio: 1; }
+
   .hero__bubble { max-width: 420px; justify-self: center; }
   .hero__plate  { max-width: 420px; justify-self: center; }
 
@@ -70,12 +80,17 @@
   .card__thumb { width: 72px; height: 72px; }
   .card__thumb img { width: 48px; height: 48px; }
   .ribbon { margin-left: 0; width: 100%; }
+
+  /* Подвал в столбик, чтобы копирайт не жался к иконкам */
+  .footer { flex-direction: column; align-items: flex-start; }
+  .charstats__rows { gap: var(--sp-1) var(--sp-2); }
 }
 
 /* ============ Низкий вьюпорт ============
-   Ниже 640px по высоте пять статов + персонаж + контент физически не влезают.
-   Здесь сознательно отпускаем страницу в скролл — иначе контент был бы обрезан. */
-@media (max-height: 640px) {
+   Порог поднят с 640px до 760px: после добавления панели INVENTORY и статов
+   персонажа колонкам нужно больше высоты, и на коротком вьюпорте нижний ряд
+   инвентаря просто обрезало. Здесь сознательно отпускаем страницу в скролл. */
+@media (max-height: 760px) {
   html, body { overflow: auto; height: auto; min-height: 100%; }
   body { padding: var(--sp-3); }
   .screen { height: auto; min-height: 560px; }

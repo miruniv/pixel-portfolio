@@ -53,13 +53,20 @@ body {
 }
 .workspace > * { min-width: 0; min-height: 0; }
 
-/* ---------- Колонка 1: статы ---------- */
-.stats {
+/* ---------- Колонка 1: статы + инвентарь ----------
+   Инвентарь забирает всё, что осталось от кнопок статов. */
+.col-left {
   grid-area: stats;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: var(--sp-4);
+  padding: var(--sp-1);          /* место под внешний контур .px-box кнопок */
+  min-height: 0;
+}
+.stats {
   display: flex;
   flex-direction: column;
   gap: var(--sp-3);
-  padding: var(--sp-1);          /* место под внешний контур .px-box кнопок */
   min-height: 0;
 }
 .stats__list {
@@ -73,16 +80,21 @@ body {
 .hero {
   grid-area: hero;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  /* Все строки по контенту: иначе строка с персонажем растягивалась
+     и отрывала спич-бабл от его головы. Центрируем группу целиком. */
+  grid-template-rows: auto auto auto auto;
   gap: var(--sp-4);
   align-content: center;
   justify-items: center;
   padding: var(--sp-1);
   min-height: 0;
 }
-.hero__bubble  { grid-row: 1; width: 100%; }
-.hero__display { grid-row: 2; align-self: center; margin: var(--sp-4); }
-.hero__plate   { grid-row: 3; width: 100%; }
+/* Бабл придвинут к персонажу: между ними только хвостик, поэтому
+   собственный отступ строки гасим отрицательным margin. */
+.hero__bubble    { grid-row: 1; width: 100%; margin-bottom: calc(-1 * var(--sp-2)); }
+.hero__display   { grid-row: 2; justify-self: center; margin: var(--sp-4); }
+.hero__nameplate { grid-row: 3; width: 100%; display: flex; gap: var(--sp-3); align-items: stretch; }
+.charstats       { grid-row: 4; width: 100%; }
 
 /* ---------- Колонка 3: контент ----------
    Контур .px-box рисуется снаружи бокса, поэтому overflow:hidden здесь
@@ -100,6 +112,18 @@ body {
   flex: 1 1 auto;
   min-height: 0;
   padding: var(--sp-4);
+}
+
+/* Подвал прибит к низу панели и не уезжает со скроллом контента. */
+.footer {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border-top: var(--bd) solid var(--ink);
 }
 
 /* ---------- Модалка (только <900px, см. 07-responsive) ---------- */

@@ -78,8 +78,56 @@
 
     if (!sections.length) console.error("[data.js] Нет ни одной валидной секции.");
 
+    /* ---- Инвентарь ---- */
+    var invRaw = SITE_DATA.inventory || {};
+    var invItems = (Array.isArray(invRaw.items) ? invRaw.items : []).filter(function (it, i) {
+      if (!it || !it.id || !ID_RE.test(it.id)) {
+        warn("inventory.items[" + i + "]: id обязателен (a-z, 0-9, дефис). Плитка пропущена.");
+        return false;
+      }
+      if (!it.label) warn('inventory.items[' + i + '] ("' + it.id + '"): нет label — подсказка будет пустой.');
+      return true;
+    });
+    // Счётчик считается по данным, а не пишется руками.
+    var unlocked = invItems.filter(function (it) { return it.unlocked !== false; }).length;
+
+    /* ---- Подвал ---- */
+    var footRaw = SITE_DATA.footer || {};
+    var footLinks = (Array.isArray(footRaw.links) ? footRaw.links : []).filter(function (l, i) {
+      if (!l || !l.url) { warn("footer.links[" + i + "]: нет url. Ссылка пропущена."); return false; }
+      if (!l.label) warn("footer.links[" + i + "]: нет label — нечего положить в aria-label.");
+      return true;
+    });
+
+    /* ---- Статы персонажа ---- */
+    var prof = SITE_DATA.profile || {};
+    var total = Number(prof.levelTotal) || 10;
+    var filled = Math.max(0, Math.min(total, Number(prof.levelFilled) || 0));
+    if (prof.levelFilled > total) {
+      warn("profile.levelFilled больше levelTotal — обрезано до " + total + ".");
+    }
+
     return {
       meta: SITE_DATA.meta || {},
+      profile: {
+        level: prof.level,
+        filled: filled,
+        total: total,
+        rows: Array.isArray(prof.rows) ? prof.rows : []
+      },
+      inventory: {
+        title: invRaw.title || "INVENTORY",
+        hint: invRaw.hint || "",
+        countLabel: invRaw.countLabel || "COLLECTED",
+        lockedLabel: invRaw.lockedLabel || "Locked",
+        items: invItems,
+        unlocked: unlocked,
+        total: invItems.length
+      },
+      footer: {
+        copyright: footRaw.copyright || "",
+        links: footLinks
+      },
       ui: SITE_DATA.ui || {},
       character: SITE_DATA.character || {},
       sections: sections,

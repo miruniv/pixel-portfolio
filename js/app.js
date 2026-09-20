@@ -173,6 +173,20 @@
 
   /* ====================================================== НАВИГАЦИЯ ==== */
 
+  /* Стрелки листают статы по кругу и пишут хэш — ровно как обычный клик
+     по стату, поэтому история, deeplink и подсветка работают сами собой. */
+  function stepSection(delta) {
+    var list = store.sections;
+    if (!list.length) return;
+    var i = -1;
+    for (var k = 0; k < list.length; k++) if (list[k].id === state.sectionId) { i = k; break; }
+    var next = i < 0
+      ? (delta > 0 ? 0 : list.length - 1)
+      : (i + delta % list.length + list.length) % list.length;
+    audio.click();
+    router.go(list[next].id, null);
+  }
+
   function goBack() {
     audio.back();
     router.go(state.sectionId, null);
@@ -264,6 +278,10 @@
   function init() {
     refs.screen = d.qs("#screen");
     refs.workspace = d.qs("#workspace");
+    refs.inventory = d.qs("#inventory");
+    refs.charstats = d.qs("#charstats");
+    refs.nameplate = d.qs("#nameplate");
+    refs.footer = d.qs("#footer");
     refs.stats = d.qs("#stats");
     refs.statList = d.qs("#stat-list");
     refs.content = d.qs("#content");
@@ -294,6 +312,16 @@
     // Статы
     refs.statList.appendChild(render.stats(store.sections));
 
+    // Инвентарь, статы персонажа и подвал — статичны, рисуем один раз
+    refs.inventory.appendChild(render.inventory(store.inventory));
+    refs.charstats.appendChild(render.charStats(store.profile));
+    refs.footer.appendChild(render.footer(store.footer));
+
+    // Стрелки по бокам плашки с именем
+    var plate = d.qs(".hero__plate", refs.nameplate);
+    refs.nameplate.insertBefore(render.navArrow(-1, ui.prevSection || "Previous section"), plate);
+    refs.nameplate.appendChild(render.navArrow(1, ui.nextSection || "Next section"));
+
     // Персонаж
     M.character.init({
       charEl: d.qs("#char"),
@@ -313,6 +341,9 @@
       if (t.closest('[data-action="back"]')) { goBack(); return; }
       if (t.closest("#modal-close") || t.closest(".modal__backdrop")) { goBack(); return; }
       if (t.closest("#sound-btn")) { audio.toggle(); return; }
+
+      var arrow = t.closest(".nav-arrow");
+      if (arrow) { stepSection(Number(arrow.dataset.step)); return; }
       if (t.closest("#menu-btn")) {
         audio.click();
         collapseStats(refs.stats.dataset.collapsed !== "true");
@@ -332,7 +363,7 @@
     d.on(document, "pointerover", function (e) {
       var t = e.target;
       if (!(t instanceof Element)) return;
-      if (t.closest(".stat, .card, .link, .back, .ribbon__item, .tbtn")) audio.hover();
+      if (t.closest(".stat, .card, .link, .back, .ribbon__item, .tbtn, .nav-arrow, .footer__link")) audio.hover();
     });
 
     /* --- Клавиатура --- */

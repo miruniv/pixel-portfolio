@@ -31,7 +31,7 @@
 
 <!-- ======================= BOOT-ЭКРАН ======================= -->
 <div class="boot" id="boot">
-  <div class="boot__window px-box px-drop">
+  <div class="boot__window px-box px-double px-drop">
     <p class="boot__label">LOADING</p>
     <div class="boot__bar px-box px-inset">
       <div class="boot__fill" id="boot-fill"></div>
@@ -40,7 +40,7 @@
 </div>
 
 <!-- ======================= ОКНО ======================= -->
-<div class="screen px-box px-drop" id="screen">
+<div class="screen px-box px-double px-drop" id="screen">
 
   <header class="titlebar">
     <div class="titlebar__left">
@@ -77,9 +77,15 @@
          Осознанно nav + aria-current, а НЕ role="tablist": паттерн табов
          требует roving tabindex (один Tab-стоп, переключение стрелками),
          а здесь нужен обычный Tab по каждому стату. Стрелки работают сверху. -->
-    <nav class="stats" id="stats" aria-label="Sections">
-      <ul class="stats__list" id="stat-list"></ul>
-    </nav>
+    <div class="col-left" id="col-left">
+      <nav class="stats" id="stats" aria-label="Sections">
+        <ul class="stats__list" id="stat-list"></ul>
+      </nav>
+
+      <!-- Заполняется из SITE_DATA.inventory. Счётчик COLLECTED считается
+           по данным, см. js/store.js -->
+      <section class="inv px-box px-double" id="inventory" aria-labelledby="inv-title"></section>
+    </div>
 
     <!-- Колонка 2: персонаж -->
     <div class="hero">
@@ -88,20 +94,26 @@
         <span class="sr-only" id="bubble-sr"></span>
       </div>
 
-      <div class="hero__display display px-box">
-        <div class="display__inner px-box px-inset px-dots">
+      <div class="hero__display display px-box px-double">
+        <div class="display__inner">
           <div class="char" id="char"></div>
         </div>
       </div>
 
-      <p class="hero__plate px-box"><span id="plate-text"></span></p>
+      <!-- Стрелки вставляет app.js: подписи берутся из SITE_DATA.ui -->
+      <div class="hero__nameplate" id="nameplate">
+        <p class="hero__plate px-box"><span id="plate-text"></span></p>
+      </div>
+
+      <section class="charstats px-box" id="charstats" aria-label="Character stats"></section>
     </div>
 
     <!-- Колонка 3: контент.
          Контур .px-box рисуется снаружи, поэтому скроллит вложенный #content. -->
-    <div class="content-frame px-box">
+    <div class="content-frame px-box px-double">
       <main class="content scroll-y" id="content"
             role="region" aria-labelledby="content-title" tabindex="-1"></main>
+      <footer class="footer" id="footer"></footer>
     </div>
 
   </div>
@@ -111,7 +123,7 @@
 <div class="modal" id="modal" data-open="false"
      role="dialog" aria-modal="true" aria-labelledby="modal-title">
   <div class="modal__backdrop"></div>
-  <div class="modal__window px-box px-drop">
+  <div class="modal__window px-box px-double px-drop">
     <div class="modal__bar">
       <h2 class="modal__title" id="modal-title"></h2>
       <button type="button" class="modal__close px-box px-face"
@@ -150,7 +162,6 @@
 <script src="./js/render.js"></script>
 <script src="./js/router.js"></script>
 <script src="./js/app.js"></script>
-
 <pre id="RESULTS" style="position:fixed;left:0;top:0;z-index:999;background:#fff;font:12px monospace"></pre>
 <script>
 (function () {
@@ -404,6 +415,155 @@
       ok("гамбургер сворачивает статы", $("#stats").dataset.collapsed === "true");
       $("#menu-btn").click(); await tick(20);
 
+
+      // ==================== ИНВЕНТАРЬ ====================
+      head("инвентарь");
+      var invItems = SITE_DATA.inventory.items;
+      var tiles = $$(".inv__tile");
+      ok("плиток столько же, сколько в данных", tiles.length === invItems.length,
+         tiles.length + " != " + invItems.length);
+      ok("у ВСЕХ плиток есть aria-label",
+         tiles.every(function (t) { return (t.getAttribute("aria-label") || "").trim().length > 0; }),
+         tiles.filter(function (t) { return !t.getAttribute("aria-label"); }).length + " без label");
+      ok("у всех плиток есть нативная подсказка title",
+         tiles.every(function (t) { return (t.getAttribute("title") || "").trim().length > 0; }));
+      ok("aria-label совпадает с title",
+         tiles.every(function (t) { return t.getAttribute("aria-label") === t.getAttribute("title"); }));
+      ok("подпись плитки берётся из label в данных",
+         tiles[0].getAttribute("aria-label") === invItems[0].label,
+         tiles[0].getAttribute("aria-label"));
+
+      var lockedData = invItems.filter(function (i) { return i.unlocked === false; });
+      var lockedTiles = $$(".inv__tile--locked");
+      ok("закрытых плиток столько же, сколько в данных",
+         lockedTiles.length === lockedData.length, lockedTiles.length + " != " + lockedData.length);
+      ok("закрытая плитка рисуется пунктиром",
+         lockedTiles.length > 0 &&
+         getComputedStyle(lockedTiles[0]).borderTopStyle === "dashed",
+         lockedTiles.length ? getComputedStyle(lockedTiles[0]).borderTopStyle : "нет плитки");
+      ok("на закрытой плитке знак вопроса",
+         lockedTiles.length > 0 && lockedTiles[0].textContent.indexOf("?") > -1);
+      ok("у закрытой плитки в подписи указано, что она закрыта",
+         lockedTiles[0].getAttribute("aria-label").indexOf(SITE_DATA.inventory.lockedLabel) === 0,
+         lockedTiles[0].getAttribute("aria-label"));
+
+      // счётчик считается из данных, а не зашит
+      var unlockedCount = invItems.filter(function (i) { return i.unlocked !== false; }).length;
+      var countText = $(".inv__count").textContent.replace(/\s+/g, " ").trim();
+      var expected = unlockedCount + " / " + invItems.length + " " + SITE_DATA.inventory.countLabel;
+      ok("счётчик COLLECTED совпадает с данными", countText === expected,
+         "«" + countText + "» ожидалось «" + expected + "»");
+
+      // и меняется, если поменять данные
+      var savedUnlocked = invItems[0].unlocked;
+      invItems[0].unlocked = false;
+      var rebuilt = MIRA.render.inventory({
+        title: "X", hint: "", countLabel: SITE_DATA.inventory.countLabel, lockedLabel: "Locked",
+        items: invItems,
+        unlocked: invItems.filter(function (i) { return i.unlocked !== false; }).length,
+        total: invItems.length
+      });
+      var probe = document.createElement("div");
+      probe.appendChild(rebuilt);
+      ok("счётчик пересчитывается, а не захардкожен",
+         probe.querySelector(".inv__count").textContent.indexOf((unlockedCount - 1) + " / ") === 0,
+         probe.querySelector(".inv__count").textContent);
+      invItems[0].unlocked = savedUnlocked;
+
+      // ==================== СТАТЫ ПЕРСОНАЖА ====================
+      head("статы персонажа");
+      var cells = $$(".lvlbar__cell");
+      ok("ячеек шкалы столько же, сколько в данных",
+         cells.length === SITE_DATA.profile.levelTotal, cells.length);
+      ok("закрашено ровно levelFilled ячеек",
+         $$(".lvlbar__cell.is-on").length === SITE_DATA.profile.levelFilled,
+         $$(".lvlbar__cell.is-on").length);
+      ok("шкала не градиент, а отдельные элементы", cells.length > 1);
+      ok("у шкалы есть текстовая альтернатива",
+         ($(".lvlbar").getAttribute("aria-label") || "").indexOf(String(SITE_DATA.profile.level)) > -1,
+         $(".lvlbar").getAttribute("aria-label"));
+      ok("строк STATUS/LOCATION/NOW столько же, сколько в данных",
+         $$(".charstats__rows dt").length === SITE_DATA.profile.rows.length);
+      ok("значения строк взяты из данных",
+         $$(".charstats__rows dd").map(function (n) { return n.textContent; }).join("|") ===
+         SITE_DATA.profile.rows.map(function (r) { return r.value; }).join("|"));
+
+      // ==================== СТРЕЛКИ ====================
+      head("стрелки листают статы по кругу");
+      var ids = SITE_DATA.sections.map(function (s) { return s.id; });
+      var next = $('.nav-arrow[data-step="1"]');
+      var prev = $('.nav-arrow[data-step="-1"]');
+      ok("обе стрелки на месте", !!next && !!prev);
+      ok("у стрелок есть aria-label",
+         !!next.getAttribute("aria-label") && !!prev.getAttribute("aria-label"),
+         next.getAttribute("aria-label") + " / " + prev.getAttribute("aria-label"));
+
+      location.hash = "#" + ids[0]; await tick();
+      next.click(); await tick(120);
+      ok("→ переводит на следующий стат", location.hash === "#" + ids[1], location.hash);
+      ok("→ обновляет подсветку стата",
+         $('.stat[data-section="' + ids[1] + '"]').getAttribute("aria-current") === "true");
+
+      // до конца списка и через край
+      location.hash = "#" + ids[ids.length - 1]; await tick();
+      next.click(); await tick(120);
+      ok("→ с последнего заворачивается на первый", location.hash === "#" + ids[0], location.hash);
+
+      prev.click(); await tick(120);
+      ok("← с первого заворачивается на последний",
+         location.hash === "#" + ids[ids.length - 1], location.hash);
+
+      prev.click(); await tick(120);
+      ok("← идёт назад по списку",
+         location.hash === "#" + ids[ids.length - 2], location.hash);
+
+      // полный круг возвращает туда же
+      location.hash = "#" + ids[0]; await tick();
+      for (var st = 0; st < ids.length; st++) { next.click(); await tick(90); }
+      ok("полный круг из " + ids.length + " шагов возвращает на старт",
+         location.hash === "#" + ids[0], location.hash);
+
+      // из IDLE
+      location.hash = ""; await tick(120);
+      next.click(); await tick(120);
+      ok("→ из пустого состояния открывает первый стат",
+         location.hash === "#" + ids[0], location.hash);
+
+      // ==================== ПОДВАЛ ====================
+      head("подвал");
+      var flinks = $$(".footer__link");
+      ok("ссылок столько же, сколько в данных",
+         flinks.length === SITE_DATA.footer.links.length, flinks.length);
+      ok("у всех ссылок подвала есть aria-label и title",
+         flinks.every(function (a) { return a.getAttribute("aria-label") && a.getAttribute("title"); }));
+      ok("подписи не выводятся текстом — только иконки",
+         flinks.every(function (a) { return a.textContent.trim() === ""; }));
+      ok("внешние ссылки подвала с rel=noopener",
+         flinks.filter(function (a) { return a.getAttribute("target"); })
+               .every(function (a) { return (a.getAttribute("rel") || "").indexOf("noopener") > -1; }));
+      ok("копирайт из данных", $(".footer__copy").textContent === SITE_DATA.footer.copyright,
+         $(".footer__copy").textContent);
+      ok("подвал прибит к низу панели, вне скроллящейся области",
+         $(".footer").parentElement === $(".content-frame") &&
+         !$(".content").contains($(".footer")));
+
+      // ==================== ЛЕНТА СОСЕДЕЙ ====================
+      head("кнопки ленты соседей");
+      location.hash = "#projects/pixel-timer"; await tick(140);
+      var ribs = $$(".ribbon__item");
+      ok("кнопки ленты без текстовых подписей",
+         ribs.every(function (b) { return b.textContent.trim() === ""; }),
+         ribs.map(function (b) { return b.textContent.trim(); }).join(","));
+      ok("у кнопок ленты есть aria-label и title",
+         ribs.every(function (b) { return b.getAttribute("aria-label") && b.getAttribute("title"); }));
+      ok("кнопки ленты квадратные",
+         ribs.every(function (b) {
+           var r = b.getBoundingClientRect();
+           return Math.abs(r.width - r.height) <= 1 && r.width >= 40;
+         }), ribs.map(function (b) {
+           var r = b.getBoundingClientRect(); return Math.round(r.width) + "x" + Math.round(r.height);
+         }).join(" "));
+
       head("регресс: геометрия и тексты");
       ok("у всех img есть alt", $$("img").every(function (i) { return i.hasAttribute("alt"); }));
       ok("нет горизонтального скролла",
@@ -451,6 +611,5 @@
   });
 })();
 </script>
-
 </body>
 </html>

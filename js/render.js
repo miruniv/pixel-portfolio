@@ -44,6 +44,66 @@
     external: [
       ["i",8,3,6,2],["i",12,3,2,6],
       ["i",10,5,2,2],["i",8,7,2,2],["i",6,9,2,2],["i",4,11,2,2]
+    ],
+    arrowRight: [
+      ["i",11,7,2,2],
+      ["i",9,5,2,2],["i",9,9,2,2],
+      ["i",7,3,2,2],["i",7,11,2,2],
+      ["i",2,7,9,2]
+    ],
+    // Обобщённая «карточка» — для квадратных кнопок ленты соседей,
+    // у которых нет своего превью. Название несут title и aria-label.
+    item: [["i",3,3,10,10],["f",4,4,8,8],["a",5,6,6,1],["a",5,8,4,1]],
+
+    /* ---- Инвентарь ---- */
+    keyboard: [
+      ["i",1,5,14,7],["f",2,6,12,5],
+      ["i",3,7,1,1],["i",5,7,1,1],["i",7,7,1,1],["i",9,7,1,1],["i",11,7,1,1],
+      ["i",5,9,6,1]
+    ],
+    mouse: [["i",4,2,8,12],["f",5,3,6,10],["i",5,8,6,1],["a",7,4,2,3]],
+    coffee: [
+      ["i",2,5,9,7],["f",3,6,7,5],
+      ["i",11,6,3,1],["i",13,7,1,2],["i",11,9,3,1],
+      ["i",1,13,11,1],
+      ["a",4,2,1,2],["a",7,2,1,2]
+    ],
+    floppy: [
+      ["i",2,2,12,12],["f",3,3,10,10],
+      ["i",5,3,6,4],["f",8,4,2,2],
+      ["i",4,9,8,4],["f",5,10,6,2]
+    ],
+    headphones: [
+      ["i",4,2,8,2],["i",3,3,1,4],["i",12,3,1,4],
+      ["i",2,7,3,5],["i",11,7,3,5],
+      ["f",3,8,1,3],["f",12,8,1,3]
+    ],
+    book: [
+      ["i",3,2,10,12],["f",4,3,8,10],["a",4,3,2,10],
+      ["i",7,5,4,1],["i",7,7,4,1],["i",7,9,4,1]
+    ],
+    cassette: [
+      ["i",1,4,14,8],["f",2,5,12,6],
+      ["i",4,7,3,3],["i",9,7,3,3],
+      ["f",5,8,1,1],["f",10,8,1,1],
+      ["a",7,8,2,1]
+    ],
+    plant: [
+      ["i",4,10,8,5],["f",5,11,6,3],["i",7,6,2,5],
+      ["m",3,4,4,3],["m",9,4,4,3],["m",6,2,4,3]
+    ],
+
+    /* ---- Подвал. Логотипы брендов не воспроизводим: рисуем нейтральные
+       глифы, а название несут title и aria-label. ---- */
+    code: [
+      ["i",4,4,2,2],["i",2,6,2,3],["i",4,9,2,2],
+      ["i",10,4,2,2],["i",12,6,2,3],["i",10,9,2,2],
+      ["a",9,3,1,3],["a",8,6,1,3],["a",7,9,1,3]
+    ],
+    badge: [["i",6,2,4,4],["f",7,3,2,2],["i",3,8,10,6],["f",4,9,8,4]],
+    document: [
+      ["i",3,1,10,14],["f",4,2,8,12],
+      ["a",5,4,6,1],["a",5,6,6,1],["a",5,8,6,1],["a",5,10,4,1]
     ]
   };
   var ICON_ORDER = ["heart", "briefcase", "monitor", "star", "envelope"];
@@ -236,7 +296,7 @@
           dataset: { section: section.id, item: it.id, sibling: "1" }
         }, it.thumb
           ? el("img", { src: it.thumb, alt: "" })
-          : el("span", { "aria-hidden": "true", text: (it.title || "?").charAt(0) })
+          : d.pixelArt(ICONS.item, 16)
         ));
       });
       bar.appendChild(ribbon);
@@ -251,8 +311,107 @@
     return frag;
   }
 
+  /* ------------------------------------------------------ ИНВЕНТАРЬ ---- */
+  function inventory(inv) {
+    var frag = document.createDocumentFragment();
+
+    frag.appendChild(el("h2", { class: "inv__title", id: "inv-title" }, [
+      el("span", { text: inv.title }),
+      el("span", { class: "inv__rule", "aria-hidden": "true" })
+    ]));
+
+    var grid = el("ul", { class: "inv__grid" });
+    inv.items.forEach(function (it) {
+      var locked = it.unlocked === false;
+      var name = it.label || it.id;
+      // Подсказка нативная (title) + то же самое в aria-label для скринридера.
+      var label = locked ? inv.lockedLabel + ": " + name : name;
+      var tile = el("span", {
+        class: "inv__tile px-box" + (locked ? " inv__tile--locked" : " px-bevel"),
+        role: "img",
+        title: label,
+        "aria-label": label
+      }, locked
+        ? el("span", { class: "inv__q", "aria-hidden": "true", text: "?" })
+        : d.pixelArt(ICONS[it.icon] || ICONS.item, 16));
+      grid.appendChild(el("li", null, tile));
+    });
+    frag.appendChild(grid);
+
+    // Счётчик всегда из данных, руками не пишется.
+    frag.appendChild(el("p", { class: "inv__count", id: "inv-count" },
+      inv.unlocked + " / " + inv.total + " " + inv.countLabel));
+    if (inv.hint) frag.appendChild(el("p", { class: "inv__hint", text: inv.hint }));
+    return frag;
+  }
+
+  /* ------------------------------------------- СТАТЫ ПЕРСОНАЖА ---- */
+  function charStats(p) {
+    var frag = document.createDocumentFragment();
+
+    // Шкала из отдельных квадратиков, а не градиент: так она остаётся
+    // пиксельной на любом масштабе.
+    var bar = el("div", {
+      class: "lvlbar",
+      role: "img",
+      "aria-label": "Level " + p.level + ": " + p.filled + " of " + p.total
+    });
+    for (var i = 0; i < p.total; i++) {
+      bar.appendChild(el("span", {
+        class: "lvlbar__cell" + (i < p.filled ? " is-on" : ""),
+        "aria-hidden": "true"
+      }));
+    }
+    frag.appendChild(el("div", { class: "charstats__lvl" }, [
+      el("span", { class: "charstats__lvlnum", text: "LVL " + p.level }),
+      bar
+    ]));
+
+    var dl = el("dl", { class: "charstats__rows" });
+    p.rows.forEach(function (r) {
+      dl.appendChild(el("dt", { text: r.label }));
+      dl.appendChild(el("dd", { text: r.value }));
+    });
+    frag.appendChild(dl);
+    return frag;
+  }
+
+  /* ---------------------------------------------------------- ПОДВАЛ ---- */
+  function footer(f) {
+    var frag = document.createDocumentFragment();
+
+    var links = el("ul", { class: "footer__links" });
+    f.links.forEach(function (l) {
+      var external = /^https?:/i.test(l.url);
+      links.appendChild(el("li", null, el("a", {
+        class: "footer__link px-box",
+        href: l.url,
+        title: l.label,
+        "aria-label": l.label,
+        target: external ? "_blank" : null,
+        rel: external ? "noopener noreferrer" : null
+      }, d.pixelArt(ICONS[l.icon] || ICONS.document, 16))));
+    });
+    frag.appendChild(links);
+
+    if (f.copyright) frag.appendChild(el("p", { class: "footer__copy", text: f.copyright }));
+    return frag;
+  }
+
+  /* ---------------------------------------- СТРЕЛКИ У ПЛАШКИ ИМЕНИ ---- */
+  function navArrow(dir, label) {
+    return el("button", {
+      type: "button",
+      class: "nav-arrow px-box px-face",
+      dataset: { step: dir > 0 ? "1" : "-1" },
+      title: label,
+      "aria-label": label
+    }, d.pixelArt(dir > 0 ? ICONS.arrowRight : ICONS.arrowLeft, 16));
+  }
+
   M.render = {
     stats: stats, hint: hint, grid: grid, page: page, detail: detail,
-    appIcon: appIcon, icons: ICONS
+    appIcon: appIcon, icons: ICONS,
+    inventory: inventory, charStats: charStats, footer: footer, navArrow: navArrow
   };
 })(window.MIRA);

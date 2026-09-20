@@ -77,9 +77,15 @@
          Осознанно nav + aria-current, а НЕ role="tablist": паттерн табов
          требует roving tabindex (один Tab-стоп, переключение стрелками),
          а здесь нужен обычный Tab по каждому стату. Стрелки работают сверху. -->
-    <nav class="stats" id="stats" aria-label="Sections">
-      <ul class="stats__list" id="stat-list"></ul>
-    </nav>
+    <div class="col-left" id="col-left">
+      <nav class="stats" id="stats" aria-label="Sections">
+        <ul class="stats__list" id="stat-list"></ul>
+      </nav>
+
+      <!-- Заполняется из SITE_DATA.inventory. Счётчик COLLECTED считается
+           по данным, см. js/store.js -->
+      <section class="inv px-box px-double" id="inventory" aria-labelledby="inv-title"></section>
+    </div>
 
     <!-- Колонка 2: персонаж -->
     <div class="hero">
@@ -94,7 +100,12 @@
         </div>
       </div>
 
-      <p class="hero__plate px-box"><span id="plate-text"></span></p>
+      <!-- Стрелки вставляет app.js: подписи берутся из SITE_DATA.ui -->
+      <div class="hero__nameplate" id="nameplate">
+        <p class="hero__plate px-box"><span id="plate-text"></span></p>
+      </div>
+
+      <section class="charstats px-box" id="charstats" aria-label="Character stats"></section>
     </div>
 
     <!-- Колонка 3: контент.
@@ -102,6 +113,7 @@
     <div class="content-frame px-box px-double">
       <main class="content scroll-y" id="content"
             role="region" aria-labelledby="content-title" tabindex="-1"></main>
+      <footer class="footer" id="footer"></footer>
     </div>
 
   </div>

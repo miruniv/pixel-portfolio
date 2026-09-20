@@ -29,7 +29,9 @@ const SITE_DATA = {
     soundOn: "SOUND ON",
     soundOff: "SOUND OFF",
     menu: "TOGGLE MENU",
-    close: "CLOSE"
+    close: "CLOSE",
+    prevSection: "Previous section",
+    nextSection: "Next section"
   },
 
   /* ----------------------------------------------------------- ПЕРСОНАЖ -- */
@@ -60,6 +62,52 @@ const SITE_DATA = {
     plate: "MIRA",                           // плашка под рамкой
     alt: "Pixel-art character: a girl with long dark hair, glasses and a black hoodie",
     idleBubble: "hi! pick a stat to begin ♥"
+  },
+
+  /* ------------------------------------------------- СТАТЫ ПЕРСОНАЖА -- */
+  /* Панель под плашкой с именем в центральной колонке. */
+  profile: {
+    level: 22,
+    levelFilled: 7,          // сколько ячеек шкалы закрашено
+    levelTotal: 10,          // всего ячеек; счётчик в aria берётся отсюда
+    rows: [
+      { label: "STATUS",   value: "Open to work" },
+      { label: "LOCATION", value: "London, UK" },
+      { label: "NOW",      value: "Learning Three.js" }
+    ]
+  },
+
+  /* ---------------------------------------------------------- ИНВЕНТАРЬ -- */
+  /* Сетка в левой колонке. Строка «N / M COLLECTED» считается по unlocked,
+     руками её писать не нужно. Иконки — имена из ICONS в js/render.js. */
+  inventory: {
+    title: "INVENTORY",
+    hint: "Hover an item to inspect",
+    countLabel: "COLLECTED",
+    lockedLabel: "Locked",
+    items: [
+      { id: "keyboard",   label: "Mechanical keyboard", icon: "keyboard",   unlocked: true },
+      { id: "mouse",      label: "Trackball mouse",     icon: "mouse",      unlocked: true },
+      { id: "coffee",     label: "Third coffee today",  icon: "coffee",     unlocked: true },
+      { id: "floppy",     label: "Floppy disk",         icon: "floppy",     unlocked: true },
+      { id: "headphones", label: "Headphones",          icon: "headphones", unlocked: true },
+      { id: "book",       label: "CSS reference book",  icon: "book",       unlocked: true },
+      { id: "cassette",   label: "Chiptune cassette",   icon: "cassette",   unlocked: true },
+      { id: "plant",      label: "Desk plant",          icon: "plant",      unlocked: true },
+      { id: "secret",     label: "Not found yet",       icon: null,         unlocked: false }
+    ]
+  },
+
+  /* -------------------------------------------------------------- ПОДВАЛ -- */
+  /* Прибит к низу правой панели. Иконки — имена из ICONS в js/render.js. */
+  footer: {
+    copyright: "\u00A9 2026 Mira \u00B7 Made with HTML",
+    links: [
+      { label: "GitHub",   url: "https://github.com/example",       icon: "code" },
+      { label: "Email",    url: "mailto:mira@example.com",          icon: "envelope" },
+      { label: "LinkedIn", url: "https://linkedin.com/in/example",  icon: "badge" },
+      { label: "CV",       url: "./cv.pdf",                         icon: "document" }
+    ]
   },
 
   /* ------------------------------------------------------------- СЕКЦИИ -- */

@@ -69,7 +69,9 @@ window.MIRA = window.MIRA || {};
     a: "var(--accent)",
     g: "var(--gold)",
     p: "var(--display)",
-    t: "var(--tile)"
+    t: "var(--tile)",
+    m: "var(--mint)",
+    w: "#FFFFFF"
   };
 
   function pixelArt(rects, size, title) {
