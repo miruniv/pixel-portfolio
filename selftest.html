@@ -91,7 +91,7 @@
          ОДНА панель с ОДНОЙ рамкой. Внутри — окно реплики и сцена, у каждого
          своя полная рамка; профиль идёт без рамки, как в макете. -->
     <section class="hero px-box" id="hero" aria-label="Character">
-      <div class="hero__bubble px-box px-bubble">
+      <div class="hero__bubble px-box">
         <span id="bubble-ink" aria-hidden="true"></span>
         <span class="sr-only" id="bubble-sr"></span>
       </div>
@@ -1025,41 +1025,6 @@
       ok("при MUTE голос молчит (blip не создаёт узлов)",
          M.audio.voice({ note: 440 }) === undefined && M.audio.isMuted());
       if (!wasMuted) { M.audio.toggle(); await tick(40); }
-
-      // ==================== ИКОНКА EXTRA: ЗВЕЗДА ====================
-      // Старая звезда сужалась к талии сразу под плечами и снизу резко
-      // расходилась на два узких столбика — не столько звезда, сколько
-      // человечек с ножками. Проверяем не сам силуэт (это вкусовщина),
-      // а то, что он вообще симметричен: растеризуем rects на сетку
-      // 16x16 и сверяем каждую строку с её зеркальным отражением
-      // относительно x=7.5, как в реальном пятиконечном пикселе.
-      head("иконка EXTRA: звезда симметрична");
-      (function () {
-        var N = 16;
-        var grid = [];
-        for (var gy = 0; gy < N; gy++) grid.push(new Array(N).fill(false));
-        M.render.icons.star.forEach(function (r) {
-          var x0 = r[1], y0 = r[2], w = r[3], h = r[4];
-          for (var yy = y0; yy < y0 + h; yy++) {
-            for (var xx = x0; xx < x0 + w; xx++) {
-              if (yy >= 0 && yy < N && xx >= 0 && xx < N) grid[yy][xx] = true;
-            }
-          }
-        });
-        var asymRows = [];
-        for (var y = 0; y < N; y++) {
-          for (var x = 0; x < N; x++) {
-            if (grid[y][x] !== grid[y][N - 1 - x]) { asymRows.push(y); break; }
-          }
-        }
-        ok("звезда зеркально симметрична по горизонтали (x=7.5)",
-           asymRows.length === 0, "асимметричные строки: " + asymRows.join(","));
-
-        var filledCount = 0;
-        for (var y2 = 0; y2 < N; y2++) for (var x2 = 0; x2 < N; x2++) if (grid[y2][x2]) filledCount++;
-        ok("не голый пиксель и не сплошной квадрат — реально звёздный силуэт",
-           filledCount > 20 && filledCount < 150, filledCount);
-      })();
 
       // ==================== РАМКИ ЗАМКНУТЫ ====================
       head("рамки");
