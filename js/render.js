@@ -412,8 +412,11 @@
       act.hint ? el("span", { class: "actions__hint", text: act.hint }) : null
     ]));
 
-    var primary = act.items.filter(function (a) { return a.kind === "primary"; });
-    var slots = act.items.filter(function (a) { return a.kind !== "primary"; });
+    // visible: false — действие остаётся в данных (голос, спрайты, фразы),
+    // но не попадает в DOM вовсе, не просто прячется стилями.
+    var shown = act.items.filter(function (a) { return a.visible !== false; });
+    var primary = shown.filter(function (a) { return a.kind === "primary"; });
+    var slots = shown.filter(function (a) { return a.kind !== "primary"; });
 
     // Обёртка нужна мобильной раскладке: там оба блока становятся одной
     // горизонтальной лентой, два главных действия идут первыми.

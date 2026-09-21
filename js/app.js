@@ -372,7 +372,10 @@
   function warmActionSprites() {
     var items = (store.actions && store.actions.items) || [];
     var run = function () {
-      items.forEach(function (a) { if (a.sprites) M.character.preloadAction(a.sprites); });
+      // visible: false — скрыто из панели, прогревать сейчас незачем.
+      items.forEach(function (a) {
+        if (a.sprites && a.visible !== false) M.character.preloadAction(a.sprites);
+      });
     };
     if (window.requestIdleCallback) window.requestIdleCallback(run, { timeout: 2000 });
     else window.setTimeout(run, 300);

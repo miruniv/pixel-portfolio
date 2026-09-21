@@ -142,8 +142,14 @@ const SITE_DATA = {
         feedback: "PLAY MUSIC \u00B7 SHE'S DANCING NOW",
         feedbackOff: "MUSIC OFF \u00B7 BACK TO WORK"
       },
+      // Пять слотов ниже спрятаны из панели (visible: false), но не
+      // удалены: записи, спрайты и голос остаются в данных, чтобы их можно
+      // было вернуть позже простой сменой флага. render.js отфильтровывает
+      // всё с visible === false ДО разбивки на primary/slots — они никогда
+      // не попадают в DOM, а не просто скрыты стилями.
       { id: "think", label: "THINK", icon: "think",
         kind: "slot", type: "oneshot", sprites: "think", sfx: "think",
+        visible: false,
         // Ниже и медленнее обычного — своя интонация
         voice: { note: 300, speed: 46 },
         line: "LET ME THINK ABOUT IT\u2026",
@@ -151,21 +157,25 @@ const SITE_DATA = {
         overlays: ["dots", "bulb"] },
       { id: "energy", label: "ENERGY", icon: "can",
         kind: "slot", type: "oneshot", sprites: "drinkEnergydrink", sfx: "can",
+        visible: false,
         line: "ONE MORE AND I CAN SHIP THIS",
         feedback: "ENERGY \u00B7 +10 ENERGY",
         overlays: ["energy"] },
       { id: "debug", label: "DEBUG", icon: "bug",
         kind: "slot", type: "oneshot", sprites: "debug", sfx: "bug",
+        visible: false,
         line: "FOUND YOU, LITTLE BUG",
         feedback: "DEBUG \u00B7 ONE LESS BUG",
         overlays: ["bug"] },
       { id: "photo", label: "TAKE PHOTO", icon: "camera",
         kind: "slot", type: "oneshot", sprites: "takePhoto", sfx: "shutter",
+        visible: false,
         line: "SAY CHEESE!",
         feedback: "TAKE PHOTO \u00B7 SMILE",
         overlays: ["flash"] },
       { id: "sayhi", label: "SAY HI", icon: "wave",
         kind: "slot", type: "oneshot", sprites: "sayHi", sfx: "wave",
+        visible: false,
         // Выше обычного
         voice: { note: 560 },
         line: "Hi, I am Mira!",

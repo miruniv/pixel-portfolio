@@ -27,19 +27,6 @@
   .acts { margin: 0; padding: max(var(--sp-2), var(--px-clear)); gap: max(var(--sp-2), var(--px-clear)); }
   .actions__row { gap: max(var(--sp-2), var(--px-clear)); }
   .actions__primary, .actions__grid { gap: max(var(--sp-2), var(--px-clear)); }
-  /* 130-140px из вёрстки на весь их бюджет на низком экране не влезают
-     вместе с пятью слотами и строкой статуса — слоты трогать нельзя (см.
-     выше), поэтому здесь ужимаются PLAY MUSIC и MUTE. На этой высоте они
-     сравниваются со слотом (60px) — шире его (делят пополам ряд, а не
-     треть), но не выше; выше уже не влезает без наезда на статус-строку.
-     Иконка и подпись тоже уменьшаются до размера слота — на 60px крупная
-     иконка (28px) и две строки fs-sm не помещаются. */
-  .act--primary {
-    height: 60px;
-    font-size: var(--fs-xs);
-    gap: var(--sp-1);
-  }
-  .act--primary .act__icon svg { width: 18px; height: 18px; }
   .hero { margin: var(--sp-2); padding: max(var(--sp-2), var(--px-clear)); gap: max(var(--sp-3), var(--px-clear)); }
   .content-frame { margin: var(--sp-2); }
 }
@@ -106,37 +93,13 @@
   /* Список статов сворачивается гамбургером, чтобы контент был ближе */
   .stats[data-collapsed="true"] .stats__list { display: none; }
 
-  /* Действия — одна горизонтальная лента, два главных первыми.
-     Оба контейнера становятся flex-строками внутри общей прокрутки,
-     поэтому визуально это один непрерывный ряд. */
-  /* flex: 0 0 auto обязателен: overflow-x: auto делает элемент скролл-
-     контейнером по ОБЕИМ осям, а у такого минимальный размер во flex равен
-     нулю — без этого ряд схлопывается, а кнопки вылезают за панель.
-     overflow-y: hidden убирает заодно паразитный вертикальный скролл. */
-  .actions__row {
-    display: flex;
-    flex: 0 0 auto;
-    gap: var(--sp-3);
-    overflow-x: auto;
-    overflow-y: hidden;
-    overscroll-behavior-x: contain;
-    scroll-snap-type: x proximity;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: var(--sp-2);
-  }
-  .actions__primary,
-  .actions__grid {
-    display: flex;
-    gap: var(--sp-3);
-    flex: 0 0 auto;
-    grid-template-columns: none;
-  }
-  .actions__row .act {
-    flex: 0 0 auto;
-    scroll-snap-align: start;
-  }
-  .act--primary { width: 104px; min-height: 88px; }
-  .act--slot { width: 88px; height: 88px; aspect-ratio: auto; }
+  /* Раньше здесь была горизонтальная лента с прокруткой — она была нужна,
+     чтобы 2 primary + 5 слотов помещались на узкий экран. Слотов больше
+     нет (см. data.js: visible: false), primary всего два, и они обязаны
+     делить ширину панели поровну и быть крупными для тапа — то есть
+     просто та же сетка в 2 колонки и та же высота 136px, что и на
+     десктопе (правило .act--primary из 05-components.css), никакого
+     отдельного мобильного переопределения тут больше не нужно. */
 
   /* Навигация — горизонтальная лента с полными подписями, без сокращений */
   .stats__list {

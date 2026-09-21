@@ -646,54 +646,66 @@
          }).join(" "));
 
       // ==================== ПАНЕЛЬ ДЕЙСТВИЙ ====================
-      head("панель действий");
+      head("панель действий: только PLAY MUSIC и MUTE, остальное спрятано");
       var acts = $$(".act");
       var byId = function (id) { return $('.act[data-action="' + id + '"]'); };
-      ok("действий столько же, сколько в данных",
-         acts.length === SITE_DATA.actions.items.length, acts.length);
-      ok("две большие кнопки (PLAY MUSIC, MUTE) и пять маленьких",
-         $$(".act--primary").length === 2 && $$(".act--slot").length === 5,
+      var HIDDEN_IDS = ["think", "energy", "debug", "photo", "sayhi"];
+
+      ok("в DOM только 2 действия", acts.length === 2, acts.length);
+      ok("обе — primary, слотов в DOM нет вовсе",
+         $$(".act--primary").length === 2 && $$(".act--slot").length === 0,
          $$(".act--primary").length + " / " + $$(".act--slot").length);
-      ok("состав действий по макету: MUTE — второй primary, рядом с PLAY MUSIC",
-         acts.map(function (n) { return n.dataset.action; }).join(",") ===
-         "music,mute,think,energy,debug,photo,sayhi",
+      ok("состав: PLAY MUSIC, MUTE, в этом порядке",
+         acts.map(function (n) { return n.dataset.action; }).join(",") === "music,mute",
          acts.map(function (n) { return n.dataset.action; }).join(","));
-      // На узком экране действия — горизонтальная лента, там свои размеры
-      var wideActs = window.innerWidth > 900;
+
+      // Скрытые данные остаются в SITE_DATA и в сторе — их не удалили,
+      // просто не рендерят. Чтобы вернуть — снять visible: false в data.js.
+      ok("в SITE_DATA.actions.items по-прежнему все 7 записей",
+         SITE_DATA.actions.items.length === 7, SITE_DATA.actions.items.length);
+      ok("пять из них помечены visible: false в исходных данных",
+         HIDDEN_IDS.every(function (id) {
+           var raw = SITE_DATA.actions.items.find(function (a) { return a.id === id; });
+           return raw && raw.visible === false;
+         }));
+      ok("store.actions.items тоже хранит все 7, включая скрытые",
+         M.store.actions.items.length === 7, M.store.actions.items.length);
+      ok("store помечает их visible: false (нормализовано, не undefined)",
+         HIDDEN_IDS.every(function (id) {
+           return M.store.actions.byId[id] && M.store.actions.byId[id].visible === false;
+         }));
+      ok("у скрытых действий данные не выпотрошены — голос/спрайты/фразы на месте",
+         M.store.actions.byId.think.voice && M.store.actions.byId.think.voice.note === 300 &&
+         M.store.actions.byId.photo.sprites === "takePhoto" &&
+         M.store.actions.byId.sayhi.line === SITE_DATA.actions.items.find(function (a) {
+           return a.id === "sayhi"; }).line);
+      ok("ни одно скрытое действие не попало в DOM",
+         HIDDEN_IDS.every(function (id) { return !byId(id); }));
+
+      // Обе плитки делят ширину ряда поровну — теперь без разделения на
+      // широкий/узкий вьюпорт: с двумя плитками нет причин для отдельной
+      // "ленты", .actions__primary — та же сетка в 2 колонки везде.
       var primaryActs = $$(".act--primary");
-      if (wideActs) {
-        ok("PLAY MUSIC и MUTE делят ширину ряда поровну",
-           Math.abs(primaryActs[0].getBoundingClientRect().width -
-                    primaryActs[1].getBoundingClientRect().width) <= 2,
-           Math.round(primaryActs[0].getBoundingClientRect().width) + " vs " +
-           Math.round(primaryActs[1].getBoundingClientRect().width));
-        ok("вместе они занимают всю ширину панели (плюс зазор между ними)",
-           Math.abs(primaryActs[0].getBoundingClientRect().width * 2 +
-                    (primaryActs[1].getBoundingClientRect().left -
-                     primaryActs[0].getBoundingClientRect().right) -
-                    $(".actions__row").getBoundingClientRect().width) <= 2);
-      } else {
-        ok("в ленте большая кнопка шире маленьких",
-           primaryActs[0].getBoundingClientRect().width >
-           $(".act--slot").getBoundingClientRect().width);
-      }
+      ok("PLAY MUSIC и MUTE делят ширину ряда поровну",
+         Math.abs(primaryActs[0].getBoundingClientRect().width -
+                  primaryActs[1].getBoundingClientRect().width) <= 2,
+         Math.round(primaryActs[0].getBoundingClientRect().width) + " vs " +
+         Math.round(primaryActs[1].getBoundingClientRect().width));
+      ok("вместе они занимают всю ширину панели (плюс зазор между ними)",
+         Math.abs(primaryActs[0].getBoundingClientRect().width * 2 +
+                  (primaryActs[1].getBoundingClientRect().left -
+                   primaryActs[0].getBoundingClientRect().right) -
+                  $(".actions__row").getBoundingClientRect().width) <= 2);
+      ok("высота плиток 130-140px, как в макете",
+         primaryActs.every(function (n) {
+           var h = n.getBoundingClientRect().height;
+           return h >= 130 && h <= 140;
+         }), primaryActs.map(function (n) {
+           return Math.round(n.getBoundingClientRect().height); }).join(" "));
       ok("у всех действий есть aria-label и title",
          acts.every(function (n) { return n.getAttribute("aria-label") && n.getAttribute("title"); }));
       ok("строка обратной связи есть и объявляется",
          $("#act-feedback") && $("#act-feedback").getAttribute("role") === "status");
-      ok("большая кнопка толще слотов по рамке",
-         parseFloat(getComputedStyle($(".act--primary")).getPropertyValue("--bd")) >
-         parseFloat(getComputedStyle($(".act--slot")).getPropertyValue("--bd")));
-      ok(wideActs ? "маленькие кнопки 58-62px высотой"
-                  : "в ленте маленькие кнопки 82-104px",
-         $$(".act--slot").every(function (n) {
-           var h = n.getBoundingClientRect().height;
-           return wideActs ? (h >= 58 && h <= 62) : (h >= 82 && h <= 104);
-         }), $$(".act--slot").map(function (n) {
-           return Math.round(n.getBoundingClientRect().height); }).join(" "));
-      ok("длинная подпись TAKE PHOTO переносится, а не обрезается",
-         byId("photo").scrollHeight <= byId("photo").clientHeight + 1 &&
-         getComputedStyle($(".act--slot .act__label")).whiteSpace === "normal");
       ok("кнопки навигации стали крупнее: 58-62px",
          $$(".stat").every(function (n) {
            var h = n.getBoundingClientRect().height;
@@ -866,8 +878,27 @@
       musicBtn.click(); await tick(120);   // и снова тихо для следующих тестов
       ok("музыка остановлена", M.audio.music.isPlaying() === false);
 
-      // ---- реплика по фокусу, а не только по наведению ----
-      var ghBtn = $('.act[data-action="sayhi"]');
+      // ---- реплика по фокусу и мигание oneshot-действия ----
+      // SAY HI и THINK сейчас спрятаны (visible: false) и не в DOM — но
+      // логика фокуса/flash() в app.js общая для любого действия, не
+      // завязана на конкретный id, и должна продолжать работать для
+      // скрытых-пока-что действий на случай, если их вернут. Рендерим их
+      // временно офф-экран через тот же M.render.actions(), что и боевую
+      // панель (никакой отдельной тестовой копии логики), кликаем/фокусируем
+      // по-настоящему — делегирование событий висит на document и не
+      // зависит от того, где в DOM лежит узел — и убираем за собой.
+      var forcedVisible = Object.assign({}, M.store.actions, {
+        items: M.store.actions.items.map(function (a) {
+          return (a.id === "sayhi" || a.id === "think") ?
+            Object.assign({}, a, { visible: true }) : a;
+        })
+      });
+      var tempWrap = document.createElement("div");
+      tempWrap.style.cssText = "position:absolute;left:-9999px;top:-9999px";
+      tempWrap.appendChild(M.render.actions(forcedVisible));
+      document.body.appendChild(tempWrap);
+
+      var ghBtn = tempWrap.querySelector('.act[data-action="sayhi"]');
       ghBtn.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
       await tick(80);
       ok("реплика обновляется по фокусу",
@@ -877,7 +908,7 @@
       await tick(80);
 
       // ---- одноразовое действие мигает нажатым состоянием ----
-      var secretBtn = $('.act[data-action="think"]');
+      var secretBtn = tempWrap.querySelector('.act[data-action="think"]');
       secretBtn.click();
       ok("одноразовое действие мигает нажатым состоянием",
          secretBtn.classList.contains("is-pressed"));
@@ -892,6 +923,7 @@
       ok("реплика одноразового действия показана",
          $("#bubble-sr").textContent === SITE_DATA.actions.items[1].line,
          $("#bubble-sr").textContent);
+      document.body.removeChild(tempWrap);
 
       // ---- prefers-reduced-motion: анимации не навешиваются ----
       var realRM2 = M.dom.reducedMotion;
@@ -1398,15 +1430,16 @@
            firstAct.bottom <= window.innerHeight,
            Math.round(firstAct.bottom) + " > " + window.innerHeight);
 
+        // Раньше здесь была своя лента-с-прокруткой для .actions__row —
+        // нужна была под 2 primary + 5 слотов. Слотов больше нет (data.js:
+        // visible: false), PLAY MUSIC и MUTE — те же 2 широкие плитки, что
+        // и на десктопе (без всякого overflow-x), и это уже покрыто общей
+        // проверкой "высота плиток 130-140px" в разделе панели действий
+        // выше — она не завязана на ширину вьюпорта.
         var row = $(".actions__row");
         var navRow0 = $(".stats__list");
-        ok("лента действий скроллится горизонтально", row.scrollWidth > row.clientWidth,
-           row.scrollWidth + " vs " + row.clientWidth);
         // Chrome нормализует "x proximity" в "x": proximity — значение по
         // умолчанию и в computed style опускается. Проверяем ось.
-        ok("у ленты действий включён scroll-snap по горизонтали",
-           /^x/.test(getComputedStyle(row).scrollSnapType),
-           getComputedStyle(row).scrollSnapType);
         ok("у ленты навигации включён scroll-snap по горизонтали",
            /^x/.test(getComputedStyle(navRow0).scrollSnapType),
            getComputedStyle(navRow0).scrollSnapType);
@@ -1414,12 +1447,6 @@
            row.getBoundingClientRect().bottom <=
            $(".acts").getBoundingClientRect().bottom + 1);
 
-        var slotSizes = $$(".act").map(function (n) {
-          return Math.round(n.getBoundingClientRect().width);
-        });
-        ok("слоты действий в диапазоне 82-104px",
-           slotSizes.every(function (w) { return w >= 82 && w <= 104; }),
-           slotSizes.join(" "));
         ok("главное действие идёт первым",
            $$(".act")[0].dataset.action === "music",
            $$(".act")[0].dataset.action);

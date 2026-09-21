@@ -117,6 +117,7 @@
         overlays: Array.isArray(a.overlays) ? a.overlays : [],
         line: a.line || "", lineOff: a.lineOff || null,
         feedback: a.feedback || "", feedbackOff: a.feedbackOff || null,
+        visible: a.visible !== false,
         enabled: enabled,
         disabledNote: a.disabledNote || "coming soon"
       };
