@@ -40,6 +40,15 @@
   var bubbleSr = null;
   var typer = null;
   var cfg = {};
+  var actionsCfg = {};           // M.store.actions — путь к спрайтам, дефолты
+
+  /* ---- Кадровые анимации действий: состояние проигрывателя ---- */
+  var actionImg = null;          // второй <img>, независимый от gaze
+  var animToken = 0;             // растёт при каждом start/stop — отменяет старое
+  var animActive = null;         // { id, timer } текущего проигрывания, иначе null
+  var frameListCache = {};       // имя папки -> [урлы], после автоопределения
+  var frameListPromise = {};     // имя папки -> Promise, чтобы не пробовать дважды
+  var imgCache = {};             // урл -> предзагруженный Image()
 
   function renderPlaceholder() {
     charEl.setAttribute("class", "char char--placeholder");
@@ -107,23 +116,19 @@
   };
   var lastFit = null;
 
-  function fitSprite() {
-    if (!innerEl) return null;
-    var img = charEl && charEl.querySelector(".char__img");
-    if (!img || !img.naturalWidth) return null;
+  /* Вся арифметика в одном месте: сколько места есть и какого размера
+     должен быть кадр с natural-размером nw x nh. Ничего не пишет в DOM —
+     чистая функция, чтобы её могли использовать и gaze-картинка, и кадры
+     анимаций действий (у них разные natural-размеры и папки, но сцена
+     и правила вписывания те же самые). */
+  function computeFit(nw, nh) {
+    if (!innerEl || !nw || !nh) return null;
 
     /* Высоту берём у РАМКИ, а не у .display__inner: та равна своему
        содержимому, то есть прошлому размеру спрайта — измерять её значит
-       измерять собственный результат. И картинку перед замером обнуляем,
-       иначе она же и распирает рамку. */
+       измерять собственный результат. */
     var frame = innerEl.parentElement;
     if (!frame) return null;
-    img.style.width = "0px";
-    img.style.height = "0px";
-    img.style.marginTop = "0px";
-    img.style.marginBottom = "0px";
-    img.style.marginLeft = "0px";
-    img.style.marginRight = "0px";
 
     var fcs = getComputedStyle(frame);
     var ics = getComputedStyle(innerEl);
@@ -135,7 +140,6 @@
           - parseFloat(ics.paddingLeft) - parseFloat(ics.paddingRight);
     if (!(H > 0) || !(W > 0)) return null;
 
-    var nw = img.naturalWidth, nh = img.naturalHeight;
     var pixelArt = nw <= FIT.pixelArtMax && nh <= FIT.pixelArtMax;
     var sw, sh, n = null, nRaw = null;
 
@@ -153,9 +157,6 @@
       if (sh > H) { sh = Math.floor(H); sw = Math.round(sh * nw / nh); }
     }
 
-    img.style.width = sw + "px";
-    img.style.height = sh + "px";
-
     /* Смещение вниз и нижнее поле спорят за одно и то же место. Если
        кадр не оставляет им обоим места — уменьшаем КАДР, а не поле:
        персонаж, прижатый к нижней грани, выглядит хуже, чем на пару
@@ -168,8 +169,6 @@
       sh = Math.max(1, Hr - needFree);
       sw = Math.round(sh * nw / nh);
       if (sw > W) { sw = Math.floor(W); sh = Math.round(sw * nh / nw); }
-      img.style.width = sw + "px";
-      img.style.height = sh + "px";
     }
 
     var free = Hr - sh;
@@ -184,19 +183,56 @@
     var left = Math.round(freeX / 2);
     var right = freeX - left;
 
-    img.style.marginTop = top + "px";
-    img.style.marginBottom = bottom + "px";
-    img.style.marginLeft = left + "px";
-    img.style.marginRight = right + "px";
+    return { mode: pixelArt ? "целый множитель" : "вписан",
+             n: n, nRaw: nRaw, natW: nw, natH: nh,
+             spriteW: sw, spriteH: sh,
+             stageW: Math.round(W), stageH: Math.round(H),
+             top: top, bottom: bottom, left: left, right: right,
+             pct: +(sh / Hr * 100).toFixed(1),
+             boundBy: sw >= Math.floor(W) ? "ширина" : "высота" };
+  }
 
-    lastFit = { mode: pixelArt ? "целый множитель" : "вписан",
-                n: n, nRaw: nRaw, natW: nw, natH: nh,
-                spriteW: sw, spriteH: sh,
-                stageW: Math.round(W), stageH: Math.round(H),
-                top: top, bottom: bottom, left: left, right: right,
-                pct: +(sh / Math.round(H) * 100).toFixed(1),
-                boundBy: sw >= Math.floor(W) ? "ширина" : "высота" };
-    return lastFit;
+  function applyFit(img, fit) {
+    img.style.width = fit.spriteW + "px";
+    img.style.height = fit.spriteH + "px";
+    img.style.marginTop = fit.top + "px";
+    img.style.marginBottom = fit.bottom + "px";
+    img.style.marginLeft = fit.left + "px";
+    img.style.marginRight = fit.right + "px";
+  }
+
+  function zeroImg(img) {
+    img.style.width = "0px";
+    img.style.height = "0px";
+    img.style.marginTop = "0px";
+    img.style.marginBottom = "0px";
+    img.style.marginLeft = "0px";
+    img.style.marginRight = "0px";
+  }
+
+  function fitSprite() {
+    if (!innerEl) return null;
+    var img = charEl && charEl.querySelector(".char__img");
+    if (!img || !img.naturalWidth) return null;
+
+    // Обнуляем перед замером, иначе картинка сама распирает рамку,
+    // по которой считаем доступное место.
+    zeroImg(img);
+    var fit = computeFit(img.naturalWidth, img.naturalHeight);
+    if (!fit) return null;
+    applyFit(img, fit);
+    lastFit = fit;
+    return fit;
+  }
+
+  /* То же самое, но для .char__action (кадры анимаций действий) —
+     без побочного эффекта на lastFit(), это API про gaze-картинку. */
+  function fitActionImg(img) {
+    if (!img || !img.naturalWidth) return null;
+    zeroImg(img);
+    var fit = computeFit(img.naturalWidth, img.naturalHeight);
+    if (fit) applyFit(img, fit);
+    return fit;
   }
 
   function scheduleFit() {
@@ -208,6 +244,167 @@
     });
   }
 
+  /* ----------------------------------------------- КАДРОВЫЕ АНИМАЦИИ ----
+     Один реиспользуемый проигрыватель для всех действий (THINK/DEBUG/
+     DRINK ENERGY DRINK/TAKE PHOTO/SAY HI/PLAY MUSIC), а не шесть отдельных
+     таймеров. Владеет ВТОРЫМ <img class="char__action">, который живёт
+     рядом с .char__img и никогда не трогает его src: пока играет действие,
+     .char__img просто скрыт атрибутом hidden. gaze.js за это время не
+     останавливается — он как ни в чём не бывало продолжает писать в
+     скрытый <img> направление взгляда, поэтому когда действие кончается
+     и gaze-картинка возвращается, на ней уже стоит верный кадр, без
+     рывка к look-center. Это и есть решение «не пускать двух хозяев
+     к одной <img>»: у каждого — своя, а конфликтовать нечему.
+
+     Один активный токен на всё: playAction()/stopAction() всегда
+     увеличивают animToken, и любой отложенный шаг сверяется с ним перед
+     тем, как что-то сделать — просроченный setTimeout от отменённой
+     анимации молча не сработает. */
+
+  function ensureActionImg() {
+    var img = charEl && charEl.querySelector(".char__action");
+    if (!img) {
+      img = d.el("img", {
+        class: "char__action", alt: "", "aria-hidden": "true",
+        draggable: "false", hidden: true
+      });
+      charEl.appendChild(img);
+    }
+    actionImg = img;
+    return img;
+  }
+
+  /* Список кадров для папки actions/<name>/. Ручной override из data.js
+     (actions.frames[name]) побеждает, если непуст. Иначе — автоопределение:
+     пробуем 1.<ext>, 2.<ext>, … пока очередной не даст 404, и на этом
+     останавливаемся. Результат кэшируется, повторный вызов файлов не
+     перезапрашивает. */
+  var FRAME_PROBE_CAP = 200;     // защита от бесконечного перебора
+
+  function actionFrameUrls(name) {
+    if (!name) return Promise.resolve([]);
+    if (frameListCache[name]) return Promise.resolve(frameListCache[name]);
+    if (frameListPromise[name]) return frameListPromise[name];
+
+    var base = (actionsCfg.spriteBase || "./assets/sprites/") + name + "/";
+    var manual = actionsCfg.frames && actionsCfg.frames[name];
+
+    var p;
+    if (Array.isArray(manual) && manual.length) {
+      p = Promise.resolve(manual.map(function (f) { return base + f; }));
+    } else {
+      p = (function probe() {
+        var urls = [];
+        function step(i) {
+          if (i > FRAME_PROBE_CAP) return urls;
+          var url = base + i + ".png";
+          return new Promise(function (resolve) {
+            var im = new Image();
+            im.onload = function () { imgCache[url] = im; urls.push(url); resolve(true); };
+            im.onerror = function () { resolve(false); };
+            im.src = url;
+          }).then(function (ok) { return ok ? step(i + 1) : urls; });
+        }
+        return step(1);
+      })();
+    }
+
+    p = p.then(function (list) { frameListCache[name] = list; return list; });
+    frameListPromise[name] = p;
+    return p;
+  }
+
+  function cancelAnimTimer() {
+    if (animActive && animActive.timer) window.clearTimeout(animActive.timer);
+  }
+
+  /* Возвращает сцену к тому, что было до действия: у gaze — снова видимый
+     .char__img (он всё это время сам следил за курсором, просто невидимо);
+     без gaze — заново отрисовать позу/плейсхолдер, как и раньше делал set(). */
+  function restoreIdleVisual() {
+    if (actionImg) actionImg.hidden = true;
+    if (gazeOn) {
+      var gi = charEl && charEl.querySelector(".char__img");
+      if (gi) gi.hidden = false;
+      /* gaze.js меряет сам <img>: пока он hidden, getBoundingClientRect()
+         даёт нулевой прямоугольник, и gaze.js честно отказывается что-то
+         считать (см. "спрайт скрыт — считать нечего" в frame()). Курсор
+         при этом не перестаёт отслеживаться — просто направление не
+         пересчитывается. Без принудительного update() картинка вернулась
+         бы с тем направлением, что было ДО начала действия, а не с тем,
+         куда курсор ушёл, пока играла анимация. */
+      if (M.gaze && M.gaze.update) M.gaze.update();
+    } else {
+      if (cfg.sprite) renderSprite(cfg.sprite); else renderPlaceholder();
+      ensureActionImg();
+    }
+  }
+
+  function finishAnim(token) {
+    if (token !== animToken) return;
+    animActive = null;
+    restoreIdleVisual();
+  }
+
+  function startPlayback(token, action, urls, loop) {
+    ensureActionImg();
+    if (gazeOn) {
+      var gi = charEl.querySelector(".char__img");
+      if (gi) gi.hidden = true;
+    }
+    actionImg.hidden = false;
+
+    var duration = action.frameDuration || actionsCfg.frameDuration || 100;
+    var reduced = M.dom.reducedMotion();
+    var sized = false;
+
+    function place(i, done) {
+      if (token !== animToken) return;
+      var img = actionImg;
+      function ready() {
+        if (token !== animToken) return;
+        // Кадры внутри одной папки — одного размера (иначе персонаж
+        // прыгал бы), поэтому считаем размер один раз на всё проигрывание.
+        if (!sized) { fitActionImg(img); sized = true; }
+        if (done) done();
+      }
+      img.src = urls[i];
+      if (img.complete && img.naturalWidth) ready(); else img.onload = ready;
+    }
+
+    animActive = { id: action.id, timer: 0 };
+
+    if (reduced) {
+      // Движение подавлено, но действие и диалог всё равно отрабатывают:
+      // статичный представительный кадр вместо цикла.
+      place(Math.floor(urls.length / 2));
+      if (!loop) {
+        animActive.timer = window.setTimeout(function () { finishAnim(token); },
+                                              urls.length * duration);
+      }
+      return;
+    }
+
+    var idx = 0;
+    function step() {
+      if (token !== animToken) return;
+      place(idx, function () {
+        idx++;
+        if (idx >= urls.length) {
+          if (loop) {
+            idx = 0;
+            animActive.timer = window.setTimeout(step, duration);
+          } else {
+            animActive.timer = window.setTimeout(function () { finishAnim(token); }, duration);
+          }
+        } else {
+          animActive.timer = window.setTimeout(step, duration);
+        }
+      });
+    }
+    step();
+  }
+
   M.character = {
     init: function (opts) {
       charEl = opts.charEl;
@@ -215,6 +412,7 @@
       bubbleInk = opts.bubbleInk;
       bubbleSr = opts.bubbleSr;
       cfg = M.store.character || {};
+      actionsCfg = M.store.actions || {};
       typer = M.createTypewriter();
 
       document.documentElement.style.setProperty(
@@ -227,6 +425,7 @@
       if (gazeOn) renderGaze();
       else if (cfg.sprite) renderSprite(cfg.sprite);
       else renderPlaceholder();
+      ensureActionImg();
 
       var img = charEl.querySelector(".char__img");
       if (img) {
@@ -246,6 +445,7 @@
       if (!gazeOn) {
         var pose = (section && section.pose) || cfg.sprite;
         if (pose) renderSprite(pose); else renderPlaceholder();
+        ensureActionImg();
       }
     },
 
@@ -296,9 +496,53 @@
     },
     state: function () { return curState; },
 
+    /* ---- Кадровые анимации действий (THINK/DEBUG/…/PLAY MUSIC) ---- */
+
+    /* action — нормализованный объект из store.actions.byId[...]. Решает
+       loop/oneshot по a.type сама, ничего дополнительно передавать не
+       нужно. Повторный вызов ВСЕГДА отменяет то, что играло, и стартует
+       заново — кроме повторного клика по ТОЙ ЖЕ анимации, когда
+       actions.restartOnRepeat === false (тогда клик молча игнорируется). */
+    playAction: function (action) {
+      if (!action || !action.sprites) return;
+      var loop = action.type === "toggle";
+      if (animActive && animActive.id === action.id &&
+          actionsCfg.restartOnRepeat === false) {
+        return;
+      }
+
+      var myToken = ++animToken;
+      cancelAnimTimer();
+
+      actionFrameUrls(action.sprites).then(function (urls) {
+        if (myToken !== animToken) return;     // отменили, пока грузили список
+        if (!urls.length) { animActive = null; return; }   // папки/файлов нет
+        startPlayback(myToken, action, urls, loop);
+      });
+    },
+
+    /* Чисто останавливает то, что играет (или ничего не делает, если
+       ничего не играло), и возвращает сцену к идле. */
+    stopAction: function () {
+      animToken++;
+      cancelAnimTimer();
+      animActive = null;
+      restoreIdleVisual();
+    },
+
+    /* Прогрев кадров одного действия — дёшево вызывать повторно (кэш).
+       Используется на hover/focus кнопки и один раз скопом после boot. */
+    preloadAction: function (name) { if (name) actionFrameUrls(name); },
+
+    /* id действия, чья анимация сейчас на экране, иначе null — для тестов. */
+    currentAction: function () { return animActive ? animActive.id : null; },
+
     stop: function () {
       if (typer) typer.cancel();
       if (gazeOn && M.gaze) M.gaze.destroy();
+      animToken++;
+      cancelAnimTimer();
+      animActive = null;
     }
   };
 })(window.MIRA);

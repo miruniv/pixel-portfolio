@@ -700,6 +700,15 @@
       var stageEl = $("#stage");
       var musicBtn = $('.act[data-action="music"]');
       var imgSrcBefore = img.getAttribute("src");
+      // Центр картинки — СЕЙЧАС, пока она ещё видна: ниже по тесту клик
+      // по музыке её скроет (getBoundingClientRect() на hidden даст ноль),
+      // а брать вместо неё центр .display неточно — сцена и спрайт не
+      // концентричны (персонаж намеренно смещён ниже центра), и на узком
+      // мобильном вьюпорте этого расхождения хватает, чтобы «вправо»
+      // соскользнуло в «вправо-вниз».
+      var imgRectBefore = img.getBoundingClientRect();
+      var imgCx = imgRectBefore.left + imgRectBefore.width / 2;
+      var imgCy = imgRectBefore.top + imgRectBefore.height / 2;
 
       ok("музыка не включается сама при загрузке", M.audio.music.isPlaying() === false);
       ok("состояние по умолчанию — idle", stageEl.dataset.state === "idle", stageEl.dataset.state);
@@ -735,9 +744,25 @@
       window.matchMedia = realMM;
       ok("gaze поднимается при активном танце", stDance.enabled === true);
 
-      var dr = img.getBoundingClientRect();
-      move((dr.left + dr.right) / 2 + 300, (dr.top + dr.bottom) / 2); G.update();
-      ok("gaze продолжает управлять src во время танца",
+      // Настоящий клик по PLAY MUSIC (выше) уже запустил кадры танца на
+      // ВТОРОЙ картинке (.char__action) и скрыл эту (.char__img) —
+      // character.js больше не крутит танец поверх gaze-картинки, у
+      // танца теперь свой рисованный цикл. gaze.js это знает и сам
+      // отказывается что-то считать для скрытого <img> (нулевой rect,
+      // см. "спрайт скрыт — считать нечего" в frame()) — значит и
+      // проверять нужно не «меняет src на скрытой картинке» (этого
+      // больше не бывает), а то ради чего это вообще нужно: курсор не
+      // теряется, пока картинка скрыта, и как только её возвращают —
+      // направление сразу актуальное, без прыжка на устаревший кадр.
+      ok("исходная сцена: gaze-картинка скрыта во время танца", img.hidden === true);
+
+      move(imgCx + 400, imgCy); G.update();
+      ok("пока картинка скрыта, gaze её src не трогает",
+         fileOf(img) === "look-center.png", fileOf(img));
+
+      img.hidden = false;    // «анимация действия закончилась» — как в restoreIdleVisual()
+      G.update();
+      ok("картинку вернули — направление сразу актуальное, а не устаревший кадр",
          fileOf(img) === "look-right.png", fileOf(img));
       ok("танец при этом не сбросился", stageEl.dataset.state === "dance");
       G.destroy();
@@ -771,6 +796,11 @@
       await tick(220);
       ok("нажатое состояние снимается само",
          !secretBtn.classList.contains("is-pressed"));
+      // Клик проверял только 150-мсную вспышку is-pressed, а не полный
+      // прогон кадров THINK (10 x 100мс). Без явной остановки .char__img
+      // остался бы скрыт до конца анимации и увёл бы в ноль все геометрии
+      // ниже по файлу — они меряют именно его.
+      M.character.stopAction();
       ok("реплика одноразового действия показана",
          $("#bubble-sr").textContent === SITE_DATA.actions.items[1].line,
          $("#bubble-sr").textContent);

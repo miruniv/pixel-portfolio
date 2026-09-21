@@ -110,6 +110,7 @@
         state: a.state || null,
         outfit: a.outfit || null,
         sprites: a.sprites || null,
+        frameDuration: Number(a.frameDuration) || null,   // null -> дефолт actions.frameDuration
         sfx: a.sfx || null,
         voice: a.voice || null,
         shares: a.shares || null,
@@ -151,6 +152,12 @@
         onBadge: actRaw.onBadge || "ON",
         items: actItems,
         overlays: actRaw.overlays || {},
+        // Кадровые анимации действий: путь, ручные списки (пустой -> авто-
+        // определение по номерам файлов), дефолтная скорость и флаг повтора.
+        spriteBase: actRaw.spriteBase || "./assets/sprites/",
+        frames: actRaw.frames || {},
+        frameDuration: Number(actRaw.frameDuration) || 100,
+        restartOnRepeat: actRaw.restartOnRepeat !== false,
         byId: actItems.reduce(function (m, a) { m[a.id] = a; return m; }, {})
       },
       footer: {

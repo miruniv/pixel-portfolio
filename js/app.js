@@ -233,6 +233,9 @@
     if (node) node.setAttribute("aria-pressed", on ? "true" : "false");
     refs.bubble.classList.toggle("is-music", on);
     M.character.setState(on ? (a && a.state) || "dance" : "idle");
+    // Кадры пляски крутятся, пока музыка включена; выключили — сцена
+    // чисто возвращается к gaze/idle, а не замирает на последнем кадре.
+    if (on && a) M.character.playAction(a); else M.character.stopAction();
     setFeedback(on ? a.feedback : a.feedbackOff);
     showLine(on ? a.line : a.lineOff, on ? 0 : 2600, a.voice);
   }
@@ -253,18 +256,29 @@
       setMusic(!musicOn, node);
       return;
     }
+
+    // Выбрали другое действие, пока играет музыка: сначала чисто гасим
+    // пляску (звук, состояние сцены, кадры) через тот же путь, что и
+    // повторный клик по PLAY MUSIC — иначе танец продолжал бы крутиться
+    // под спрайтом нового действия.
+    if (musicOn) setMusic(false, d.qs('.act[data-action="music"]'));
+
     if (a.type === "toggle") {
       var on = node.getAttribute("aria-pressed") !== "true";
       node.setAttribute("aria-pressed", on ? "true" : "false");
       M.character.setState(on ? a.state : "idle");
+      if (a.sprites) { if (on) M.character.playAction(a); else M.character.stopAction(); }
       setFeedback(on ? a.feedback : null);
       if (a.sfx) audio.sfx(a.sfx);
       showLine(a.line, on ? 0 : 2600, a.voice);
       return;
     }
-    // Ссылки и одноразовые: мигаем, играем эффект действия и говорим
+    // Ссылки и одноразовые: мигаем, играем эффект действия и говорим.
+    // playAction сама разберётся: если a.sprites нет (ссылки, MUTE) —
+    // тихо ничего не делает.
     flash(node);
     if (a.sfx) audio.sfx(a.sfx);
+    M.character.playAction(a);
     setFeedback(a.feedback);
     showLine(a.line, 2600, a.voice);
   }
@@ -343,6 +357,19 @@
   function finishBoot() {
     refs.boot.hidden = true;
     try { window.sessionStorage.setItem("mira.booted", "1"); } catch (e) {}
+    warmActionSprites();
+  }
+
+  /* Прогрев кадров ВСЕХ действий скопом, после boot и не в очередь с
+     первой отрисовкой. hover/focus уже прогревают по одному действию —
+     это подстраховка для touch-устройств, у которых hover не бывает. */
+  function warmActionSprites() {
+    var items = (store.actions && store.actions.items) || [];
+    var run = function () {
+      items.forEach(function (a) { if (a.sprites) M.character.preloadAction(a.sprites); });
+    };
+    if (window.requestIdleCallback) window.requestIdleCallback(run, { timeout: 2000 });
+    else window.setTimeout(run, 300);
   }
 
   /* ========================================================== ЗВУК ==== */
@@ -466,11 +493,13 @@
       if (!(t instanceof Element)) return;
       if (t.closest(".stat, .card, .link, .back, .ribbon__item, .tbtn, .footer__link, .act")) audio.hover();
 
-      // Реплика обновляется и по наведению, и по фокусу (тач hover не даёт)
+      // Реплика обновляется и по наведению, и по фокусу (тач hover не даёт).
+      // Заодно прогреваем кадры действия: к моменту клика они уже в кэше,
+      // и первый показ не мигает пустотой.
       var over = t.closest(".act");
       if (over && !over.disabled) {
         var ao = store.actions.byId[over.dataset.action];
-        if (ao) showLine(ao.line, 0, ao.voice);
+        if (ao) { showLine(ao.line, 0, ao.voice); if (ao.sprites) M.character.preloadAction(ao.sprites); }
       }
     });
 
@@ -481,7 +510,7 @@
       var a = t.closest(".act");
       if (a && !a.disabled) {
         var ao = store.actions.byId[a.dataset.action];
-        if (ao) showLine(ao.line, 0, ao.voice);
+        if (ao) { showLine(ao.line, 0, ao.voice); if (ao.sprites) M.character.preloadAction(ao.sprites); }
       }
     });
     d.on(document, "focusout", function (e) {
