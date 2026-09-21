@@ -422,14 +422,18 @@
       var padTop = ir.top - sr.top, padBottom = sr.bottom - ir.bottom;
       var padLeft = ir.left - sr.left, padRight = sr.right - ir.right;
 
-      // Персонаж намеренно ниже центра: сверху воздуха больше, чем под ногами
-      ok("над головой воздуха больше, чем под ногами", padTop > padBottom + 8,
+      // Персонаж намеренно ниже центра: сверху воздуха больше, чем под ногами.
+      // Абсолютный запас берём из живого FIT, а не числом: bias совсем
+      // небольшой (см. js/character.js — сцена уже сжата почти до предела
+      // прозрачными полями в PNG), на низких сценах разница может быть
+      // всего в пару пикселей — важен только знак, а не величина буфера.
+      var fcfg0 = M.character.fitConfig;
+      ok("над головой воздуха больше, чем под ногами", padTop > padBottom,
          Math.round(padTop) + " сверху / " + Math.round(padBottom) + " снизу");
       ok("поля слева и справа равны", Math.abs(padLeft - padRight) <= 1,
          Math.round(padLeft) + " / " + Math.round(padRight));
-      // 16px — на просторной сцене; на низкой столько просто нет, там
-      // порог пропорциональный. Те же две величины, что и в FIT.
-      var floorPx = Math.min(16, Math.round(sr.height * 0.06));
+      // Те же две величины, что и в FIT.minBottomPx/minBottomPct.
+      var floorPx = Math.min(fcfg0.minBottomPx, Math.round(sr.height * fcfg0.minBottomPct));
       ok("спрайт не прижат к нижней грани рамки", padBottom >= floorPx - 0.5,
          Math.round(padBottom) + " при минимуме " + floorPx +
          " (сцена " + Math.round(sr.height) + ")");
@@ -647,24 +651,30 @@
       var byId = function (id) { return $('.act[data-action="' + id + '"]'); };
       ok("действий столько же, сколько в данных",
          acts.length === SITE_DATA.actions.items.length, acts.length);
-      ok("одна большая кнопка и шесть маленьких",
-         $$(".act--primary").length === 1 && $$(".act--slot").length === 6,
+      ok("две большие кнопки (PLAY MUSIC, MUTE) и пять маленьких",
+         $$(".act--primary").length === 2 && $$(".act--slot").length === 5,
          $$(".act--primary").length + " / " + $$(".act--slot").length);
-      ok("состав действий по макету",
+      ok("состав действий по макету: MUTE — второй primary, рядом с PLAY MUSIC",
          acts.map(function (n) { return n.dataset.action; }).join(",") ===
-         "music,think,energy,debug,photo,sayhi,mute",
+         "music,mute,think,energy,debug,photo,sayhi",
          acts.map(function (n) { return n.dataset.action; }).join(","));
       // На узком экране действия — горизонтальная лента, там свои размеры
       var wideActs = window.innerWidth > 900;
+      var primaryActs = $$(".act--primary");
       if (wideActs) {
-        ok("большая кнопка занимает всю ширину панели",
-           Math.abs($(".act--primary").getBoundingClientRect().width -
-                    $(".actions__row").getBoundingClientRect().width) <= 2,
-           Math.round($(".act--primary").getBoundingClientRect().width) + " vs " +
-           Math.round($(".actions__row").getBoundingClientRect().width));
+        ok("PLAY MUSIC и MUTE делят ширину ряда поровну",
+           Math.abs(primaryActs[0].getBoundingClientRect().width -
+                    primaryActs[1].getBoundingClientRect().width) <= 2,
+           Math.round(primaryActs[0].getBoundingClientRect().width) + " vs " +
+           Math.round(primaryActs[1].getBoundingClientRect().width));
+        ok("вместе они занимают всю ширину панели (плюс зазор между ними)",
+           Math.abs(primaryActs[0].getBoundingClientRect().width * 2 +
+                    (primaryActs[1].getBoundingClientRect().left -
+                     primaryActs[0].getBoundingClientRect().right) -
+                    $(".actions__row").getBoundingClientRect().width) <= 2);
       } else {
         ok("в ленте большая кнопка шире маленьких",
-           $(".act--primary").getBoundingClientRect().width >
+           primaryActs[0].getBoundingClientRect().width >
            $(".act--slot").getBoundingClientRect().width);
       }
       ok("у всех действий есть aria-label и title",
@@ -1170,8 +1180,14 @@
       ok("размер спрайта посчитан", !!fit,
          fit ? fit.mode + " " + fit.spriteW + "x" + fit.spriteH : "fitSprite вернул null");
 
-      ok("персонаж смещён ниже центра сцены на 6-8% её высоты",
-         bias >= 6 && bias <= 8, bias.toFixed(1) + "% (сверху " + Math.round(padTop) +
+      // Ждём знак и потолок в fcfg.bias*100 (плюс округление) — не точное
+      // число: needFree may срезать сдвиг раньше, чем он дойдёт до номинала
+      // (в упор на низких сценах), а на "vписан"-режиме конкурирует ещё и
+      // ширина сцены с квадратным кадром спрайта.
+      ok("персонаж смещён ниже центра сцены, не больше настроенного bias",
+         bias > 0 && bias <= fcfg.bias * 100 + 1,
+         bias.toFixed(1) + "% при настроенном " + (fcfg.bias * 100) +
+         "% (сверху " + Math.round(padTop) +
          ", снизу " + Math.round(padBottom) + ", сцена " + Math.round(stInner.height) + ")");
 
       // Пиксель-арт масштабируется только целым множителем. Крупный
@@ -1482,6 +1498,46 @@
           if (v && cyr.test(v)) bad.push(a + "=" + v.slice(0, 40));
         });
       });
+      // ==================== ВЁРСТКА: ACTIONS НЕ НАЕЗЖАЕТ НА НАВИГАЦИЮ ====
+      // Тень и внешнее кольцо двойной рамки рисуются через box-shadow и не
+      // занимают места в потоке — обычный getBoundingClientRect() их не
+      // видит, поэтому меряем полный визуальный прямоугольник (border-box
+      // + тень + кольцо .px-double) и сравниваем с тем же прямоугольником
+      // навигации. На десктопе и ноутбуке ACTIONS ниже статов, на мобильном
+      // лента статов уезжает вниз и ACTIONS оказывается выше неё — порядок
+      // разный, но в обоих случаях панели не должны наезжать друг на друга.
+      head("вёрстка: ACTIONS не наезжает на навигацию (с учётом тени)");
+      // --px-gap-w/--px-line2-w/--px-drop-x/-y — обычные custom properties,
+      // они наследуются вниз по DOM даже туда, где ничего не рисуют. #stats
+      // не .px-box — своей тени и кольца у него нет, но он ВИДИТ значения,
+      // унаследованные от .screen.px-double (ring=8px), и наивный замер
+      // приписал бы эти 8px контейнеру, у которого нет своего box-shadow.
+      // Меряем поэтому не #stats, а каждую .stat-кнопку по отдельности —
+      // они сами .px-box и несут свои значения не по наследству.
+      function expandedRect(el) {
+        var r = el.getBoundingClientRect();
+        var cs = getComputedStyle(el);
+        var gapW = parseFloat(cs.getPropertyValue("--px-gap-w")) || 0;
+        var line2W = parseFloat(cs.getPropertyValue("--px-line2-w")) || 0;
+        var dropX = parseFloat(cs.getPropertyValue("--px-drop-x")) || 0;
+        var dropY = parseFloat(cs.getPropertyValue("--px-drop-y")) || 0;
+        var ring = gapW + line2W;
+        return { left: r.left - ring, top: r.top - ring,
+                 right: r.right + ring + dropX, bottom: r.bottom + ring + dropY };
+      }
+      function rectsOverlap(a, b) {
+        return !(a.left > b.right || a.right < b.left ||
+                 a.top > b.bottom || a.bottom < b.top);
+      }
+      var actionsRect = expandedRect($("#actions"));
+      var overlappingStats = $$(".stat").filter(function (n) {
+        return rectsOverlap(actionsRect, expandedRect(n));
+      });
+      ok("прямоугольник ACTIONS (с тенью) не пересекается ни с одной кнопкой статов (с тенью)",
+         overlappingStats.length === 0,
+         "actions=" + JSON.stringify(actionsRect) + " задели: " +
+         overlappingStats.map(function (n) { return n.textContent.trim(); }).join(", "));
+
       ok("на странице нет кириллицы (весь текст сайта — EN)", bad.length === 0, bad.join(" | "));
 
       ok("нет ошибок и предупреждений в консоли", errors.length === 0, errors.join(" ;; "));

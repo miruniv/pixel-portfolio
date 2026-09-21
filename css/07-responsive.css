@@ -27,6 +27,19 @@
   .acts { margin: 0; padding: max(var(--sp-2), var(--px-clear)); gap: max(var(--sp-2), var(--px-clear)); }
   .actions__row { gap: max(var(--sp-2), var(--px-clear)); }
   .actions__primary, .actions__grid { gap: max(var(--sp-2), var(--px-clear)); }
+  /* 130-140px из вёрстки на весь их бюджет на низком экране не влезают
+     вместе с пятью слотами и строкой статуса — слоты трогать нельзя (см.
+     выше), поэтому здесь ужимаются PLAY MUSIC и MUTE. На этой высоте они
+     сравниваются со слотом (60px) — шире его (делят пополам ряд, а не
+     треть), но не выше; выше уже не влезает без наезда на статус-строку.
+     Иконка и подпись тоже уменьшаются до размера слота — на 60px крупная
+     иконка (28px) и две строки fs-sm не помещаются. */
+  .act--primary {
+    height: 60px;
+    font-size: var(--fs-xs);
+    gap: var(--sp-1);
+  }
+  .act--primary .act__icon svg { width: 18px; height: 18px; }
   .hero { margin: var(--sp-2); padding: max(var(--sp-2), var(--px-clear)); gap: max(var(--sp-3), var(--px-clear)); }
   .content-frame { margin: var(--sp-2); }
 }

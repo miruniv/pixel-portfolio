@@ -171,7 +171,9 @@ const SITE_DATA = {
         line: "Hi, I am Mira!",
         feedback: "SAY HI \u00B7 HELLO THERE" },
       { id: "mute", label: "MUTE", icon: "speaker",
-        kind: "slot", type: "toggle",
+        // primary, не slot: делит верхний ряд с PLAY MUSIC поровну —
+        // см. references/actions-target.png.
+        kind: "primary", type: "toggle",
         // Состояние звука живёт в js/audio.js и общее с кнопкой в шапке окна.
         // Отдельной переменной здесь НЕТ намеренно.
         shares: "sound",
