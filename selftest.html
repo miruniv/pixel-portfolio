@@ -272,8 +272,11 @@
       }));
       ok("все 9 спрайтов загружаются", loaded.every(function (w) { return w > 0; }),
          names.filter(function (n, i) { return !loaded[i]; }).join(","));
-      ok("все 9 спрайтов одного размера 128x128",
-         loaded.every(function (w) { return w === 128; }), loaded.join(","));
+      // Важен не конкретный размер, а то, что он ОДИН на весь набор:
+      // разнокалиберные кадры заставят персонажа прыгать при смене
+      // направления взгляда.
+      ok("все 9 кадров одного размера",
+         loaded.every(function (w) { return w === loaded[0]; }), loaded.join(","));
 
       // ==================== СЛЕЖЕНИЕ: РАБОТА В DOM ====================
       head("gaze: поведение на странице");
@@ -394,17 +397,28 @@
          Math.round(padTop) + " сверху / " + Math.round(padBottom) + " снизу");
       ok("поля слева и справа равны", Math.abs(padLeft - padRight) <= 1,
          Math.round(padLeft) + " / " + Math.round(padRight));
-      ok("спрайт не прижат к нижней грани рамки", padBottom >= 16, Math.round(padBottom));
+      // 16px — на просторной сцене; на низкой столько просто нет, там
+      // порог пропорциональный. Те же две величины, что и в FIT.
+      var floorPx = Math.min(16, Math.round(sr.height * 0.06));
+      ok("спрайт не прижат к нижней грани рамки", padBottom >= floorPx - 0.5,
+         Math.round(padBottom) + " при минимуме " + floorPx +
+         " (сцена " + Math.round(sr.height) + ")");
       ok("спрайт по центру рамки по горизонтали",
          Math.abs((ir.left + ir.right) / 2 - (sr.left + sr.right) / 2) <= 1);
       ok("по вертикали спрайт ниже центра рамки",
          (ir.top + ir.bottom) / 2 > (sr.top + sr.bottom) / 2,
          Math.round((ir.top + ir.bottom) / 2) + " vs центр " +
          Math.round((sr.top + sr.bottom) / 2));
+      // Не «целым множителем от frameSize»: frameSize в data.js — это
+      // размер кадра листа действий, а кадры слежения бывают крупными
+      // и целого множителя не имеют вовсе. Требование к ним другое:
+      // пропорции исходника сохранены, размер в целых пикселях.
       var w = Math.round(ir.width), hh = Math.round(ir.height);
-      ok("спрайт выводится целым множителем исходного размера",
-         w === hh && w % SITE_DATA.character.frameSize === 0,
-         w + "x" + hh + " при исходнике " + SITE_DATA.character.frameSize);
+      var natRatio = img.naturalWidth / img.naturalHeight;
+      ok("спрайт сохраняет пропорции исходника и мерится целыми пикселями",
+         Math.abs(w / hh - natRatio) < 0.02 &&
+         Math.abs(ir.width - w) < 0.01 && Math.abs(ir.height - hh) < 0.01,
+         w + "x" + hh + " при исходнике " + img.naturalWidth + "x" + img.naturalHeight);
 
       // gaze меряет сам <img>, поэтому после центрирования его центр —
       // это середина рамки. Проверяем от неё, а не от прежнего низа.
@@ -1035,19 +1049,202 @@
          "hero__bubble,hero__stage,charstats",
          kids.map(function (n) { return n.className.split(" ")[0]; }).join(","));
 
-      // персонаж ниже центра сцены
+      // ---- размер и положение персонажа ----
       var stInner = $(".display__inner").getBoundingClientRect();
-      var imgR = $(".char__img").getBoundingClientRect();
+      var imgEl = $(".char__img");
+      var imgR = imgEl.getBoundingClientRect();
+      var stFrame = $(".hero__stage").getBoundingClientRect();
+      var fit = MIRA.character.lastFit();
+      var fcfg = MIRA.character.fitConfig;
       var padTop = imgR.top - stInner.top, padBottom = stInner.bottom - imgR.bottom;
       var bias = (padTop - padBottom) / 2 / stInner.height * 100;
+
+      ok("размер спрайта посчитан", !!fit,
+         fit ? fit.mode + " " + fit.spriteW + "x" + fit.spriteH : "fitSprite вернул null");
+
       ok("персонаж смещён ниже центра сцены на 6-8% её высоты",
          bias >= 6 && bias <= 8, bias.toFixed(1) + "% (сверху " + Math.round(padTop) +
          ", снизу " + Math.round(padBottom) + ", сцена " + Math.round(stInner.height) + ")");
 
-      ok("спрайт масштабируется целым множителем",
-         Math.round(imgR.width) % $(".char__img").naturalWidth === 0 &&
-         Math.round(imgR.width) === Math.round(imgR.height),
-         Math.round(imgR.width) + " при исходнике " + $(".char__img").naturalWidth);
+      // Пиксель-арт масштабируется только целым множителем. Крупный
+      // сглаженный исходник целого множителя не имеет вовсе — там
+      // требование другое: целые пиксели на экране.
+      if (fit && fit.mode === "целый множитель") {
+        ok("пиксель-арт: экранный размер = исходник x целое",
+           fit.n === Math.round(fit.n) && fit.n >= 1 &&
+           Math.round(imgR.width) === fit.natW * fit.n &&
+           Math.round(imgR.height) === fit.natH * fit.n,
+           "N=" + fit.n + ", " + Math.round(imgR.width) + "x" + Math.round(imgR.height) +
+           " при исходнике " + fit.natW + "x" + fit.natH);
+      } else {
+        ok("крупный исходник: пропорции кадра сохранены",
+           !!fit && Math.abs(fit.spriteW / fit.spriteH - fit.natW / fit.natH) < 0.01,
+           fit ? fit.spriteW + "x" + fit.spriteH + " при исходнике " +
+                 fit.natW + "x" + fit.natH : "-");
+      }
+
+      ok("спрайт занимает не меньше 60% высоты сцены",
+         !!fit && fit.pct >= 60, fit ? fit.pct + "%" : "-");
+
+      ok("спрайт целиком внутри рамки сцены",
+         imgR.left >= stFrame.left - 0.5 && imgR.right <= stFrame.right + 0.5 &&
+         imgR.top >= stFrame.top - 0.5 && imgR.bottom <= stFrame.bottom + 0.5,
+         Math.round(imgR.left) + ".." + Math.round(imgR.right) + " / " +
+         Math.round(imgR.top) + ".." + Math.round(imgR.bottom) + " в рамке " +
+         Math.round(stFrame.left) + ".." + Math.round(stFrame.right) + " / " +
+         Math.round(stFrame.top) + ".." + Math.round(stFrame.bottom));
+
+      var isFrac = function (v) { return Math.abs(v - Math.round(v)) > 0.01; };
+      ok("спрайт стоит и мерится в целых пикселях",
+         !isFrac(imgR.width) && !isFrac(imgR.height) &&
+         !isFrac(parseFloat(imgEl.style.marginTop)) &&
+         !isFrac(parseFloat(imgEl.style.marginBottom)),
+         imgR.width + "x" + imgR.height + ", поля " +
+         imgEl.style.marginTop + "/" + imgEl.style.marginBottom);
+
+      ok("поля слева и справа от спрайта равны",
+         Math.abs((imgR.left - stInner.left) - (stInner.right - imgR.right)) <= 1,
+         Math.round(imgR.left - stInner.left) + " / " + Math.round(stInner.right - imgR.right));
+
+      // ============ НАКЛАДКИ: ТЕНИ И КОЛЬЦА НЕ ЗАНИМАЮТ МЕСТА ============
+      // box-shadow рисуется ВНЕ потока: браузер не учитывает его при
+      // расчёте отступов, поэтому элемент виден больше своего box и
+      // наезжает на соседа. Здесь сравниваются ВИДИМЫЕ прямоугольники:
+      // getBoundingClientRect (в нём уже учтён transform) плюс вылет
+      // теней. Значения --px-* для этого не годятся: там лежат строки
+      // вида "calc(3px * 2)", и parseFloat от них даёт NaN.
+      head("накладки: видимые прямоугольники не пересекаются");
+
+      function splitShadows(str) {
+        var out = [], depth = 0, cur = "";
+        for (var i = 0; i < str.length; i++) {
+          var ch = str[i];
+          if (ch === "(") depth++;
+          if (ch === ")") depth--;
+          if (ch === "," && depth === 0) { out.push(cur); cur = ""; }
+          else cur += ch;
+        }
+        if (cur.trim()) out.push(cur);
+        return out;
+      }
+      function shadowBleed(el) {
+        var res = { t: 0, r: 0, b: 0, l: 0 };
+        var raw = getComputedStyle(el).boxShadow;
+        if (!raw || raw === "none") return res;
+        splitShadows(raw).forEach(function (part) {
+          var p = part.trim();
+          if (p.indexOf("inset") >= 0) return;
+          if (/rgba\([^)]*,\s*0\s*\)/.test(p)) return;   // прозрачная — не рисует
+          var nums = (p.replace(/rgba?\([^)]*\)/g, "").match(/-?[\d.]+px/g) || [])
+                     .map(parseFloat);
+          if (nums.length < 2) return;
+          var dx = nums[0], dy = nums[1], blur = nums[2] || 0, spread = nums[3] || 0;
+          res.r = Math.max(res.r, dx + spread + blur);
+          res.b = Math.max(res.b, dy + spread + blur);
+          res.l = Math.max(res.l, spread + blur - dx);
+          res.t = Math.max(res.t, spread + blur - dy);
+        });
+        return res;
+      }
+      // Видимая коробка поддерева: сам элемент и все его потомки с тенями.
+      function visualRect(el) {
+        var r = el.getBoundingClientRect();
+        var L = r.left, T = r.top, R = r.right, B = r.bottom;
+        var nodes = [el].concat(Array.prototype.slice.call(el.querySelectorAll(".px-box")));
+        nodes.forEach(function (n) {
+          if (!n.getClientRects().length) return;
+          var nr = n.getBoundingClientRect(), s = shadowBleed(n);
+          L = Math.min(L, nr.left - s.l); T = Math.min(T, nr.top - s.t);
+          R = Math.max(R, nr.right + s.r); B = Math.max(B, nr.bottom + s.b);
+        });
+        return { left: L, top: T, right: R, bottom: B, box: r };
+      }
+      function visible(el) {
+        if (!el.getClientRects().length) return false;
+        var cs = getComputedStyle(el);
+        return cs.visibility !== "hidden" &&
+               cs.position !== "absolute" && cs.position !== "fixed";
+      }
+
+      // --- пара соседей в колонке ---
+      var COLS = [".col-left", ".stats", ".stats__list", ".acts", ".actions__row",
+                  ".actions__primary", ".actions__grid", ".hero", ".workspace",
+                  ".content-frame", ".charstats"];
+      var badPairs = [];
+      COLS.forEach(function (sel) {
+        var c = $(sel);
+        if (!c) return;
+        var cs = getComputedStyle(c);
+        if (/auto|scroll/.test(cs.overflowX) || /auto|scroll/.test(cs.overflowY)) return;
+        var kids = Array.prototype.slice.call(c.children).filter(visible);
+        for (var i = 0; i + 1 < kids.length; i++) {
+          var A = visualRect(kids[i]), B = visualRect(kids[i + 1]);
+          var ox = Math.min(A.right, B.right) - Math.max(A.left, B.left);
+          var oy = Math.min(A.bottom, B.bottom) - Math.max(A.top, B.top);
+          if (ox > 0.5 && oy > 0.5) {
+            badPairs.push(sel + ": " + (kids[i].className || kids[i].tagName) + " x " +
+                          (kids[i + 1].className || kids[i + 1].tagName) +
+                          " на " + ox.toFixed(1) + "x" + oy.toFixed(1) + "px");
+          }
+        }
+      });
+      ok("соседние блоки в колонках не пересекаются с учётом теней",
+         badPairs.length === 0, badPairs.join(" | ") || "чисто");
+
+      // --- кнопка против внутренней рамки своей панели ---
+      var badChild = [];
+      Array.prototype.slice.call(document.querySelectorAll(".px-box")).forEach(function (p) {
+        if (!visible(p)) return;
+        var pcs = getComputedStyle(p);
+        if (/auto|scroll/.test(pcs.overflowX) || /auto|scroll/.test(pcs.overflowY)) return;
+        var pr = p.getBoundingClientRect();
+        var inner = {
+          left: pr.left + parseFloat(pcs.borderLeftWidth),
+          top: pr.top + parseFloat(pcs.borderTopWidth),
+          right: pr.right - parseFloat(pcs.borderRightWidth),
+          bottom: pr.bottom - parseFloat(pcs.borderBottomWidth)
+        };
+        Array.prototype.slice.call(p.querySelectorAll(".px-box")).forEach(function (ch) {
+          if (!visible(ch)) return;
+          if (ch.parentElement.closest(".px-box") !== p) return;
+          var hop = ch.parentElement, scrolled = false;
+          while (hop && hop !== p) {
+            var hs = getComputedStyle(hop);
+            if (/auto|scroll/.test(hs.overflowX) || /auto|scroll/.test(hs.overflowY)) scrolled = true;
+            hop = hop.parentElement;
+          }
+          if (scrolled) return;
+          var r = ch.getBoundingClientRect(), s = shadowBleed(ch);
+          var d = Math.max((r.right + s.r) - inner.right, (r.bottom + s.b) - inner.bottom,
+                           inner.left - (r.left - s.l), inner.top - (r.top - s.t));
+          if (d > 0.5) {
+            badChild.push((ch.className || ch.tagName) + " за рамку " +
+                          (p.className || p.tagName) + " на " + d.toFixed(1) + "px");
+          }
+        });
+      });
+      ok("тени кнопок не выходят за внутреннюю рамку своей панели",
+         badChild.length === 0, badChild.join(" | ") || "чисто");
+
+      // --- подъём на :hover должен помещаться в зазор над кнопкой ---
+      var lift = parseFloat(getComputedStyle(document.documentElement)
+                   .getPropertyValue("--px-lift")) || 0;
+      ok("подъём кнопки на :hover заложен в токен --px-lift",
+         lift > 0, lift + "px");
+
+      // --- отрицательных margin не должно быть вовсе ---
+      var negMargins = [];
+      Array.prototype.slice.call(document.querySelectorAll("*")).forEach(function (el) {
+        if (!el.getClientRects().length) return;
+        var cs = getComputedStyle(el);
+        ["marginTop", "marginRight", "marginBottom", "marginLeft"].forEach(function (k) {
+          if (parseFloat(cs[k]) < 0) {
+            negMargins.push((el.className || el.tagName) + "." + k + "=" + cs[k]);
+          }
+        });
+      });
+      ok("отрицательных margin в макете нет",
+         negMargins.length === 0, negMargins.slice(0, 5).join(" | ") || "чисто");
 
       // ==================== МОБИЛЬНАЯ РАСКЛАДКА ====================
       head("мобильная раскладка");

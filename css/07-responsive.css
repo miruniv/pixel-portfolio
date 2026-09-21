@@ -19,11 +19,15 @@
      панели на 47px и упиралась в нижнюю рамку окна. */
   /* Замер: панели действий не хватало ровно 7px. Поля панели и зазор
      колонки дают 12 — с запасом и без ужимания кнопок. */
-  .col-left { gap: var(--sp-1); }
-  .acts { margin: 0; padding: var(--sp-2); gap: var(--sp-2); }
-  .actions__row { gap: var(--sp-2); }
-  .actions__primary, .actions__grid { gap: var(--sp-2); }
-  .hero { margin: var(--sp-2); padding: var(--sp-2); gap: var(--sp-3); }
+  .col-left { gap: max(var(--sp-1), var(--px-clear)); }
+  /* Кнопкам навигации тень не нужна вовсе, поэтому на низком экране их
+     зазоры ужимаются первыми — так панель действий получает обратно
+     место, которое забрал увеличенный зазор колонки. */
+  .stats, .stats__list { gap: max(var(--sp-2), var(--px-clear)); }
+  .acts { margin: 0; padding: max(var(--sp-2), var(--px-clear)); gap: max(var(--sp-2), var(--px-clear)); }
+  .actions__row { gap: max(var(--sp-2), var(--px-clear)); }
+  .actions__primary, .actions__grid { gap: max(var(--sp-2), var(--px-clear)); }
+  .hero { margin: var(--sp-2); padding: max(var(--sp-2), var(--px-clear)); gap: max(var(--sp-3), var(--px-clear)); }
   .content-frame { margin: var(--sp-2); }
 }
 @media (max-width: 560px)  { :root { --char-scale: 1; --stage-pad: 16px; --stage-bias: 24px; } }

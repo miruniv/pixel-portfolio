@@ -55,8 +55,8 @@ body {
     minmax(280px, 300px)
     minmax(420px, 480px)
     minmax(0, 1fr);
-  gap: var(--sp-4);
-  padding: var(--sp-4);
+  gap: max(var(--sp-4), var(--px-clear));
+  padding: max(var(--sp-4), var(--px-clear));
   min-height: 0;
   background-color: var(--workspace);
 }
@@ -68,20 +68,27 @@ body {
   grid-area: stats;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  gap: var(--sp-4);
-  padding: var(--sp-1);          /* место под внешний контур .px-box кнопок */
+  /* Зазор и отступ не меньше того, что тени и кольца дорисовывают
+     за пределами box: иначе рамка ACTIONS наезжает на кнопку над ней.
+     Подъём на :hover тут не нужен — панели не приподнимаются, только
+     кнопки, поэтому --px-clear без --px-lift. */
+  --px-clear: calc(var(--bd) * 2);
+  gap: max(var(--sp-4), var(--px-clear));
+  padding: max(var(--sp-1), var(--px-clear));
   min-height: 0;
 }
 .stats {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-3);
+  gap: max(var(--sp-3), var(--px-clear));
   min-height: 0;
 }
 .stats__list {
+  /* Кнопки навигации теней не отбрасывают вовсе — им хватает подъёма */
+  --px-clear: calc(var(--bd-md) * 2 + var(--px-lift));
   display: flex;
   flex-direction: column;
-  gap: var(--sp-3);
+  gap: max(var(--sp-3), var(--px-clear));
   min-height: 0;
 }
 

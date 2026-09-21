@@ -92,9 +92,12 @@
 .display__inner {
   position: relative;
   display: grid;
-  place-items: center;
-  padding-top: calc(var(--stage-pad) + var(--stage-bias));
-  padding-bottom: var(--stage-pad);
+  justify-items: start;
+  align-content: start;
+  /* Вертикальные поля больше не задаются здесь: размер спрайта и его
+     смещение вниз считает fitSprite() в js/character.js, целыми
+     пикселями. Коробка сцены при этом прежняя — её держит min-height
+     и растяжение во flex-колонке. */
   padding-inline: var(--sp-2);
   min-height: calc(var(--char-size) * var(--char-scale) + var(--stage-pad) * 2);
 }
@@ -108,20 +111,22 @@
   pointer-events: none;
 }
 
+/* Размер задаёт fitSprite() прямо на <img>, обёртка подстраивается */
 .char {
-  width: calc(var(--char-size) * var(--char-scale));
-  height: calc(var(--char-size) * var(--char-scale));
   display: grid;
   place-items: center;
 }
-.char svg { width: 100%; height: 100%; shape-rendering: crispEdges; }
+.char svg {
+  width: calc(var(--char-size) * var(--char-scale));
+  height: calc(var(--char-size) * var(--char-scale));
+  shape-rendering: crispEdges;
+}
 
 /* Слежение за курсором: один <img>, меняется только src.
    Затухание нужно для мягкого возврата к взгляду прямо, когда курсор
    уходит за пределы окна. */
 .char__img {
-  width: 100%;
-  height: 100%;
+  display: block;                /* ширина и высота приходят из character.js */
   image-rendering: pixelated;
   -webkit-user-drag: none;
   user-select: none;
@@ -133,6 +138,8 @@
    (-frames * frameSize) со steps(frames) — тогда шаги попадают ровно
    на границы кадров, а конечное положение никогда не показывается. */
 .char--sprite {
+  width: calc(var(--char-size) * var(--char-scale));
+  height: calc(var(--char-size) * var(--char-scale));
   background-image: var(--sheet);
   background-repeat: no-repeat;
   background-size: calc(var(--char-size) * var(--frames) * var(--char-scale))
@@ -374,8 +381,12 @@
 .acts {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-3);
-  padding: var(--sp-3);
+  /* Зазор считается по рамке ДЕТЕЙ, а не панели: у кнопок --bd 3px и
+     2px, вылет тени 6px и 2px. Брать 4px от самой панели тут незачем —
+     лишние пиксели выдавливали строку обратной связи за рамку. */
+  --px-clear: calc(var(--bd-md) * 2 + var(--px-lift));
+  gap: max(var(--sp-3), var(--px-clear));
+  padding: max(var(--sp-3), var(--px-clear));
   margin: var(--sp-3);
   min-height: 0;
 }
@@ -396,9 +407,11 @@
   white-space: nowrap;
 }
 
-.actions__row     { display: grid; gap: var(--sp-3); min-width: 0; }
-.actions__primary { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-3); }
-.actions__grid    { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-3); }
+.actions__row     { display: grid; gap: max(var(--sp-3), var(--px-clear)); min-width: 0; }
+.actions__primary { display: grid; grid-template-columns: minmax(0, 1fr); gap: max(var(--sp-3), var(--px-clear)); }
+/* Слоты с рамкой 2px: тень вылезает на 2px, больше зазора им не нужно */
+.actions__grid    { --px-clear: calc(var(--bd-sm) * 2 + var(--px-lift));
+                    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: max(var(--sp-3), var(--px-clear)); }
 
 /* ---- Общая плитка действия ---- */
 .act {
