@@ -15,6 +15,8 @@
 
   var KEY = "mira.sound";
   var ctx = null;
+  var masterGain = null;      // единственная точка правды для громкости:
+                               // музыка, blip'ы диалога и sfx — все в неё
   var muted = true;
   var lastHover = 0;
   var listeners = [];
@@ -34,12 +36,19 @@
     }
     var AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return null;
-    try { ctx = new AC(); } catch (e) { return null; }
+    try {
+      ctx = new AC();
+      masterGain = ctx.createGain();
+      masterGain.gain.value = muted ? 0 : 1;
+      masterGain.connect(ctx.destination);
+    } catch (e) { return null; }
     return ctx;
   }
 
   /* Одна нота с мягкой огибающей. Тип волны параметром: голосу идёт
-     треугольник, интерфейсу — квадрат. */
+     треугольник, интерфейсу — квадрат. Всё, что звучит — музыка, blip'ы,
+     голос — сходится в masterGain, а не в ctx.destination напрямую:
+     mute должен глушить ВСЁ одним узлом, а не гоняться за каждым источником. */
   function tone(freq, startAt, dur, peak, type) {
     var c = ctx;
     var osc = c.createOscillator();
@@ -52,7 +61,7 @@
     gain.gain.exponentialRampToValueAtTime(0.0001, startAt + dur);
 
     osc.connect(gain);
-    gain.connect(c.destination);
+    gain.connect(masterGain);
     osc.start(startAt);
     osc.stop(startAt + dur + 0.02);
   }
@@ -80,6 +89,7 @@
   var NOTES = [523.25, 659.25, 783.99, 659.25, 587.33, 698.46, 880.00, 698.46];
   var BEAT = 0.22;
   var music = { on: false, timer: 0, nextAt: 0, listeners: [] };
+  var resumeMusicOnUnmute = false;   // помнит, что музыка играла ДО mute
 
   function scheduleBar(at) {
     for (var i = 0; i < NOTES.length; i++) {
@@ -175,10 +185,25 @@
       }
     },
 
+    /* Единственная точка правды для громкости: масштабирует masterGain,
+       которого слушают ВСЕ источники звука. Музыку при этом не просто
+       глушит — по-настоящему останавливает (music.stop чистит таймер),
+       иначе она продолжала бы впустую планировать ноты в фоне. Какая
+       музыка играла — запоминается и возвращается при unmute; если музыки
+       не было, unmute просто отдаёт короткий click, как и раньше. */
     toggle: function () {
       muted = !muted;
       save();
-      if (!muted) { ensureCtx(); api.click(); }
+      if (muted) {
+        resumeMusicOnUnmute = music.on;
+        if (music.on) api.music.stop();
+        if (masterGain) masterGain.gain.setValueAtTime(0, ctx.currentTime);
+      } else {
+        ensureCtx();
+        if (masterGain) masterGain.gain.setValueAtTime(1, ctx.currentTime);
+        if (resumeMusicOnUnmute) { resumeMusicOnUnmute = false; api.music.start(); }
+        else api.click();
+      }
       listeners.forEach(function (fn) { fn(muted); });
       return muted;
     },

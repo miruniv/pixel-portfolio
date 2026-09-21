@@ -21,8 +21,37 @@ from playwright.sync_api import sync_playwright
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PAGE = "file://" + os.path.join(ROOT, "selftest.html")
+INDEX_PAGE = "file://" + os.path.join(ROOT, "index.html")
 ENGINES = ["chromium", "firefox", "webkit"]
 VIEWPORTS = [("desktop", 1600, 1100), ("laptop", 1280, 800), ("mobile", 390, 844)]
+
+
+def check_hover_no_jitter(browser, width, height):
+    """Настоящий :hover нельзя взвести синтетическим mousemove из
+    selftest.html (псевдокласс требует реального указателя), поэтому эта
+    проверка — не JS-assert из общего набора, а отдельный прогон в
+    Playwright с настоящим browser.mouse.move(). Ловит именно тот баг,
+    который был: .display:hover .char трясла спрайт transform'ом, пока
+    курсор просто лежит внутри рамки — независимо от направления взгляда,
+    которое считает gaze.js."""
+    ctx = browser.new_context(viewport={"width": width, "height": height})
+    page = ctx.new_page()
+    page.goto(INDEX_PAGE)
+    page.wait_for_timeout(400)
+    box = page.eval_on_selector(
+        ".display",
+        "el => { const r = el.getBoundingClientRect();"
+        "        return {x: r.x + r.width / 2, y: r.y + r.height / 2}; }")
+    page.mouse.move(box["x"], box["y"])
+    page.wait_for_timeout(100)
+    lefts = []
+    for _ in range(12):
+        lefts.append(page.eval_on_selector(
+            ".char", "el => el.getBoundingClientRect().left"))
+        page.wait_for_timeout(40)
+    ctx.close()
+    delta = max(lefts) - min(lefts)
+    return delta == 0, delta
 
 
 def run_one(browser, label, width, height):
@@ -91,6 +120,13 @@ def main():
                     bad += 1
                 for err in errors[:3]:
                     print("         JS-ОШИБКА:", err[:150])
+                    bad += 1
+
+                hover_ok, delta = check_hover_no_jitter(browser, w, h)
+                hmark = "OK  " if hover_ok else "FAIL"
+                print(f"[{hmark}] {engine:9} {label:8} "
+                      f"hover: .char не дёргается (delta={delta}px)")
+                if not hover_ok:
                     bad += 1
             browser.close()
 

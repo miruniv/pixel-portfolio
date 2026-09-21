@@ -211,7 +211,7 @@
   }
   .sky__layer { animation: none !important; transform: none !important; }
   .char--placeholder svg { animation: none !important; }
-  .display:hover .char { animation: none !important; }
+  .display:hover .char--placeholder { animation: none !important; }
   .typed__ink.is-typing::after, .caret { animation: none !important; opacity: 1 !important; }
   .stat:active, .stat[aria-current="true"],
   .px-bevel:active, .px-bevel.is-pressed { transform: none !important; }

@@ -381,6 +381,36 @@
       G.init({ img: img, cfg: gcfg, stageEl: $(".display") });
       move(cx + 400, cy); G.update();
 
+      // Реальная причина видимого дёрганья была не в gaze.js (направление
+      // здесь и раньше не пересчитывалось), а в CSS: .display:hover .char
+      // трясла спрайт transform'ом независимо от направления взгляда.
+      // Направление и так не скачет — проверяем это за реальное время,
+      // с играющей анимацией дыхания, а не только один кадр G.update().
+      head("gaze: направление не скачет 2с при неподвижном курсоре (анимация играет)");
+      $("#stage").dataset.state = "idle";
+      move(inX, inY); G.update();
+      var stillFile = fileOf(img);
+      var stillSeen = [stillFile], stillStable = true;
+      for (var si = 0; si < 10; si++) {
+        await tick(200);
+        G.update();
+        var sf = fileOf(img);
+        stillSeen.push(sf);
+        if (sf !== stillFile) stillStable = false;
+      }
+      ok("направление не изменилось ни разу за 10 сэмплов по 200мс",
+         stillStable, stillSeen.join(","));
+
+      // Дёрганье персонажа при наведении на самом деле было вызвано CSS-
+      // правилом .display:hover .char { animation: wobble … }, оставшимся
+      // с самого первого коммита (тогда единственным персонажем был SVG-
+      // плейсхолдер) — gaze.js тут ни при чём, трясло transform'ом поверх
+      // любого спрайта. Правило сузили до .char--placeholder. Проверка
+      // настоящего :hover живёт в tools/xbrowser.py: синтетический
+      // mousemove здесь не взводит псевдокласс :hover, а внешние
+      // стили в file:// недоступны через cssRules/fetch в Chromium и
+      // WebKit (кросс-origin запрет), так что здесь это не проверить.
+
       // ==================== СЦЕНА: ЦЕНТРИРОВАНИЕ И ЦЕНТР ДЛЯ GAZE ====================
       head("сцена персонажа");
       var stage = $(".display__inner");
@@ -777,6 +807,54 @@
          $("#bubble-sr").textContent === SITE_DATA.actions.items[0].lineOff,
          $("#bubble-sr").textContent);
       ok("класс музыки снят", !$(".hero__bubble").classList.contains("is-music"));
+
+      // ==================== MUTE ДЕЙСТВИТЕЛЬНО ОСТАНАВЛИВАЕТ МУЗЫКУ ====
+      // Раньше mute гасил только интерфейсные blip'ы — музыка играла своим
+      // отдельным узлом (tone() соединялась прямо с ctx.destination) и о
+      // флаге muted не знала вовсе. Теперь всё звучащее (музыка, blip'ы,
+      // голос) сходится в один masterGain, а mute вдобавок по-настоящему
+      // останавливает музыку (чистит её setInterval), а не просто глушит
+      // играющий впустую фон — проверяем это через M.audio.music.isPlaying(),
+      // а не через громкость: сам gain-узел приватен в audio.js.
+      head("MUTE реально останавливает музыку, а не просто глушит");
+      if (M.audio.isMuted()) { headBtn.click(); await tick(80); }   // старт с unmuted
+      musicBtn.click(); await tick(150);
+      ok("музыка играет", M.audio.music.isPlaying() === true);
+
+      muteBtn.click(); await tick(100);                              // MUTE во время игры
+      ok("музыка вкл -> mute -> тишина: isPlaying() стал false",
+         M.audio.music.isPlaying() === false);
+      ok("MUTE и кнопка в шапке синхронны и после программной остановки музыки",
+         muteBtn.getAttribute("aria-pressed") === "true" &&
+         headBtn.getAttribute("aria-pressed") === "false");
+      ok("кнопка PLAY MUSIC отражает реальную остановку — единая точка правды",
+         musicBtn.getAttribute("aria-pressed") === "false");
+      ok("сцена вернулась в idle вместе с музыкой",
+         stageEl.dataset.state === "idle", stageEl.dataset.state);
+      ok("строка статуса обновилась на сообщение MUTE",
+         $("#act-feedback").textContent === SITE_DATA.actions.items[6].feedback,
+         $("#act-feedback").textContent);
+
+      muteBtn.click(); await tick(150);                              // unmute -> резюме
+      ok("mute -> unmute: музыка возвращается в прежнем состоянии (играла — играет)",
+         M.audio.music.isPlaying() === true);
+      ok("кнопка PLAY MUSIC снова нажата", musicBtn.getAttribute("aria-pressed") === "true");
+      ok("сцена снова в dance", stageEl.dataset.state === "dance", stageEl.dataset.state);
+
+      musicBtn.click(); await tick(120);   // выключаем музыку явно — не тащим в другие тесты
+      ok("музыка остановлена для следующих проверок", M.audio.music.isPlaying() === false);
+
+      // ---- mute -> play music: нажатие снимает mute (см. комментарий в audio.js) ----
+      if (!M.audio.isMuted()) { headBtn.click(); await tick(80); }   // гарантируем muted
+      ok("подготовка: звук выключен", M.audio.isMuted() === true);
+      musicBtn.click(); await tick(150);
+      ok("mute -> PLAY MUSIC: mute снимается, музыка звучит по-настоящему",
+         M.audio.isMuted() === false && M.audio.music.isPlaying() === true);
+      ok("обе кнопки звука перерисовались в unmuted",
+         muteBtn.getAttribute("aria-pressed") === "false" &&
+         headBtn.getAttribute("aria-pressed") === "true");
+      musicBtn.click(); await tick(120);   // и снова тихо для следующих тестов
+      ok("музыка остановлена", M.audio.music.isPlaying() === false);
 
       // ---- реплика по фокусу, а не только по наведению ----
       var ghBtn = $('.act[data-action="sayhi"]');

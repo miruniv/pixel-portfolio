@@ -222,14 +222,20 @@
     window.setTimeout(function () { node.classList.remove("is-pressed"); }, 150);
   }
 
-  function setMusic(on, node) {
-    // Сначала реально запускаем звук. Если браузер отказал (нет
-    // AudioContext), кнопка не должна врать, что музыка играет.
-    if (on) { if (!audio.music.start()) on = false; }
-    else audio.music.stop();
+  /* Только просит audio.js включить/выключить музыку — саму UI-синхронизацию
+     (кнопка, поза персонажа, статус, реплика) делает syncMusicUI ниже,
+     подписанная на audio.music.onChange. Это нужно не только для клика по
+     PLAY MUSIC: MUTE теперь тоже умеет останавливать и возвращать музыку
+     (см. js/audio.js), и в обоих случаях UI обязана обновиться одинаково —
+     единая точка правды, а не два места, которые рисуют одно и то же. */
+  function requestMusic(on) {
+    if (on) audio.music.start(); else audio.music.stop();
+  }
 
+  function syncMusicUI(on) {
     musicOn = on;
     var a = store.actions.byId.music;
+    var node = d.qs('.act[data-action="music"]');
     if (node) node.setAttribute("aria-pressed", on ? "true" : "false");
     refs.bubble.classList.toggle("is-music", on);
     M.character.setState(on ? (a && a.state) || "dance" : "idle");
@@ -253,7 +259,7 @@
     }
     if (a.id === "music") {
       // Нажатие — это и есть пользовательский жест, которого ждёт браузер
-      setMusic(!musicOn, node);
+      requestMusic(!musicOn);
       return;
     }
 
@@ -261,7 +267,7 @@
     // пляску (звук, состояние сцены, кадры) через тот же путь, что и
     // повторный клик по PLAY MUSIC — иначе танец продолжал бы крутиться
     // под спрайтом нового действия.
-    if (musicOn) setMusic(false, d.qs('.act[data-action="music"]'));
+    if (musicOn) requestMusic(false);
 
     if (a.type === "toggle") {
       var on = node.getAttribute("aria-pressed") !== "true";
@@ -375,8 +381,15 @@
   /* ========================================================== ЗВУК ==== */
 
   /* Одно состояние звука на две кнопки: ♪ в шапке и MUTE в панели действий.
-     Обе читают audio.isMuted() и обе перерисовываются здесь. */
-  function syncSound() {
+     Обе читают audio.isMuted() и обе перерисовываются здесь.
+     fromToggle — false только при самом первом вызове из init(): тогда это
+     не реакция на нажатие, а просто отрисовка стартового состояния, и
+     строку статуса под слотами лучше оставить как есть ("PICK AN ACTION"),
+     а не сразу перекрывать её сообщением про звук. При любом реальном
+     переключении (из любой из двух кнопок — обе идут через audio.toggle
+     и этот же подписчик) статус и реплика обновляются как у любого
+     другого toggle-действия. */
+  function syncSound(fromToggle) {
     var muted = audio.isMuted();
 
     d.clear(refs.soundGlyph);
@@ -396,8 +409,9 @@
           render.icons[muted ? "speakerOff" : "speaker"], 16));
       }
       var act = store.actions.byId.mute;
-      if (act && refs.feedback && refs.feedback.dataset.owner === "mute") {
-        refs.feedback.textContent = muted ? act.feedback : act.feedbackOff;
+      if (act && fromToggle) {
+        setFeedback(muted ? act.feedback : act.feedbackOff);
+        showLine(muted ? act.line : act.lineOff, muted ? 0 : 2600, act.voice);
       }
     }
   }
@@ -458,8 +472,9 @@
       bubbleInk: d.qs("#bubble-ink"),
       bubbleSr: d.qs("#bubble-sr")
     });
-    syncSound();
-    audio.onChange(syncSound);
+    syncSound(false);
+    audio.onChange(function () { syncSound(true); });
+    audio.music.onChange(syncMusicUI);
 
     /* --- Делегирование кликов --- */
     d.on(document, "click", function (e) {

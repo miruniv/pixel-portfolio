@@ -175,7 +175,12 @@
 .char--placeholder svg { animation: bob 1.2s steps(2) infinite; }
 @keyframes bob { 50% { transform: translateY(-4px); } }
 
-.display:hover .char { animation: wobble 260ms steps(2) infinite; }
+/* Только у плейсхолдера: gaze и sprite-режимы уже реагируют на курсор сами
+   (поворотом головы, покадровой анимацией), а этот wobble остался с самых
+   первых коммитов, когда единственным персонажем был SVG-силуэт. На
+   .char--gaze он применялся до сих пор и тряс спрайт всё то время, что
+   курсор просто лежит внутри рамки — независимо от направления взгляда. */
+.display:hover .char--placeholder { animation: wobble 260ms steps(2) infinite; }
 @keyframes wobble { 50% { transform: translateX(4px); } }
 
 .hero__plate {
