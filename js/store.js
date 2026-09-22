@@ -32,9 +32,16 @@
       if (byId[s.id]) { warn(where + ": id продублирован. Секция пропущена."); return; }
       if (!s.label) warn(where + ": нет label — на кнопке будет id.");
 
-      var mode = s.mode === "page" ? "page" : "list";
+      // "cards" — как "list", но без второго уровня: все карточки со своим
+      // текстом видны сразу (см. render.cards()). Нужен для ACHIEVEMENTS —
+      // короткие самодостаточные блоки, а не карточка-превью + деталь.
+      var mode = (s.mode === "page" || s.mode === "cards") ? s.mode : "list";
       if (mode === "list" && (!Array.isArray(s.items) || !s.items.length)) {
         warn(where + ': mode "list" требует непустой items. Переключаю на "page".');
+        mode = "page";
+      }
+      if (mode === "cards" && (!Array.isArray(s.items) || !s.items.length)) {
+        warn(where + ': mode "cards" требует непустой items. Переключаю на "page".');
         mode = "page";
       }
       if (mode === "page" && !s.page) {
@@ -58,11 +65,27 @@
           items.push(it);
         });
         if (!items.length) { warn(where + ": не осталось валидных карточек. Секция пропущена."); return; }
+      } else if (mode === "cards") {
+        s.items.forEach(function (it, ii) {
+          var iw = where + ".items[" + ii + "]";
+          if (!it || !it.title) { warn(iw + ": нет title. Карточка пропущена."); return; }
+          if (!it.description) warn(iw + ": нет description.");
+          if (it.image && !it.imageAlt) warn(iw + ": у image нет imageAlt.");
+          if (it.id && ID_RE.test(it.id)) {
+            if (itemsById[it.id]) { warn(iw + ": id продублирован. Карточка пропущена."); return; }
+            itemsById[it.id] = it;
+          }
+          items.push(it);
+        });
+        if (!items.length) { warn(where + ": не осталось валидных карточек. Секция пропущена."); return; }
       }
 
       var sec = {
         id: s.id,
         label: s.label || s.id.toUpperCase(),
+        // Заголовок в правой панели — обычно = label, но может отличаться
+        // от подписи на кнопке навигации (ACHIEVEMENTS у EXTRA).
+        heading: s.heading || s.label || s.id.toUpperCase(),
         icon: s.icon || null,
         mode: mode,
         pose: s.pose || null,

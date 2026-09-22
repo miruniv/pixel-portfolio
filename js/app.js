@@ -80,6 +80,9 @@
     } else if (section.mode === "page") {
       setContent(render.page(section, jobs));
       closeModal();
+    } else if (section.mode === "cards") {
+      setContent(render.cards(section));
+      closeModal();
     } else if (!item) {
       setContent(render.grid(section));
       closeModal();

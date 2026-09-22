@@ -31,7 +31,11 @@
 
   function ensureCtx() {
     if (ctx) {
-      if (ctx.state === "suspended") ctx.resume();
+      // resume() возвращает промис; ничего не ждём (звук планируется
+      // синхронно по ctx.currentTime), но непойманный reject тут — это
+      // ровно тот "uncaught promise" из брифа про play(), только для
+      // Web Audio вместо <audio>.
+      if (ctx.state === "suspended") ctx.resume().catch(function () {});
       return ctx;
     }
     var AC = window.AudioContext || window.webkitAudioContext;

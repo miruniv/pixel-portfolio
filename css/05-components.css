@@ -268,6 +268,52 @@
 }
 .card__sub { font-size: var(--fs-sm); color: var(--ink); opacity: 0.8; }
 
+/* ---- Карточки без деталей (ACHIEVEMENTS) ----
+   minmax(min(100%, 260px), 1fr): на очень узких экранах min(...) отдаёт
+   100% раньше, чем 260px перестанет помещаться — иначе колонка не может
+   сжаться меньше 260px и появляется горизонтальный скролл. Высота — auto,
+   без строгой сетки строк, поэтому длинное описание не обрезается и не
+   требует мелкого шрифта, чтобы влезть. */
+.achv-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: var(--sp-5);
+  padding: var(--sp-1);
+  align-items: start;
+}
+.achv {
+  display: grid;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  --bd: var(--bd-md);
+  --px-fill: var(--tile);
+}
+.achv__img {
+  --px-fill: var(--panel-2);
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  margin: 0;
+  overflow: hidden;
+}
+.achv__img img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.achv__title {
+  font-family: var(--font-display);
+  font-size: var(--fs-md);
+  line-height: var(--lh-tight);
+  letter-spacing: 0.5px;
+}
+.achv__desc {
+  font-size: var(--fs-sm);
+  line-height: var(--lh-body);
+  color: var(--ink-2);
+}
+
 /* ---- Деталь (уровень 2) ---- */
 .detail { display: grid; gap: var(--sp-4); padding: var(--sp-1); }
 

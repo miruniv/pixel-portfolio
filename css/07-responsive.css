@@ -88,7 +88,13 @@
 
   /* На мобилке правая панель уже не скроллится сама — скроллит .workspace */
   .content { overflow: visible; }
-  .content-frame { min-height: 200px; }
+  /* align-items:stretch (grid-дефолт) считает auto-высоту строки "content"
+     по min-height элемента, а не по фактическому содержимому — с длинными
+     секциями (ACHIEVEMENTS) .content-frame стягивался обратно к 200px,
+     а карточки ниже просто рисовались поверх futь, наезжая на подвал.
+     align-self:start убирает stretch именно для этой строки: высота
+     считается по content-frame, а не наоборот. */
+  .content-frame { min-height: 200px; align-self: start; }
 
   /* Список статов сворачивается гамбургером, чтобы контент был ближе */
   .stats[data-collapsed="true"] .stats__list { display: none; }
@@ -101,22 +107,23 @@
      десктопе (правило .act--primary из 05-components.css), никакого
      отдельного мобильного переопределения тут больше не нужно. */
 
-  /* Навигация — горизонтальная лента с полными подписями, без сокращений */
+  /* Навигация — перенос по строкам, а не горизонтальная прокрутка: длинная
+     подпись вроде "WORK EXPERIENCE" переносится на вторую строку внутри
+     своей же кнопки, а не обрезается и не требует свайпа, чтобы её
+     дочитать. flex-basis отвечает за "2-3 в ряд, остаток — на следующей
+     строке"; конкретное число зависит от того, сколько влезло по ширине. */
   .stats__list {
     flex-direction: row;
+    flex-wrap: wrap;
     flex: 0 0 auto;
-    overflow-x: auto;
-    overflow-y: hidden;
-    overscroll-behavior-x: contain;
-    scroll-snap-type: x proximity;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: var(--sp-2);
+    gap: var(--sp-2);
   }
   .stat {
-    flex: 0 0 auto;
+    flex: 1 1 140px;
     width: auto;
-    white-space: nowrap;
-    scroll-snap-align: start;
+    white-space: normal;
+    text-align: left;
+    line-height: 1.3;
   }
 
   /* Сцена ужимается по высоте: на 390x844 без этого не помещается

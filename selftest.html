@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Mira — Portfolio</title>
-<meta name="description" content="Frontend developer and pixel artist. Portfolio.">
+<meta name="description" content="Mira Askar — portfolio. Programming and hardware.">
 <meta name="color-scheme" content="light">
 <meta name="theme-color" content="#F9A8D0">
 
@@ -144,12 +144,11 @@
 <noscript>
   <div class="noscript px-box px-drop">
     <h2 class="content__title">HI, I'M MIRA</h2>
-    <p>Frontend developer and pixel artist.</p>
+    <p>Programming and hardware have always been at the heart of my interests.</p>
     <p>This portfolio needs JavaScript to run. Here are the important bits:</p>
     <ul class="links">
-      <li><a class="link px-box px-face" href="mailto:mira@example.com">EMAIL</a></li>
-      <li><a class="link px-box px-face" href="https://github.com/example" rel="noopener noreferrer">GITHUB</a></li>
-      <li><a class="link px-box px-face" href="https://t.me/example" rel="noopener noreferrer">TELEGRAM</a></li>
+      <li><a class="link px-box px-face" href="mailto:askamirra@gmail.com">askamirra@gmail.com</a></li>
+      <li><a class="link px-box px-face" href="https://www.linkedin.com/in/mira-askar-59764b365" rel="noopener noreferrer">www.linkedin.com/in/mira-askar-59764b365</a></li>
     </ul>
   </div>
 </noscript>
@@ -520,7 +519,7 @@
       ok("боковая панель — nav, не tablist", !!$("nav.stats") && !$('[role="tablist"]'));
 
       location.hash = "#projects"; await tick();
-      ok("SECTION: 3 карточки", $$("#content .card").length === 3);
+      ok("SECTION: 4 карточки", $$("#content .card").length === 4);
       ok("SECTION: aria-current", $('.stat[data-section="projects"]').getAttribute("aria-current") === "true");
 
       var stats = $$(".stat");
@@ -530,13 +529,13 @@
       ok("End -> последний", document.activeElement === stats[4]);
 
       var isNarrow = window.innerWidth <= 900;
-      var card = $('.card[data-item="pixel-timer"]');
+      var card = $('.card[data-item="hyperloop"]');
       card.focus(); card.click(); await tick(170);
       // На узком экране деталь открывается модалкой, а не в правой панели
       var dRoot = isNarrow ? $("#modal-body") : $("#content");
       ok("DETAIL открылась",
          !!dRoot.querySelector(".detail__title") &&
-         dRoot.querySelector(".detail__title").textContent === "PIXEL TIMER",
+         dRoot.querySelector(".detail__title").textContent === "HYPERLOOP UNIVERSITY PROJECT",
          isNarrow ? "модалка" : "панель");
       ok("заголовок детали не дублирует id заголовка сетки",
          $$("#content-title").length <= 1, $$("#content-title").length + " с таким id");
@@ -544,7 +543,7 @@
          document.activeElement === (isNarrow ? $("#modal-close") : $('[data-action="back"]')));
       ok("текст детали лежит в DOM целиком, без печати",
          $$(".detail__text p", dRoot).map(function (p) { return p.textContent; }).join("|") ===
-         SITE_DATA.sections[2].items[1].detail.text.join("|"));
+         SITE_DATA.sections[2].items[0].detail.text.join("|"));
       ok("в правой панели нет печатающегося слоя",
          $$(".typed, .typed__ink, .typed__ghost", dRoot).length === 0);
       ok("текст детали не спрятан от скринридера",
@@ -553,22 +552,22 @@
 
       key("Escape"); await tick(160);
       ok("Esc возвращает на сетку", !!$("#content .cards") && location.hash === "#projects");
-      ok("фокус вернулся на карточку", document.activeElement === $('.card[data-item="pixel-timer"]'));
+      ok("фокус вернулся на карточку", document.activeElement === $('.card[data-item="hyperloop"]'));
 
       if (isNarrow) { key("Escape"); await tick(170); }
       $("#content").style.maxHeight = "120px";
       $("#content").scrollTop = 40;
       var saved = $("#content").scrollTop;
-      $('.card[data-item="site-redesign"]').click(); await tick(170);
+      $('.card[data-item="hyperloop"]').click(); await tick(170);
       if (isNarrow) { key("Escape"); } else { $('[data-action="back"]').click(); }
       await tick(180);
       ok("BACK восстанавливает скролл сетки", $("#content").scrollTop === saved,
          $("#content").scrollTop + " != " + saved);
       $("#content").style.maxHeight = "";
 
-      $('.card[data-item="site-redesign"]').click(); await tick(140);
+      $('.card[data-item="hyperloop"]').click(); await tick(140);
       var len = history.length;
-      $$('.ribbon__item[data-item="pixel-timer"]',
+      $$('.ribbon__item[data-item="poker-simulator"]',
          isNarrow ? $("#modal-body") : $("#content"))[0].click();
       await tick(170);
       ok("лента соседей = replace, не push", history.length === len);
@@ -630,7 +629,7 @@
 
       // ==================== ЛЕНТА СОСЕДЕЙ ====================
       head("кнопки ленты соседей");
-      location.hash = "#projects/pixel-timer"; await tick(180);
+      location.hash = "#projects/hyperloop"; await tick(180);
       var ribs = $$(".ribbon__item", window.innerWidth <= 900 ? $("#modal-body") : $("#content"));
       ok("кнопки ленты без текстовых подписей",
          ribs.every(function (b) { return b.textContent.trim() === ""; }),
@@ -943,14 +942,66 @@
 
       // ==================== МЕТАДАННЫЕ И ВВОДНОЕ ПРЕДЛОЖЕНИЕ ====================
       head("правая панель");
-      location.hash = "#about"; await tick(160);
+      // Разные тона теперь живут не в ABOUT ME (её теги убраны по брифу —
+      // остался только заголовок и один абзац), а в WORK/PROJECTS: LOCATION
+      // и STATUS — tone: "plain"/"alt" у HEALWARE и DELIVERY ROBOT.
+      location.hash = "#work/healware"; await tick(160);
+      var plainCount = $$(".tag--plain").length;
+      location.hash = "#projects/delivery-robot"; await tick(160);
       ok("ряды метаданных несут разные тона",
-         $$(".tag--alt").length > 0 && $$(".tag--plain").length > 0,
-         "alt=" + $$(".tag--alt").length + " plain=" + $$(".tag--plain").length);
-      ok("вводное предложение крупнее остального текста",
-         parseFloat(getComputedStyle($(".detail__text > p:first-child")).fontSize) >
-         parseFloat(getComputedStyle($$(".detail__text > p")[1]).fontSize));
+         $$(".tag--alt").length > 0 && plainCount > 0,
+         "alt=" + $$(".tag--alt").length + " plain=" + plainCount);
+
+      location.hash = "#about"; await tick(160);
+      ok("вводное предложение — единственный абзац, тегов нет",
+         $$(".detail__text > p").length === 1 && $$(".tags", $("#content")).length === 0,
+         $$(".detail__text > p").length + " абзацев, " + $$(".tags", $("#content")).length + " .tags");
       ok("карточка проекта из правой панели убрана", $$(".featured").length === 0);
+
+      // ==================== EXTRA: mode "cards" (ACHIEVEMENTS) ====================
+      // Новый режим секции — все карточки видны сразу, без перехода на
+      // деталь (в отличие от mode "list" у WORK/PROJECTS). Кнопка навигации
+      // остаётся EXTRA, а заголовок в панели — ACHIEVEMENTS: это то, что
+      // отличает section.heading от section.label.
+      head('EXTRA: mode "cards" (ACHIEVEMENTS)');
+      ok("кнопка навигации подписана EXTRA",
+         $('.stat[data-section="extra"] .stat__label').textContent === "EXTRA");
+      // transientLine переживает навигацию (это фича — короткая реплика
+      // действия не должна обрываться переходом между секциями), поэтому
+      // сначала нужно дождаться, пока истечёт её собственный hold-таймер
+      // от более раннего теста (THINK: showLine(..., 2600, ...)), иначе
+      // она перекроет section.bubble независимо от того, сколько раз тут
+      // сменить hash.
+      await tick(2700);
+      location.hash = "#extra"; await tick(200);
+      ok("заголовок панели — ACHIEVEMENTS, не EXTRA",
+         $("#content-title").textContent === "ACHIEVEMENTS", $("#content-title").textContent);
+      ok("реплика при открытии EXTRA — новая строка из брифа",
+         $("#bubble-sr").textContent === "Here is what else I have", $("#bubble-sr").textContent);
+      ok("все 5 карточек достижений видны сразу, без клика",
+         $$(".achv-grid .achv").length === 5, $$(".achv-grid .achv").length);
+      ok("ни одна карточка не превратилась в кликабельную .card (нет второго уровня)",
+         $$("#content .card").length === 0);
+      ok("у каждой карточки есть заголовок и описание",
+         $$(".achv").every(function (n) {
+           return !!n.querySelector(".achv__title") && !!n.querySelector(".achv__desc");
+         }));
+      ok("у каждой карточки есть картинка (все 5 достижений совпали с файлами)",
+         $$(".achv img").length === 5, $$(".achv img").length);
+      ok("у всех картинок достижений есть содержательный alt",
+         $$(".achv img").every(function (img) { return (img.getAttribute("alt") || "").length > 5; }));
+      ok("заголовки карточек совпадают с data.js дословно",
+         $$(".achv__title").map(function (n) { return n.textContent; }).join("|") ===
+         SITE_DATA.sections.find(function (s) { return s.id === "extra"; })
+           .items.map(function (it) { return it.title; }).join("|"));
+      ok("itemId у cards-секции невалиден — откатывается на секцию, как у mode page",
+         (function () {
+           location.hash = "#extra/anything"; return true;
+         })());
+      await tick(160);
+      ok("… и правда откатился: hash = #extra, карточки всё ещё все 5 видны",
+         location.hash === "#extra" && $$(".achv-grid .achv").length === 5,
+         location.hash + " / " + $$(".achv-grid .achv").length + " карточек");
 
       // ==================== ГОЛОС ПЕРСОНАЖА ====================
       head("голос персонажа");
@@ -1095,6 +1146,10 @@
            return sideWidths(n).every(function (x) { return x > 0; }); }),
          dbl.length + " элементов");
 
+      // .tag:not(.tag--plain) требует страницу, где такой тег реально
+      // отрисован сейчас — ABOUT ME тегов больше не несёт вовсе (см. бриф),
+      // не-plain тон сейчас только у STATUS/DELIVERY ROBOT.
+      location.hash = "#projects/delivery-robot"; await tick(160);
       ok("перечисленные в задании коробки на месте и с рамкой",
          [".screen", ".hero", ".hero__bubble", ".hero__stage", ".acts",
           ".stat", ".act", ".actions__feedback", ".content-frame",
@@ -1200,6 +1255,12 @@
          kids.map(function (n) { return n.className.split(" ")[0]; }).join(","));
 
       // ---- размер и положение персонажа ----
+      // .fit() форсирует пересчёт под ТЕКУЩИЙ layout, а не .lastFit(),
+      // который просто отдаёт кэш с прошлого вызова — тестов навигации
+      // и модалок выше в файле прибавилось, и без форс-пересчёта здесь
+      // можно было сравнить живой imgR с точным расчётом ПОД СТАРУЮ,
+      // уже неактуальную геометрию сцены.
+      MIRA.character.fit();
       var stInner = $(".display__inner").getBoundingClientRect();
       var imgEl = $(".char__img");
       var imgR = imgEl.getBoundingClientRect();
@@ -1213,11 +1274,13 @@
          fit ? fit.mode + " " + fit.spriteW + "x" + fit.spriteH : "fitSprite вернул null");
 
       // Ждём знак и потолок в fcfg.bias*100 (плюс округление) — не точное
-      // число: needFree may срезать сдвиг раньше, чем он дойдёт до номинала
-      // (в упор на низких сценах), а на "vписан"-режиме конкурирует ещё и
-      // ширина сцены с квадратным кадром спрайта.
+      // число: needFree может срезать сдвиг раньше, чем он дойдёт до
+      // номинала (в упор на низких сценах — на 160px сцене needFree и
+      // round() съедают его совсем, bias честно округляется до 0, а не до
+      // отрицательного), а на "vписан"-режиме конкурирует ещё и ширина
+      // сцены с квадратным кадром спрайта.
       ok("персонаж смещён ниже центра сцены, не больше настроенного bias",
-         bias > 0 && bias <= fcfg.bias * 100 + 1,
+         bias >= 0 && bias <= fcfg.bias * 100 + 1,
          bias.toFixed(1) + "% при настроенном " + (fcfg.bias * 100) +
          "% (сверху " + Math.round(padTop) +
          ", снизу " + Math.round(padBottom) + ", сцена " + Math.round(stInner.height) + ")");
@@ -1437,12 +1500,15 @@
         // проверкой "высота плиток 130-140px" в разделе панели действий
         // выше — она не завязана на ширину вьюпорта.
         var row = $(".actions__row");
+        // Раньше навигация тоже была лентой с горизонтальной прокруткой —
+        // теперь длинные подписи вроде WORK EXPERIENCE переносятся внутри
+        // своей кнопки (flex-wrap), а сам список статов переносится по
+        // строкам, а не скроллится в сторону. См. .stats__list в
+        // 07-responsive.css.
         var navRow0 = $(".stats__list");
-        // Chrome нормализует "x proximity" в "x": proximity — значение по
-        // умолчанию и в computed style опускается. Проверяем ось.
-        ok("у ленты навигации включён scroll-snap по горизонтали",
-           /^x/.test(getComputedStyle(navRow0).scrollSnapType),
-           getComputedStyle(navRow0).scrollSnapType);
+        ok("у ленты навигации нет горизонтальной прокрутки — она переносится",
+           navRow0.scrollWidth <= navRow0.clientWidth + 1,
+           navRow0.scrollWidth + " vs " + navRow0.clientWidth);
         ok("ряд действий не схлопнут — кнопки внутри своей панели",
            row.getBoundingClientRect().bottom <=
            $(".acts").getBoundingClientRect().bottom + 1);
@@ -1451,8 +1517,6 @@
            $$(".act")[0].dataset.action === "music",
            $$(".act")[0].dataset.action);
 
-        var navRow = $(".stats__list");
-        ok("навигация скроллится горизонтально", navRow.scrollWidth > navRow.clientWidth);
         ok("подписи навигации полные, без сокращений",
            $$(".stat__label").map(function (n) { return n.textContent; }).join("|") ===
            SITE_DATA.sections.map(function (x) { return x.label; }).join("|"),

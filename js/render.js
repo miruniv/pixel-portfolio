@@ -95,11 +95,6 @@
 
     /* ---- Подвал. Логотипы брендов не воспроизводим: рисуем нейтральные
        глифы, а название несут title и aria-label. ---- */
-    code: [
-      ["i",4,4,2,2],["i",2,6,2,3],["i",4,9,2,2],
-      ["i",10,4,2,2],["i",12,6,2,3],["i",10,9,2,2],
-      ["a",9,3,1,3],["a",8,6,1,3],["a",7,9,1,3]
-    ],
     badge: [["i",6,2,4,4],["f",7,3,2,2],["i",3,8,10,6],["f",4,9,8,4]],
     note: [
       ["i",10,2,2,9],["i",12,2,3,3],["i",12,5,2,2],
@@ -217,7 +212,7 @@
   /* ------------------------------------------- СЕТКА (уровень 1) ---- */
   function grid(section) {
     var frag = document.createDocumentFragment();
-    frag.appendChild(title(section.label));
+    frag.appendChild(title(section.heading));
     if (section.intro) frag.appendChild(el("p", { class: "content__intro", text: section.intro }));
 
     var list = el("ul", { class: "cards" });
@@ -232,6 +227,31 @@
         it.subtitle ? el("span", { class: "card__sub", text: it.subtitle }) : null
       ]);
       list.appendChild(el("li", null, btn));
+    });
+    frag.appendChild(list);
+    return frag;
+  }
+
+  /* ---------------------------------- КАРТОЧКИ БЕЗ ДЕТАЛИ (ACHIEVEMENTS) ----
+     Как grid(), но без перехода на второй уровень: заголовок, полное
+     описание и картинка видны сразу в каждой карточке. Своя разметка,
+     а не переиспользование card/detail — тем карточкам, наоборот, нужен
+     ужатый превью-вид с переходом по клику. */
+  function cards(section) {
+    var frag = document.createDocumentFragment();
+    frag.appendChild(title(section.heading));
+    if (section.intro) frag.appendChild(el("p", { class: "content__intro", text: section.intro }));
+
+    var list = el("ul", { class: "achv-grid" });
+    section.items.forEach(function (it) {
+      var kids = [];
+      if (it.image) {
+        kids.push(el("figure", { class: "achv__img px-box px-inset" },
+          el("img", { src: it.image, alt: it.imageAlt || "", loading: "lazy" })));
+      }
+      kids.push(el("h3", { class: "achv__title", text: it.title }));
+      if (it.description) kids.push(el("p", { class: "achv__desc", text: it.description }));
+      list.appendChild(el("li", null, el("article", { class: "achv px-box px-bevel" }, kids)));
     });
     frag.appendChild(list);
     return frag;
@@ -298,7 +318,7 @@
   /* -------------------------------------- СТРАНИЦА (без ур. 2) ---- */
   function page(section, jobs) {
     var frag = document.createDocumentFragment();
-    frag.appendChild(title(section.label));
+    frag.appendChild(title(section.heading));
     frag.appendChild(el("div", { class: "detail" }, body(section.page, jobs)));
     return frag;
   }
@@ -512,7 +532,7 @@
   }
 
   M.render = {
-    stats: stats, hint: hint, grid: grid, page: page, detail: detail,
+    stats: stats, hint: hint, grid: grid, page: page, cards: cards, detail: detail,
     appIcon: appIcon, icons: ICONS,
     charStats: charStats, footer: footer,
     actions: actions, bubbleDecor: bubbleDecor

@@ -7,7 +7,7 @@
      section.mode = "list"  -> сетка карточек, у каждой свой экран (уровень 2)
      section.mode = "page"  -> контент показывается сразу, без второго уровня
      любой путь к картинке можно поставить null — нарисуется плейсхолдер
-     id попадает в адрес страницы:  #projects/pixel-timer
+     id попадает в адрес страницы:  #projects/hyperloop
    ============================================================================ */
 
 const SITE_DATA = {
@@ -17,7 +17,7 @@ const SITE_DATA = {
     name: "HI, I'M MIRA",                    // текст в шапке окна
     shortName: "Mira",                       // для <title> вкладки
     appIcon: null,                           // "./assets/icons/app.png" (16x16)
-    description: "Frontend developer and pixel artist. Portfolio."
+    description: "Mira Askar — portfolio. Programming and hardware."
   },
 
   /* ------------------------------------------------------------------ UI -- */
@@ -109,7 +109,7 @@ const SITE_DATA = {
   /* ------------------------------------------------- СТАТЫ ПЕРСОНАЖА -- */
   /* Панель под плашкой с именем в центральной колонке. */
   profile: {
-    level: 22,
+    level: 19,
     levelFilled: 7,          // сколько ячеек шкалы закрашено
     levelTotal: 10           // всего ячеек; счётчик в aria берётся отсюда
   },
@@ -225,12 +225,13 @@ const SITE_DATA = {
   /* -------------------------------------------------------------- ПОДВАЛ -- */
   /* Прибит к низу правой панели. Иконки — имена из ICONS в js/render.js. */
   footer: {
-    copyright: "\u00A9 2026 Mira \u00B7 Made with HTML",
+    copyright: "Designed and Built by Mira Askar 2026",
+    // GitHub icon removed on purpose (separate from Contacts, see #6 of the
+    // brief) \u2014 this row is the "bottom-right GitHub block/widget" it refers to.
     links: [
-      { label: "GitHub",   url: "https://github.com/example",       icon: "code" },
-      { label: "Email",    url: "mailto:mira@example.com",          icon: "envelope" },
-      { label: "LinkedIn", url: "https://linkedin.com/in/example",  icon: "badge" },
-      { label: "CV",       url: "./cv.pdf",                         icon: "document" }
+      { label: "Email",    url: "mailto:askamirra@gmail.com",                          icon: "envelope" },
+      { label: "LinkedIn", url: "https://www.linkedin.com/in/mira-askar-59764b365",     icon: "badge" },
+      { label: "CV",       url: "./cv.pdf",                                            icon: "document" }
     ]
   },
 
@@ -247,19 +248,13 @@ const SITE_DATA = {
       page: {
         hero: null,
         heroAlt: "",
-        // Первый абзац выводится крупнее остальных — это вводное предложение.
+        // Единственный абзац — вводное предложение, поэтому он же крупный.
+        // Теги/чипы убраны из данных, а не просто скрыты CSS — так в
+        // render.js не остаётся пустой обёртки под них.
         text: [
-          "Frontend developer who likes small, handmade interfaces.",
-          "I like things that feel like objects you can pick up: buttons that click, edges you can see, nothing that slides around for no reason.",
-          "Everything here is hand-written HTML, CSS and JavaScript. No framework, no build step."
+          "Hi, I'm Mira. Programming and hardware have always been at the heart of my interests. I enjoy gaming, drawing, and playing the piano. I love creating things."
         ],
-        // tone: "alt" — второй цвет чипов, "plain" — значение строкой без чипа
-        tags: [
-          { label: "BASED IN",  values: ["Almaty / London"], tone: "plain" },
-          { label: "STACK",     values: ["HTML", "CSS", "JavaScript"] },
-          { label: "ALSO",      values: ["Figma", "Aseprite", "Three.js"], tone: "alt" },
-          { label: "CURRENTLY", values: ["Building small tools \u00B7 Learning Three.js"], tone: "plain" }
-        ],
+        tags: [],
         links: []
       }
     },
@@ -274,41 +269,43 @@ const SITE_DATA = {
       intro: "SELECT A PLACE",
       items: [
         {
-          id: "studio-nova",
-          title: "STUDIO NOVA",
-          subtitle: "2023 — now · Frontend",
-          thumb: null,                       // "./assets/cards/work-studio-nova.png" (64x64)
-          thumbAlt: "Pixel icon of an office building",
+          id: "healware",
+          title: "HEALWARE",
+          subtitle: "Aug – Sep 2026 · Java Backend Developer",
+          thumb: "./assets/cards/work-healware.png",
+          thumbAlt: "Healware logo",
           detail: {
-            hero: null,                      // "./assets/cards/work-studio-nova@hero.png" (192x128)
-            heroAlt: "",
+            hero: "./assets/cards/work-healware.png",
+            heroAlt: "Healware logo",
             text: [
-              "Building and maintaining marketing sites for a design studio.",
-              "Rebuilt the component library from scratch, which cut page weight by roughly 40% and finally made the team stop fighting the old grid."
+              "Developed Java/Spring RESTful API workflows and endpoint contracts to ingest medication selections and patient allergy histories from hospital systems via structured JSON payloads.",
+              "Designed response DTOs and API schemas to return allergy-risk assessments, contributing factors and safer medication alternatives to downstream clinical systems.",
+              "Defined input-validation rules, exception-handling flows, HTTP status codes and structured error responses to support reliable exchange of sensitive clinical data."
             ],
             tags: [
-              { label: "ROLE", values: ["Frontend"] },
-              { label: "SKILLS", values: ["CSS Grid", "a11y", "Performance"] }
+              { label: "ROLE", values: ["Java Backend Developer"] },
+              { label: "LOCATION", values: ["London, United Kingdom (Remote)"], tone: "plain" }
             ],
-            links: [{ label: "SITE", url: "https://example.com", kind: "live" }]
+            links: []
           }
         },
         {
-          id: "pixel-lab",
-          title: "PIXEL LAB",
-          subtitle: "2021 — 2023 · Junior dev",
-          thumb: null,
-          thumbAlt: "Pixel icon of a flask",
+          id: "trans-asia-construction",
+          title: "TRANS ASIA CONSTRUCTION LLP",
+          subtitle: "Jul – Aug 2026 · Java Backend Developer",
+          thumb: "./assets/cards/work-trans-asia-construction.png",
+          thumbAlt: "Trans Asia Construction LLP logo",
           detail: {
-            hero: null,
-            heroAlt: "",
+            hero: "./assets/cards/work-trans-asia-construction.png",
+            heroAlt: "Trans Asia Construction LLP logo",
             text: [
-              "Small agency, lots of landing pages, very short deadlines.",
-              "This is where I learned to write CSS that survives a client changing their mind three times in one afternoon."
+              "Developed a Java/Spring employee-record backend using Hibernate ORM and PostgreSQL, containerised with Docker, to centralise staff profiles and employment data.",
+              "Designed relational data models and CRUD workflows for employee records and document-status tracking, enabling structured search and administration.",
+              "Implemented server-side validation, database queries and update workflows to improve data consistency and reduce manual file-based record management."
             ],
             tags: [
-              { label: "ROLE", values: ["Junior dev"] },
-              { label: "SKILLS", values: ["HTML", "SCSS", "Webpack"] }
+              { label: "ROLE", values: ["Java Backend Developer"] },
+              { label: "LOCATION", values: ["Kyzylorda, Kazakhstan"], tone: "plain" }
             ],
             links: []
           }
@@ -326,65 +323,82 @@ const SITE_DATA = {
       intro: "SELECT A PROJECT",
       items: [
         {
-          id: "site-redesign",
-          title: "SITE REDESIGN",
-          subtitle: "2025 · solo",
-          thumb: null,
-          thumbAlt: "Pixel icon of a pink computer monitor",
+          id: "hyperloop",
+          title: "HYPERLOOP UNIVERSITY PROJECT",
+          subtitle: "Sep 2025 – Present · Electronics Hardware Engineer",
+          thumb: "./assets/cards/project-hyperloop.png",
+          thumbAlt: "Hyperloop University Project",
           detail: {
-            hero: null,
-            heroAlt: "Screenshot of the redesigned landing page",
+            hero: "./assets/cards/project-hyperloop.png",
+            heroAlt: "Hyperloop University Project",
             text: [
-              "A full redesign of a local bakery's website.",
-              "Cut the load time in half and doubled mobile orders in the first month. No framework, no build step, just careful HTML."
+              "Simulated and validated circuit behaviour in LTspice before schematic capture and PCB layout, preparing the design for physical prototyping.",
+              "Designed a custom battery-temperature monitoring PCB in KiCad, including the schematic and board layout.",
+              "Incorporated CAN and UART interfaces for communication between the temperature-monitoring system and the Battery Management System."
             ],
             tags: [
-              { label: "SKILLS", values: ["HTML", "CSS", "JS"] },
-              { label: "ROLE", values: ["Design", "Build"] }
+              { label: "ROLE", values: ["Electronics Hardware Engineer"] }
             ],
-            links: [
-              { label: "LIVE", url: "https://example.com", kind: "live" },
-              { label: "CODE", url: "https://github.com/example/bakery", kind: "repo" }
-            ]
+            links: []
           }
         },
         {
-          id: "pixel-timer",
-          title: "PIXEL TIMER",
-          subtitle: "2024 · pet project",
-          thumb: null,
-          thumbAlt: "Pixel icon of a pink alarm clock",
+          id: "poker-simulator",
+          title: "POKER DECISION SIMULATOR",
+          subtitle: "Java",
+          thumb: "./assets/cards/project-poker-simulator.png",
+          thumbAlt: "Poker Decision Simulator",
           detail: {
-            hero: null,
-            heroAlt: "The timer interface: a pink pixel window with a countdown",
+            hero: "./assets/cards/project-poker-simulator.png",
+            heroAlt: "Poker Decision Simulator",
             text: [
-              "A pomodoro timer that looks like a Game Boy.",
-              "Sounds are generated with the Web Audio API so the whole thing is one HTML file and about 12 KB.",
-              "Around 300 people use it daily, which still surprises me."
+              "Developed a Texas Hold'em simulator with complete betting rounds, hand evaluation and AI-controlled opponents.",
+              "Implemented Monte Carlo simulation to estimate hand equity and support decisions under incomplete information.",
+              "Built an explainable fold/call/raise engine using pot odds, expected value, object-oriented design and JUnit tests."
             ],
             tags: [
-              { label: "SKILLS", values: ["Vanilla JS", "Web Audio", "Canvas"] }
+              { label: "TECHNOLOGY", values: ["Java"] }
             ],
-            links: [{ label: "TRY IT", url: "https://example.com/timer", kind: "live" }]
+            links: []
           }
         },
         {
-          id: "sprite-sheeter",
-          title: "SPRITE SHEETER",
-          subtitle: "2023 · tool",
+          id: "delivery-robot",
+          title: "DELIVERY ROBOT & NAVIGATION PLATFORM",
+          subtitle: "In Progress",
+          thumb: "./assets/cards/project-delivery-robot.png",
+          thumbAlt: "Delivery Robot and Navigation Platform",
+          detail: {
+            hero: "./assets/cards/project-delivery-robot.png",
+            heroAlt: "Delivery Robot and Navigation Platform",
+            text: [
+              "Developing an ESP32-based robot with GPS positioning, motor control, obstacle detection and wireless telemetry.",
+              "Building a Spring Boot REST API for robot control, route planning, delivery management and live status monitoring.",
+              "Designing a PostgreSQL data model for robots, deliveries, GPS waypoints, telemetry and route history, with ESP32-backend integration."
+            ],
+            tags: [
+              { label: "TECHNOLOGIES", values: ["Java", "Spring Boot", "PostgreSQL", "ESP32", "GPS"] },
+              { label: "STATUS", values: ["In Progress"], tone: "alt" }
+            ],
+            links: []
+          }
+        },
+        {
+          id: "portfolio-website",
+          title: "INTERACTIVE PIXEL-ART PORTFOLIO WEBSITE",
+          subtitle: "Frontend Development",
           thumb: null,
-          thumbAlt: "Pixel icon of a grid of tiny frames",
+          thumbAlt: "Interactive Pixel-Art Portfolio Website",
           detail: {
             hero: null,
             heroAlt: "",
             text: [
-              "Drag a folder of PNGs in, get a packed sprite sheet and the CSS to animate it out.",
-              "Written because I was tired of counting frame offsets by hand."
+              "Designed and developed a responsive pixel-art portfolio with a retro desktop UI, custom sprite animations and cross-browser compatibility for Safari and Firefox."
             ],
             tags: [
-              { label: "SKILLS", values: ["JS", "File API", "Canvas"] }
+              { label: "CATEGORY", values: ["Frontend Development"], tone: "plain" }
             ],
-            links: [{ label: "CODE", url: "https://github.com/example/sheeter", kind: "repo" }]
+            links: []
           }
         }
       ]
@@ -392,62 +406,48 @@ const SITE_DATA = {
 
     {
       id: "extra",
-      label: "EXTRA",
+      label: "EXTRA",                          // кнопка навигации — не менять
+      heading: "ACHIEVEMENTS",                  // а вот видимый заголовок — новый
       icon: null,
-      mode: "list",
+      mode: "cards",                            // см. render.cards(): все карточки
+                                                 // сразу, без перехода на деталь
       pose: null,
-      bubble: "the stuff I do when nobody's watching.",
-      intro: "SELECT A HOBBY",
+      bubble: "Here is what else I have",
       items: [
         {
-          id: "pixel-art",
-          title: "PIXEL ART",
-          subtitle: "since 2019",
-          thumb: null,
-          thumbAlt: "Pixel icon of a paintbrush",
-          detail: {
-            hero: null,
-            heroAlt: "",
-            text: [
-              "Mostly tiny food and tinier animals, drawn in Aseprite at 32x32.",
-              "It is the reason this entire site has a 4px grid."
-            ],
-            tags: [{ label: "TOOLS", values: ["Aseprite", "Piskel"] }],
-            links: []
-          }
+          id: "bpho",
+          title: "British Physics Olympiad (BPhO) — Gold",
+          description: "Achieved a Gold award in the British Physics Olympiad, demonstrating strong analytical reasoning, mathematical problem-solving and the ability to apply physics concepts to challenging unfamiliar problems.",
+          image: "./assets/cards/achv-bpho.png",
+          imageAlt: "British Physics Olympiad Gold award"
         },
         {
-          id: "chiptune",
-          title: "CHIPTUNE",
-          subtitle: "occasionally",
-          thumb: null,
-          thumbAlt: "Pixel icon of a music note",
-          detail: {
-            hero: null,
-            heroAlt: "",
-            text: [
-              "Four channels, no mercy.",
-              "The blips on this site are distant relatives of that hobby."
-            ],
-            tags: [{ label: "TOOLS", values: ["FamiTracker", "LMMS"] }],
-            links: []
-          }
+          id: "gold-crest",
+          title: "Gold CREST Award — QinetiQ Project",
+          description: "Earned a Gold CREST Award for designing and building a prototype liquid-sensing system for potential use in military applications. The project involved research, electronic system design, prototyping, testing and evaluation.",
+          image: "./assets/cards/achv-gold-crest.png",
+          imageAlt: "Gold CREST Award, QinetiQ project"
         },
         {
-          id: "mech-keyboards",
-          title: "KEYBOARDS",
-          subtitle: "an expensive habit",
-          thumb: null,
-          thumbAlt: "Pixel icon of a keyboard",
-          detail: {
-            hero: null,
-            heroAlt: "",
-            text: [
-              "Currently on a 65% with linear switches and a pink keycap set that matches this page a little too well."
-            ],
-            tags: [{ label: "CURRENT", values: ["65%", "Linear"] }],
-            links: []
-          }
+          id: "warwick-scholarship",
+          title: "University of Warwick Global Excellence Scholarship",
+          description: "Awarded the University of Warwick Global Excellence Scholarship in recognition of academic achievement, leadership experience, personal initiative and the potential to contribute positively to the university community.",
+          image: "./assets/cards/achv-warwick-scholarship.png",
+          imageAlt: "University of Warwick Global Excellence Scholarship"
+        },
+        {
+          id: "malvern-college",
+          title: "Malvern College Honorary Scholarship",
+          description: "Received an Honorary Scholarship from Malvern College in recognition of strong academic performance, intellectual curiosity and active contribution to the wider school community.",
+          image: "./assets/cards/achv-malvern-college.png",
+          imageAlt: "Malvern College Honorary Scholarship"
+        },
+        {
+          id: "enactus-sponsorship",
+          title: "Corporate Sponsorship — Enactus National Expo Kazakhstan",
+          description: "Secured approximately £1,000 in sponsorship from KT Lab Cloud and Chevron for the Enactus National Expo Kazakhstan, demonstrating effective pitching, stakeholder communication and corporate relationship-building.",
+          image: "./assets/cards/achv-enactus-sponsorship.png",
+          imageAlt: "Enactus National Expo Kazakhstan sponsorship"
         }
       ]
     },
@@ -467,10 +467,12 @@ const SITE_DATA = {
           "Open to freelance frontend work and small collaborations."
         ],
         tags: [{ label: "STATUS", values: ["Open to work"] }],
+        // Видимый текст ссылки — сам адрес (так просили), а не общая
+        // подпись вроде "EMAIL"/"LINKEDIN".
         links: [
-          { label: "EMAIL", url: "mailto:mira@example.com", kind: "mail" },
-          { label: "GITHUB", url: "https://github.com/example", kind: "repo" },
-          { label: "TELEGRAM", url: "https://t.me/example", kind: "social" }
+          { label: "askamirra@gmail.com", url: "mailto:askamirra@gmail.com", kind: "mail" },
+          { label: "www.linkedin.com/in/mira-askar-59764b365",
+            url: "https://www.linkedin.com/in/mira-askar-59764b365", kind: "social" }
         ]
       }
     }
