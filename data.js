@@ -259,7 +259,7 @@ const SITE_DATA = {
         // Теги/чипы убраны из данных, а не просто скрыты CSS — так в
         // render.js не остаётся пустой обёртки под них.
         text: [
-          "Hi, I'm Mira. Programming and hardware have always been at the heart of my interests. I enjoy gaming, drawing, and playing the piano. I love creating things."
+          "Hi, I'm Mira. Programming and hardware have always been at the heart of my interests. I enjoy gaming, drawing, volleyball and playing the piano. I love creating things."
         ],
         tags: [],
         links: []
