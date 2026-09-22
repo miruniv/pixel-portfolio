@@ -268,6 +268,32 @@
 }
 .card__sub { font-size: var(--fs-sm); color: var(--ink); opacity: 0.8; }
 
+/* ---- PROJECTS: крупнее превью (~25-35%), сама карточка не трогается ----
+   Колонка чуть шире 136px по умолчанию, чтобы увеличенное превью с
+   паддингом карточки не упиралось в рамку на узких десктопных окнах. */
+.cards--projects { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+.cards--projects .card__thumb { width: 120px; height: 120px; }
+.cards--projects .card__thumb img { width: 80px; height: 80px; }
+
+/* ---- WORK EXPERIENCE: карточки заметно крупнее, только на широком
+   экране (см. 07-responsive.css — на <=900px раздел уже одноколоночный,
+   там хватает общей .cards-раскладки). auto-fit вместо auto-fill: с
+   ровно 2 карточками auto-fill оставлял(бы) пустые треки и прижимал
+   обе карточки влево — auto-fit схлопывает пустые треки и отдаёт им
+   ширину ряда, отсюда и «лучше использует горизонтальное место». */
+@media (min-width: 901px) {
+  .cards--work {
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: var(--sp-6);
+  }
+  .cards--work .card {
+    padding: var(--sp-4);
+    gap: var(--sp-3);
+  }
+  .cards--work .card__thumb { width: 112px; height: 112px; }
+  .cards--work .card__thumb img { width: 74px; height: 74px; }
+}
+
 /* ---- Карточки без деталей (ACHIEVEMENTS) ----
    minmax(min(100%, 260px), 1fr): на очень узких экранах min(...) отдаёт
    100% раньше, чем 260px перестанет помещаться — иначе колонка не может
@@ -281,10 +307,13 @@
   padding: var(--sp-1);
   align-items: start;
 }
+/* Без картинки (текущие данные — image: не задан) карточка держится
+   только на паддинге и зазоре: чуть просторнее, чем раньше рядом с
+   превью, иначе заголовок с описанием выглядят прижатыми к рамке. */
 .achv {
   display: grid;
-  gap: var(--sp-3);
-  padding: var(--sp-4);
+  gap: var(--sp-4);
+  padding: var(--sp-5);
   --bd: var(--bd-md);
   --px-fill: var(--tile);
 }
@@ -448,17 +477,26 @@
 .link:hover { --px-fill: var(--accent-soft); }
 
 /* ============ ПАНЕЛЬ ДЕЙСТВИЙ ============ */
+/* .acts — только контур (px-box): по правилу 03-pixel-box.css нельзя
+   вешать overflow на сам .px-box, иначе обрежется рамка. Padding, gap
+   и скролл живут на вложенном .acts__scroll. */
 .acts {
   display: flex;
   flex-direction: column;
+  margin: var(--sp-3);
+  min-height: 0;
+}
+.acts__scroll {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
   /* Зазор считается по рамке ДЕТЕЙ, а не панели: у кнопок --bd 3px и
      2px, вылет тени 6px и 2px. Брать 4px от самой панели тут незачем —
      лишние пиксели выдавливали строку обратной связи за рамку. */
   --px-clear: calc(var(--bd-md) * 2 + var(--px-lift));
   gap: max(var(--sp-3), var(--px-clear));
   padding: max(var(--sp-3), var(--px-clear));
-  margin: var(--sp-3);
-  min-height: 0;
 }
 .actions__title {
   display: flex;
@@ -481,9 +519,14 @@
 /* PLAY MUSIC и MUTE делят верхний ряд поровну — два широких, почти
    квадратных слота, а не одна во всю ширину плашка. */
 .actions__primary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: max(var(--sp-3), var(--px-clear)); }
-/* Слоты с рамкой 2px: тень вылезает на 2px, больше зазора им не нужно */
+/* Слоты с рамкой 2px: тень вылезает на 2px, больше зазора им не нужно.
+   auto-fit, а не repeat(3, ...): раньше слотов было ровно 6 (плюс скрытые
+   до 3 в ряд), сейчас виден только DOWNLOAD CV — фиксированные 3 колонки
+   оставили бы его на трети ширины с пустым местом справа. auto-fit
+   схлопывает пустые треки, поэтому один слот занимает всю ширину ряда,
+   а вернувшиеся слоты снова лягут по несколько в ряд сами. */
 .actions__grid    { --px-clear: calc(var(--bd-sm) * 2 + var(--px-lift));
-                    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: max(var(--sp-3), var(--px-clear)); }
+                    display: grid; grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); gap: max(var(--sp-3), var(--px-clear)); }
 
 /* ---- Общая плитка действия ---- */
 .act {

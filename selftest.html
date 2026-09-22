@@ -83,8 +83,14 @@
       </nav>
 
       <!-- Панель действий. Заполняется из SITE_DATA.actions:
-           два primary сверху, шесть слотов снизу, строка обратной связи. -->
-      <section class="acts px-box px-double" id="actions" aria-labelledby="act-title"></section>
+           два primary сверху, слоты снизу, строка обратной связи.
+           Контур — на .acts (px-box), а скроллит вложенный .acts__scroll:
+           на низком вьюпорте (например 1280x800) панели может не хватать
+           высоты под три ряда действий, и по правилу из 03-pixel-box.css
+           overflow нельзя вешать на сам .px-box — обрежет контур. -->
+      <section class="acts px-box px-double" aria-labelledby="act-title">
+        <div class="acts__scroll scroll-y" id="actions"></div>
+      </section>
     </div>
 
     <!-- Колонка 2: персонаж.
@@ -165,6 +171,7 @@
 <script src="./js/render.js"></script>
 <script src="./js/router.js"></script>
 <script src="./js/app.js"></script>
+
 <pre id="RESULTS" style="position:fixed;left:0;top:0;z-index:999;background:#fff;font:12px monospace"></pre>
 <script>
 (function () {
@@ -645,30 +652,36 @@
          }).join(" "));
 
       // ==================== ПАНЕЛЬ ДЕЙСТВИЙ ====================
-      head("панель действий: только PLAY MUSIC и MUTE, остальное спрятано");
+      head("панель действий: PLAY MUSIC, MUTE и DOWNLOAD CV, остальное спрятано");
       var acts = $$(".act");
       var byId = function (id) { return $('.act[data-action="' + id + '"]'); };
       var HIDDEN_IDS = ["think", "energy", "debug", "photo", "sayhi"];
 
-      ok("в DOM только 2 действия", acts.length === 2, acts.length);
-      ok("обе — primary, слотов в DOM нет вовсе",
-         $$(".act--primary").length === 2 && $$(".act--slot").length === 0,
+      ok("в DOM 3 действия", acts.length === 3, acts.length);
+      ok("2 primary + 1 slot (DOWNLOAD CV)",
+         $$(".act--primary").length === 2 && $$(".act--slot").length === 1,
          $$(".act--primary").length + " / " + $$(".act--slot").length);
-      ok("состав: PLAY MUSIC, MUTE, в этом порядке",
-         acts.map(function (n) { return n.dataset.action; }).join(",") === "music,mute",
+      ok("состав: PLAY MUSIC, MUTE, DOWNLOAD CV, в этом порядке",
+         acts.map(function (n) { return n.dataset.action; }).join(",") === "music,mute,cv",
          acts.map(function (n) { return n.dataset.action; }).join(","));
+      ok("DOWNLOAD CV — семантическая ссылка на реальный PDF, открывается в новой вкладке",
+         byId("cv") && byId("cv").tagName === "A" &&
+         byId("cv").getAttribute("href") === "./cv.pdf" &&
+         byId("cv").getAttribute("target") === "_blank" &&
+         (byId("cv").getAttribute("rel") || "").indexOf("noopener") > -1,
+         byId("cv") && byId("cv").outerHTML.slice(0, 120));
 
       // Скрытые данные остаются в SITE_DATA и в сторе — их не удалили,
       // просто не рендерят. Чтобы вернуть — снять visible: false в data.js.
-      ok("в SITE_DATA.actions.items по-прежнему все 7 записей",
-         SITE_DATA.actions.items.length === 7, SITE_DATA.actions.items.length);
+      ok("в SITE_DATA.actions.items 8 записей (7 старых + DOWNLOAD CV)",
+         SITE_DATA.actions.items.length === 8, SITE_DATA.actions.items.length);
       ok("пять из них помечены visible: false в исходных данных",
          HIDDEN_IDS.every(function (id) {
            var raw = SITE_DATA.actions.items.find(function (a) { return a.id === id; });
            return raw && raw.visible === false;
          }));
-      ok("store.actions.items тоже хранит все 7, включая скрытые",
-         M.store.actions.items.length === 7, M.store.actions.items.length);
+      ok("store.actions.items тоже хранит все 8, включая скрытые",
+         M.store.actions.items.length === 8, M.store.actions.items.length);
       ok("store помечает их visible: false (нормализовано, не undefined)",
          HIDDEN_IDS.every(function (id) {
            return M.store.actions.byId[id] && M.store.actions.byId[id].visible === false;
@@ -986,10 +999,11 @@
          $$(".achv").every(function (n) {
            return !!n.querySelector(".achv__title") && !!n.querySelector(".achv__desc");
          }));
-      ok("у каждой карточки есть картинка (все 5 достижений совпали с файлами)",
-         $$(".achv img").length === 5, $$(".achv img").length);
-      ok("у всех картинок достижений есть содержательный alt",
-         $$(".achv img").every(function (img) { return (img.getAttribute("alt") || "").length > 5; }));
+      ok("картинок в достижениях больше нет (брифом убраны из данных)",
+         $$(".achv img").length === 0, $$(".achv img").length);
+      ok("и пустых контейнеров под них тоже нет",
+         $$(".achv .achv__img, .achv figure").length === 0,
+         $$(".achv .achv__img, .achv figure").length);
       ok("заголовки карточек совпадают с data.js дословно",
          $$(".achv__title").map(function (n) { return n.textContent; }).join("|") ===
          SITE_DATA.sections.find(function (s) { return s.id === "extra"; })

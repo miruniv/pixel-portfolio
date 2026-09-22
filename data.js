@@ -188,7 +188,14 @@ const SITE_DATA = {
         // Отдельной переменной здесь НЕТ намеренно.
         shares: "sound",
         line: "SHH\u2026", lineOff: "SOUND IS BACK",
-        feedback: "MUTE \u00B7 SOUND OFF", feedbackOff: "MUTE \u00B7 SOUND ON" }
+        feedback: "MUTE \u00B7 SOUND OFF", feedbackOff: "MUTE \u00B7 SOUND ON" },
+      // href \u2014 \u0440\u0435\u0430\u043B\u044C\u043D\u044B\u0439 PDF (\u0441\u043C. cv.pdf \u0432 \u043A\u043E\u0440\u043D\u0435 \u0440\u0435\u043F\u043E\u0437\u0438\u0442\u043E\u0440\u0438\u044F), \u043D\u0435 \u0437\u0430\u0433\u043B\u0443\u0448\u043A\u0430.
+      // newTab: \u043E\u0442\u043A\u0440\u044B\u0432\u0430\u0442\u044C \u0432 \u043D\u043E\u0432\u043E\u0439 \u0432\u043A\u043B\u0430\u0434\u043A\u0435, \u043A\u0430\u043A \u0432\u043D\u0435\u0448\u043D\u044E\u044E \u0441\u0441\u044B\u043B\u043A\u0443, \u0445\u043E\u0442\u044F \u043F\u0443\u0442\u044C
+      // \u043B\u043E\u043A\u0430\u043B\u044C\u043D\u044B\u0439 \u2014 \u0438\u043D\u0430\u0447\u0435 \u043A\u043B\u0438\u043A \u0443\u0432\u0451\u043B \u0431\u044B \u0441 SPA \u043D\u0430 \u0441\u0442\u0430\u0442\u0438\u0447\u043D\u044B\u0439 PDF \u0432 \u044D\u0442\u043E\u0439 \u0436\u0435 \u0432\u043A\u043B\u0430\u0434\u043A\u0435.
+      { id: "cv", label: "DOWNLOAD CV", icon: "document",
+        kind: "slot", type: "link", href: "./cv.pdf", newTab: true,
+        line: "HERE'S MY CV!",
+        feedback: "DOWNLOAD CV \u00B7 OPENED AS PDF" }
     ],
 
     /* Ручной список кадров — НЕ обязателен. Папка указана у действия в
@@ -300,7 +307,7 @@ const SITE_DATA = {
             heroAlt: "Trans Asia Construction LLP logo",
             text: [
               "Developed a Java/Spring employee-record backend using Hibernate ORM and PostgreSQL, containerised with Docker, to centralise staff profiles and employment data.",
-              "Designed relational data models and CRUD workflows for employee records and document-status tracking, enabling structured search and administration.",
+              "Developed a Java/Spring backend for managing employee records, using Hibernate ORM and PostgreSQL, with Docker for containerised deployment.",
               "Implemented server-side validation, database queries and update workflows to improve data consistency and reduce manual file-based record management."
             ],
             tags: [
@@ -417,37 +424,27 @@ const SITE_DATA = {
         {
           id: "bpho",
           title: "British Physics Olympiad (BPhO) — Gold",
-          description: "Achieved a Gold award in the British Physics Olympiad, demonstrating strong analytical reasoning, mathematical problem-solving and the ability to apply physics concepts to challenging unfamiliar problems.",
-          image: "./assets/cards/achv-bpho.png",
-          imageAlt: "British Physics Olympiad Gold award"
+          description: "Achieved a Gold award in the British Physics Olympiad, demonstrating strong analytical reasoning, mathematical problem-solving and the ability to apply physics concepts to challenging unfamiliar problems."
         },
         {
           id: "gold-crest",
           title: "Gold CREST Award — QinetiQ Project",
-          description: "Earned a Gold CREST Award for designing and building a prototype liquid-sensing system for potential use in military applications. The project involved research, electronic system design, prototyping, testing and evaluation.",
-          image: "./assets/cards/achv-gold-crest.png",
-          imageAlt: "Gold CREST Award, QinetiQ project"
+          description: "Earned a Gold CREST Award for designing and building a prototype liquid-sensing system for potential use in military applications. The project involved research, electronic system design, prototyping, testing and evaluation."
         },
         {
           id: "warwick-scholarship",
           title: "University of Warwick Global Excellence Scholarship",
-          description: "Awarded the University of Warwick Global Excellence Scholarship in recognition of academic achievement, leadership experience, personal initiative and the potential to contribute positively to the university community.",
-          image: "./assets/cards/achv-warwick-scholarship.png",
-          imageAlt: "University of Warwick Global Excellence Scholarship"
+          description: "Awarded the University of Warwick Global Excellence Scholarship in recognition of academic achievement, leadership experience, personal initiative and the potential to contribute positively to the university community."
         },
         {
           id: "malvern-college",
           title: "Malvern College Honorary Scholarship",
-          description: "Received an Honorary Scholarship from Malvern College in recognition of strong academic performance, intellectual curiosity and active contribution to the wider school community.",
-          image: "./assets/cards/achv-malvern-college.png",
-          imageAlt: "Malvern College Honorary Scholarship"
+          description: "Received an Honorary Scholarship from Malvern College in recognition of strong academic performance, intellectual curiosity and active contribution to the wider school community."
         },
         {
           id: "enactus-sponsorship",
           title: "Corporate Sponsorship — Enactus National Expo Kazakhstan",
-          description: "Secured approximately £1,000 in sponsorship from KT Lab Cloud and Chevron for the Enactus National Expo Kazakhstan, demonstrating effective pitching, stakeholder communication and corporate relationship-building.",
-          image: "./assets/cards/achv-enactus-sponsorship.png",
-          imageAlt: "Enactus National Expo Kazakhstan sponsorship"
+          description: "Secured approximately £1,000 in sponsorship from KT Lab Cloud and Chevron for the Enactus National Expo Kazakhstan, demonstrating effective pitching, stakeholder communication and corporate relationship-building."
         }
       ]
     },

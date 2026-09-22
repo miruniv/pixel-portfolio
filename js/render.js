@@ -215,7 +215,11 @@
     frag.appendChild(title(section.heading));
     if (section.intro) frag.appendChild(el("p", { class: "content__intro", text: section.intro }));
 
-    var list = el("ul", { class: "cards" });
+    // Класс раздела на обёртке (cards--work / cards--projects) — так
+    // CSS может увеличить карточки WORK EXPERIENCE и превью PROJECTS
+    // по отдельности, не трогая общий .card/.card__thumb остальных
+    // list-разделов.
+    var list = el("ul", { class: "cards cards--" + section.id });
     section.items.forEach(function (it) {
       var btn = el("button", {
         type: "button",
@@ -382,6 +386,10 @@
   function actionNode(a, onBadge) {
     var isLink = a.type === "link" && a.href;
     var external = isLink && /^https?:/i.test(a.href);
+    // newTab: ссылка локальная (не https), но всё равно должна открываться
+    // в новой вкладке — например download-ссылка на PDF, чтобы клик не
+    // уводил с SPA на статичный файл в этой же вкладке.
+    var blank = isLink && (external || a.newTab);
     var disabled = a.enabled === false;
 
     var kids = [
@@ -413,7 +421,7 @@
       node = el("button", attrs, kids);
     } else if (isLink) {
       attrs.href = a.href;
-      if (external) { attrs.target = "_blank"; attrs.rel = "noopener noreferrer"; }
+      if (blank) { attrs.target = "_blank"; attrs.rel = "noopener noreferrer"; }
       node = el("a", attrs, kids);
     } else {
       attrs.type = "button";

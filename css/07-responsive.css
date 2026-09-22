@@ -24,7 +24,8 @@
      зазоры ужимаются первыми — так панель действий получает обратно
      место, которое забрал увеличенный зазор колонки. */
   .stats, .stats__list { gap: max(var(--sp-2), var(--px-clear)); }
-  .acts { margin: 0; padding: max(var(--sp-2), var(--px-clear)); gap: max(var(--sp-2), var(--px-clear)); }
+  .acts { margin: 0; }
+  .acts__scroll { padding: max(var(--sp-2), var(--px-clear)); gap: max(var(--sp-2), var(--px-clear)); }
   .actions__row { gap: max(var(--sp-2), var(--px-clear)); }
   .actions__primary, .actions__grid { gap: max(var(--sp-2), var(--px-clear)); }
   .hero { margin: var(--sp-2); padding: max(var(--sp-2), var(--px-clear)); gap: max(var(--sp-3), var(--px-clear)); }
@@ -137,6 +138,10 @@
 
   /* Карточки в 2 колонки */
   .cards { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  /* PROJECTS: превью здесь всё ещё крупное (120px, см. 05-components.css)
+     — колонка шире общей 140px, иначе увеличенному превью не хватает
+     места рядом с паддингом карточки. */
+  .cards--projects { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
 }
 
 /* Гамбургер виден только на мобилке */
@@ -162,6 +167,12 @@
   .cards { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
   .card__thumb { width: 72px; height: 72px; }
   .card__thumb img { width: 48px; height: 48px; }
+  /* PROJECTS: превью здесь масштабируется вниз пропорционально — до
+     прежнего десктопного размера (96/64), а не до общего 72/48, иначе
+     на самом узком экране увеличение из задачи 4 просто исчезает. */
+  .cards--projects { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); }
+  .cards--projects .card__thumb { width: 96px; height: 96px; }
+  .cards--projects .card__thumb img { width: 64px; height: 64px; }
   .ribbon { margin-left: 0; width: 100%; }
 
   /* Подвал в столбик, чтобы копирайт не жался к иконкам.

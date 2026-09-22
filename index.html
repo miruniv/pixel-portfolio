@@ -83,8 +83,14 @@
       </nav>
 
       <!-- Панель действий. Заполняется из SITE_DATA.actions:
-           два primary сверху, шесть слотов снизу, строка обратной связи. -->
-      <section class="acts px-box px-double" id="actions" aria-labelledby="act-title"></section>
+           два primary сверху, слоты снизу, строка обратной связи.
+           Контур — на .acts (px-box), а скроллит вложенный .acts__scroll:
+           на низком вьюпорте (например 1280x800) панели может не хватать
+           высоты под три ряда действий, и по правилу из 03-pixel-box.css
+           overflow нельзя вешать на сам .px-box — обрежет контур. -->
+      <section class="acts px-box px-double" aria-labelledby="act-title">
+        <div class="acts__scroll scroll-y" id="actions"></div>
+      </section>
     </div>
 
     <!-- Колонка 2: персонаж.

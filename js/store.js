@@ -130,6 +130,7 @@
         type: a.type || "oneshot",
         tone: a.tone || null,
         href: a.href || null,
+        newTab: !!a.newTab,
         state: a.state || null,
         outfit: a.outfit || null,
         sprites: a.sprites || null,
