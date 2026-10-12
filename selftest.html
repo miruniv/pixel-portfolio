@@ -957,10 +957,10 @@
       head("правая панель");
       // Разные тона теперь живут не в ABOUT ME (её теги убраны по брифу —
       // остался только заголовок и один абзац), а в WORK/PROJECTS: LOCATION
-      // и STATUS — tone: "plain"/"alt" у HEALWARE и DELIVERY ROBOT.
+      // и STATUS — tone: "plain"/"alt" у HEALWARE и SELF-BALANCING ROBOT.
       location.hash = "#work/healware"; await tick(160);
       var plainCount = $$(".tag--plain").length;
-      location.hash = "#projects/delivery-robot"; await tick(160);
+      location.hash = "#projects/self-balancing-robot"; await tick(160);
       ok("ряды метаданных несут разные тона",
          $$(".tag--alt").length > 0 && plainCount > 0,
          "alt=" + $$(".tag--alt").length + " plain=" + plainCount);
@@ -1162,8 +1162,8 @@
 
       // .tag:not(.tag--plain) требует страницу, где такой тег реально
       // отрисован сейчас — ABOUT ME тегов больше не несёт вовсе (см. бриф),
-      // не-plain тон сейчас только у STATUS/DELIVERY ROBOT.
-      location.hash = "#projects/delivery-robot"; await tick(160);
+      // не-plain тон сейчас только у STATUS/SELF-BALANCING ROBOT.
+      location.hash = "#projects/self-balancing-robot"; await tick(160);
       ok("перечисленные в задании коробки на месте и с рамкой",
          [".screen", ".hero", ".hero__bubble", ".hero__stage", ".acts",
           ".stat", ".act", ".actions__feedback", ".content-frame",

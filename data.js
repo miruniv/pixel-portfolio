@@ -370,22 +370,21 @@ const SITE_DATA = {
           }
         },
         {
-          id: "delivery-robot",
-          title: "DELIVERY ROBOT & NAVIGATION PLATFORM",
-          subtitle: "In Progress",
-          thumb: "./assets/cards/project-delivery-robot.png",
-          thumbAlt: "Delivery Robot and Navigation Platform",
+          id: "self-balancing-robot",
+          title: "SELF-BALANCING ROBOT",
+          subtitle: "Jun 2026 · University Engineering Project",
+          thumb: null,
+          thumbAlt: "Self-Balancing Robot",
           detail: {
-            hero: "./assets/cards/project-delivery-robot.png",
-            heroAlt: "Delivery Robot and Navigation Platform",
+            hero: null,
+            heroAlt: "",
             text: [
-              "Developing an ESP32-based robot with GPS positioning, motor control, obstacle detection and wireless telemetry.",
-              "Building a Spring Boot REST API for robot control, route planning, delivery management and live status monitoring.",
-              "Designing a PostgreSQL data model for robots, deliveries, GPS waypoints, telemetry and route history, with ESP32-backend integration."
+              "Developed Simulink control code to process sensor data and maintain balance; tuned controller coefficients in MATLAB Simulink and achieved successful balancing in practical testing.",
+              "Achieved a First Class mark for the product, team presentation and planning."
             ],
             tags: [
-              { label: "TECHNOLOGIES", values: ["Java", "Spring Boot", "PostgreSQL", "ESP32", "GPS"] },
-              { label: "STATUS", values: ["In Progress"], tone: "alt" }
+              { label: "TECHNOLOGIES", values: ["MATLAB", "Simulink"] },
+              { label: "TYPE", values: ["University Engineering Project"], tone: "plain" }
             ],
             links: []
           }
