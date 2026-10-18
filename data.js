@@ -17,14 +17,14 @@ const SITE_DATA = {
     name: "HI, I'M MIRA",                    // текст в шапке окна
     shortName: "Mira",                       // для <title> вкладки
     appIcon: null,                           // "./assets/icons/app.png" (16x16)
-    description: "Mira Askar — portfolio. Programming and hardware."
+    description: "Mira Askar | portfolio. Programming and hardware."
   },
 
   /* ------------------------------------------------------------------ UI -- */
   ui: {
     hint: "PICK A STAT",
     back: "BACK",
-    notFound: "404 — NOTHING HERE",
+    notFound: "404 | NOTHING HERE",
     loading: "LOADING",
     soundOn: "SOUND ON",
     soundOff: "SOUND OFF",

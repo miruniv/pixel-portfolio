@@ -50,8 +50,10 @@
 
   function docTitle(section, item) {
     var base = (store.meta && store.meta.shortName) || "Portfolio";
-    if (item) document.title = section.label + " / " + item.title + " — " + base;
-    else if (section) document.title = section.label + " — " + base;
+    // длинных тире в названии вкладки не бывает, в т.ч. из заголовков карточек
+    function clean(t) { return String(t).replace(/\s*\u2014\s*/g, " - "); }
+    if (item) document.title = clean(section.label + " / " + item.title + " | " + base);
+    else if (section) document.title = clean(section.label + " | " + base);
     else document.title = base;
   }
 
