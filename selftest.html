@@ -1,0 +1,1669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mira — Portfolio</title>
+<meta name="description" content="Mira Askar — portfolio. Programming and hardware.">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#F9A8D0">
+
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23F9A8D0'/%3E%3Cpath d='M4 3h3v1H4zM9 3h3v1H9zM3 4h10v3H3zM4 7h8v1H4zM5 8h6v1H5zM6 9h4v1H6zM7 10h2v1H7z' fill='%232B2260'/%3E%3C/svg%3E">
+
+<!-- Порядок важен: 07-responsive.css идёт последним и переопределяет остальное -->
+<link rel="stylesheet" href="./css/01-tokens.css">
+<link rel="stylesheet" href="./css/02-base.css">
+<link rel="stylesheet" href="./css/03-pixel-box.css">
+<link rel="stylesheet" href="./css/04-layout.css">
+<link rel="stylesheet" href="./css/05-components.css">
+<link rel="stylesheet" href="./css/06-sky.css">
+<link rel="stylesheet" href="./css/07-responsive.css">
+</head>
+
+<body>
+
+<!-- ======================= ФОН: небо с облаками ======================= -->
+<div class="sky" aria-hidden="true">
+  <div class="sky__layer sky__layer--far"></div>
+  <div class="sky__layer sky__layer--mid"></div>
+  <div class="sky__layer sky__layer--near"></div>
+</div>
+
+<!-- ======================= BOOT-ЭКРАН ======================= -->
+<div class="boot" id="boot">
+  <div class="boot__window px-box px-double px-drop">
+    <p class="boot__label">LOADING</p>
+    <div class="boot__bar px-box px-inset">
+      <div class="boot__fill" id="boot-fill"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================= ОКНО ======================= -->
+<div class="screen px-box px-double px-drop" id="screen">
+
+  <header class="titlebar">
+    <div class="titlebar__left">
+      <span class="titlebar__icon" id="window-icon"></span>
+    </div>
+
+    <h1 class="titlebar__title" id="window-title">HI, I'M MIRA</h1>
+
+    <div class="titlebar__right">
+      <button type="button" class="tbtn tbtn--sound px-box px-face"
+              id="sound-btn" aria-pressed="false" aria-label="Sound off">
+        <span class="tbtn__glyph" id="sound-glyph" aria-hidden="true"></span>
+      </button>
+
+      <!-- Декоративные кнопки окна: вне tab-порядка и невидимы для скринридера -->
+      <span class="tbtn tbtn--min px-box px-face" aria-hidden="true">
+        <span class="tbtn__glyph"></span>
+      </span>
+      <span class="tbtn tbtn--max px-box px-face" aria-hidden="true">
+        <span class="tbtn__glyph"></span>
+      </span>
+
+      <button type="button" class="tbtn tbtn--menu px-box px-face"
+              id="menu-btn" aria-expanded="true" aria-controls="stat-list"
+              aria-label="Toggle menu">
+        <span class="tbtn__glyph" aria-hidden="true"></span>
+      </button>
+    </div>
+  </header>
+
+  <div class="workspace px-dots" id="workspace">
+
+    <!-- Колонка 1: статы.
+         Осознанно nav + aria-current, а НЕ role="tablist": паттерн табов
+         требует roving tabindex (один Tab-стоп, переключение стрелками),
+         а здесь нужен обычный Tab по каждому стату. Стрелки работают сверху. -->
+    <div class="col-left" id="col-left">
+      <nav class="stats" id="stats" aria-label="Sections">
+        <ul class="stats__list" id="stat-list"></ul>
+      </nav>
+
+      <!-- Панель действий. Заполняется из SITE_DATA.actions:
+           два primary сверху, слоты снизу, строка обратной связи.
+           Контур — на .acts (px-box), а скроллит вложенный .acts__scroll:
+           на низком вьюпорте (например 1280x800) панели может не хватать
+           высоты под три ряда действий, и по правилу из 03-pixel-box.css
+           overflow нельзя вешать на сам .px-box — обрежет контур. -->
+      <section class="acts px-box px-double" aria-labelledby="act-title">
+        <div class="acts__scroll scroll-y" id="actions"></div>
+      </section>
+    </div>
+
+    <!-- Колонка 2: персонаж.
+         ОДНА панель с ОДНОЙ рамкой. Внутри — окно реплики и сцена, у каждого
+         своя полная рамка; профиль идёт без рамки, как в макете. -->
+    <section class="hero px-box" id="hero" aria-label="Character">
+      <div class="hero__bubble px-box px-bubble">
+        <span id="bubble-ink" aria-hidden="true"></span>
+        <span class="sr-only" id="bubble-sr"></span>
+      </div>
+
+      <div class="hero__stage display px-box">
+        <div class="display__inner">
+          <!-- #stage — обёртка под анимации состояний. Всё, что внутри .char,
+               принадлежит gaze.js: он подставляет туда направление взгляда. -->
+          <div class="stage" id="stage" data-state="idle">
+            <div class="char" id="char"></div>
+          </div>
+          <div class="overlays" id="overlays" aria-hidden="true"></div>
+        </div>
+      </div>
+
+      <!-- Имя и LVL, шкала XP, разделитель, строки статуса.
+           Собирается в app.js из SITE_DATA.profile и SITE_DATA.character -->
+      <div class="charstats" id="charstats"></div>
+    </section>
+
+    <!-- Колонка 3: контент.
+         Контур .px-box рисуется снаружи, поэтому скроллит вложенный #content. -->
+    <div class="content-frame px-box px-double">
+      <main class="content scroll-y" id="content"
+            role="region" aria-labelledby="content-title" tabindex="-1"></main>
+      <footer class="footer" id="footer"></footer>
+    </div>
+
+  </div>
+</div>
+
+<!-- ======================= МОДАЛКА (<=900px) ======================= -->
+<div class="modal" id="modal" data-open="false"
+     role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal__backdrop"></div>
+  <div class="modal__window px-box px-double px-drop">
+    <div class="modal__bar">
+      <h2 class="modal__title" id="modal-title"></h2>
+      <button type="button" class="modal__close px-box px-face"
+              id="modal-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal__body scroll-y" id="modal-body"></div>
+  </div>
+</div>
+
+<!-- ======================= БЕЗ JS =======================
+     Весь контент живёт в data.js, поэтому без JS страница была бы пуста.
+     Совместить «контент только в data.js» и «работает без JS» нельзя —
+     здесь сознательно продублирован минимум. Держите его в синхроне с data.js. -->
+<noscript>
+  <div class="noscript px-box px-drop">
+    <h2 class="content__title">HI, I'M MIRA</h2>
+    <p>Programming and hardware have always been at the heart of my interests.</p>
+    <p>This portfolio needs JavaScript to run. Here are the important bits:</p>
+    <ul class="links">
+      <li><a class="link px-box px-face" href="mailto:askamirra@gmail.com">askamirra@gmail.com</a></li>
+      <li><a class="link px-box px-face" href="https://www.linkedin.com/in/mira-askar-59764b365" rel="noopener noreferrer">www.linkedin.com/in/mira-askar-59764b365</a></li>
+    </ul>
+  </div>
+</noscript>
+
+<!-- Классические скрипты, без type="module": через file:// модули блокируются CORS.
+     Порядок = порядок зависимостей. -->
+<script src="./data.js"></script>
+<script src="./js/dom.js"></script>
+<script src="./js/store.js"></script>
+<script src="./js/audio.js"></script>
+<script src="./js/typewriter.js"></script>
+<script src="./js/gaze.js"></script>
+<script src="./js/character.js"></script>
+<script src="./js/render.js"></script>
+<script src="./js/router.js"></script>
+<script src="./js/app.js"></script>
+
+<pre id="RESULTS" style="position:fixed;left:0;top:0;z-index:999;background:#fff;font:12px monospace"></pre>
+<script>
+(function () {
+  var out = [], fails = 0, errors = [];
+  function ok(n, c, x) {
+    if (!c) fails++;
+    out.push((c ? "PASS  " : "FAIL  ") + n + (c || x == null ? "" : "  -> " + x));
+    var r = document.getElementById("RESULTS");
+    if (r) r.textContent = out.join("\n");
+  }
+  function head(t) { out.push(""); out.push("== " + t + " =="); }
+  window.addEventListener("error", function (e) { errors.push(String(e.message)); });
+  var w0 = console.warn, e0 = console.error;
+  console.warn = function () { errors.push("warn: " + [].join.call(arguments, " ")); w0.apply(console, arguments); };
+  console.error = function () { errors.push("error: " + [].join.call(arguments, " ")); e0.apply(console, arguments); };
+  function tick(ms) { return new Promise(function (r) { setTimeout(r, ms || 70); }); }
+  function raf() {
+    return new Promise(function (r) {
+      var done = false;
+      function fin() { if (!done) { done = true; r(); } }
+      requestAnimationFrame(function () { requestAnimationFrame(fin); });
+      setTimeout(fin, 90);          // страховка: headless не гарантирует кадры
+    });
+  }
+  var $ = function (s) { return document.querySelector(s); };
+  var $$ = function (s, root) { return [].slice.call((root || document).querySelectorAll(s)); };
+  function key(k) { document.dispatchEvent(new KeyboardEvent("keydown", { key: k, bubbles: true })); }
+  function move(x, y) { document.dispatchEvent(new MouseEvent("mousemove", { clientX: x, clientY: y, bubbles: true })); }
+  function fileOf(el) { return (el.getAttribute("src") || "").split("/").pop(); }
+
+  window.addEventListener("load", function () {
+    (async function () {
+      await tick(220);
+      var M = window.MIRA, G = M.gaze;
+
+      // ==================== СЛЕЖЕНИЕ: ВЫБОР СЕКТОРА ====================
+      head("gaze: выбор сектора по углу");
+      var R = 200, D = Math.round(R * 0.7071);
+      var cases = [
+        [ R,  0, "right"], [ D,  D, "downRight"], [ 0,  R, "down"], [-D,  D, "downLeft"],
+        [-R,  0, "left"],  [-D, -D, "upLeft"],    [ 0, -R, "up"],   [ D, -D, "upRight"]
+      ];
+      cases.forEach(function (c) {
+        var got = G.pickDirection(c[0], c[1], null);
+        ok("вектор (" + c[0] + "," + c[1] + ") -> " + c[2], got === c[2], got);
+      });
+      // границы секторов: чуть не доходя до стыка и сразу за ним
+      ok("угол 22° от нуля -> right", G.pickDirection(
+        R * Math.cos(22 * Math.PI / 180), R * Math.sin(22 * Math.PI / 180), null) === "right");
+      ok("угол 24° от нуля -> downRight", G.pickDirection(
+        R * Math.cos(24 * Math.PI / 180), R * Math.sin(24 * Math.PI / 180), null) === "downRight");
+      ok("перелом через 180° (angle wrap) -> left",
+         G.pickDirection(-R, 1, null) === "left" && G.pickDirection(-R, -1, null) === "left");
+
+      // ==================== СЛЕЖЕНИЕ: МЁРТВАЯ ЗОНА ====================
+      head("gaze: мёртвая зона");
+      ok("r=0 -> center", G.pickDirection(0, 0, null) === "center");
+      ok("r=20 -> center", G.pickDirection(14, 14, null) === "center", G.pickDirection(14, 14, null));
+      ok("r=59 -> center (внутри мёртвой зоны 120px)", G.pickDirection(59, 0, "right") === "center");
+      ok("r=119 -> center: зона выросла вдвое",
+         G.pickDirection(119, 0, "right") === "center", G.pickDirection(119, 0, "right"));
+      ok("r=121 из направления -> направление сохраняется",
+         G.pickDirection(121, 0, "right") === "right");
+      ok("r=200 -> направление, не center", G.pickDirection(0, 200, null) === "down");
+      ok("выход из center требует запаса: r=130 остаётся center",
+         G.pickDirection(130, 0, "center") === "center", G.pickDirection(130, 0, "center"));
+      ok("выход из center: r=140 переключает на направление",
+         G.pickDirection(140, 0, "center") === "right", G.pickDirection(140, 0, "center"));
+
+      // ==================== СЛЕЖЕНИЕ: ГИСТЕРЕЗИС ====================
+      head("gaze: гистерезис");
+      function at(deg, cur) {
+        var a = deg * Math.PI / 180;
+        return G.pickDirection(R * Math.cos(a), R * Math.sin(a), cur);
+      }
+      ok("из right: 33° (меньше 22.5+14) остаётся right", at(33, "right") === "right", at(33, "right"));
+      ok("из right: 40° (больше запаса) уходит в downRight",
+         at(40, "right") === "downRight", at(40, "right"));
+      ok("из downRight: 20° остаётся downRight (без гистерезиса было бы right)",
+         at(20, "downRight") === "downRight", at(20, "downRight"));
+      ok("без гистерезиса тот же угол дал бы right", at(20, null) === "right");
+      ok("гистерезис не залипает навсегда: 90° из right -> down",
+         at(90, "right") === "down", at(90, "right"));
+
+      // ==================== СЛЕЖЕНИЕ: ФАЙЛЫ ====================
+      head("gaze: ассеты");
+      var img = $(".char__img");
+      ok("персонаж отрисован одним <img>", !!img && $$(".char__img").length === 1);
+      ok("у спрайта есть alt", img && img.getAttribute("alt"), img && img.getAttribute("alt"));
+      ok("image-rendering: pixelated", getComputedStyle(img).imageRendering === "pixelated",
+         getComputedStyle(img).imageRendering);
+      ok("стартовый кадр — look-center", fileOf(img) === "look-center.png", fileOf(img));
+
+      var names = ["look-center", "look-up", "look-up-right", "look-right", "look-down-right",
+                   "look-down", "look-down-left", "look-left", "look-up-left"];
+      var loaded = await Promise.all(names.map(function (n) {
+        return new Promise(function (r) {
+          var im = new Image();
+          im.onload = function () { r(im.naturalWidth); };
+          im.onerror = function () { r(0); };
+          setTimeout(function () { r(im.naturalWidth || 0); }, 3000);
+          im.src = SITE_DATA.character.gaze.base + n + ".png";
+        });
+      }));
+      ok("все 9 спрайтов загружаются", loaded.every(function (w) { return w > 0; }),
+         names.filter(function (n, i) { return !loaded[i]; }).join(","));
+      // Важен не конкретный размер, а то, что он ОДИН на весь набор:
+      // разнокалиберные кадры заставят персонажа прыгать при смене
+      // направления взгляда.
+      ok("все 9 кадров одного размера",
+         loaded.every(function (w) { return w === loaded[0]; }), loaded.join(","));
+
+      // ==================== СЛЕЖЕНИЕ: РАБОТА В DOM ====================
+      head("gaze: поведение на странице");
+      // headless может не отдавать (hover: hover) — подменяем matchMedia,
+      // чтобы проверить именно логику, а не окружение
+      var realMM = window.matchMedia;
+      window.matchMedia = function (q) {
+        if (/hover|pointer/.test(q)) return { matches: true, addEventListener: function () {}, addListener: function () {} };
+        return realMM.call(window, q);
+      };
+      // minSwitchMs: 0 — здесь проверяется сопоставление сектора, а не частота;
+      // сам троттлинг проверяется отдельно ниже, с реальными паузами.
+      var gcfg = Object.assign({}, SITE_DATA.character.gaze,
+                               { returnDelay: 30, fade: 30, minSwitchMs: 0 });
+      var st = G.init({ img: img, cfg: gcfg, stageEl: $(".display") });
+      ok("обработчики повешены", st.enabled === true);
+      ok("предзагружены все 9 картинок", st.preload.length === 9, st.preload.length);
+
+      var b = img.getBoundingClientRect();
+      var cx = b.left + b.width / 2, cy = b.top + b.height / 2;
+
+      // headless при --dump-dom не выдаёт кадров, поэтому rAF сам не сработает:
+      // сначала проверяем, что обработчик НИЧЕГО не делает синхронно,
+      // потом форсируем пересчёт через публичный update().
+      move(cx + 400, cy);
+      ok("mousemove сам по себе картинку не меняет (пересчёт вынесен из обработчика)",
+         fileOf(img) === "look-center.png", fileOf(img));
+      G.update();
+      ok("после пересчёта взгляд вправо", fileOf(img) === "look-right.png", fileOf(img));
+
+      move(cx, cy + 400); G.update();
+      ok("курсор снизу -> look-down", fileOf(img) === "look-down.png", fileOf(img));
+      move(cx - 300, cy - 300); G.update();
+      ok("курсор сверху-слева -> look-up-left", fileOf(img) === "look-up-left.png", fileOf(img));
+      move(cx + 300, cy - 300); G.update();
+      ok("курсор сверху-справа -> look-up-right", fileOf(img) === "look-up-right.png", fileOf(img));
+      move(cx - 300, cy + 300); G.update();
+      ok("курсор снизу-слева -> look-down-left", fileOf(img) === "look-down-left.png", fileOf(img));
+      move(cx - 400, cy); G.update();
+      ok("курсор слева -> look-left", fileOf(img) === "look-left.png", fileOf(img));
+      move(cx, cy - 400); G.update();
+      ok("курсор сверху -> look-up", fileOf(img) === "look-up.png", fileOf(img));
+      move(cx + 5, cy + 5); G.update();
+      ok("курсор в мёртвой зоне -> look-center", fileOf(img) === "look-center.png", fileOf(img));
+
+      // возврат в center при уходе курсора за пределы окна
+      move(cx + 400, cy); G.update();
+      ok("подготовка: взгляд вправо", fileOf(img) === "look-right.png", fileOf(img));
+      document.dispatchEvent(new MouseEvent("mouseleave"));
+      await tick(120);
+      ok("после ухода курсора возвращается look-center",
+         fileOf(img) === "look-center.png", fileOf(img));
+      ok("класс затухания снят", !img.classList.contains("is-settling"));
+
+      // пересчёт центра на resize/scroll
+      var dirtyBefore = st.dirty;
+      window.dispatchEvent(new Event("resize"));
+      ok("resize помечает геометрию устаревшей", st.dirty === true, String(dirtyBefore));
+
+      // ==================== ДЁРГАНЬЕ ВНУТРИ РАМКИ ====================
+      head("gaze: курсор внутри рамки персонажа");
+      var frameRect = $(".display").getBoundingClientRect();
+      var ir0 = img.getBoundingClientRect();
+      var scx = (ir0.left + ir0.right) / 2, scy = (ir0.top + ir0.bottom) / 2;
+
+      // Берём угол сцены: он внутри рамки, но далеко от центра спрайта —
+      // по чистой математике это был бы сектор, а не center.
+      var inX = frameRect.left + 10, inY = frameRect.top + 10;
+      var rIn = Math.round(Math.hypot(inX - scx, inY - scy));
+      ok("контрольная точка внутри рамки и ВНЕ мёртвой зоны",
+         inX >= frameRect.left && inX <= frameRect.right &&
+         inY >= frameRect.top && inY <= frameRect.bottom &&
+         rIn > SITE_DATA.character.gaze.deadZone,
+         "r=" + rIn + " при зоне " + SITE_DATA.character.gaze.deadZone);
+      ok("по одному только углу эта точка дала бы направление",
+         G.pickDirection(inX - scx, inY - scy, "center",
+           { deadZone: SITE_DATA.character.gaze.deadZone,
+             hysteresis: SITE_DATA.character.gaze.hysteresis }) !== "center");
+
+      move(cx + 400, cy); G.update();
+      ok("подготовка: смотрит вправо", fileOf(img) === "look-right.png", fileOf(img));
+      move(inX, inY); G.update();
+      ok("внутри рамки направление не пересчитывается — возврат в центр",
+         fileOf(img) === "look-center.png", fileOf(img));
+      move(frameRect.right - 10, frameRect.bottom - 10); G.update();
+      ok("в противоположном углу рамки спрайт всё так же спокоен",
+         fileOf(img) === "look-center.png", fileOf(img));
+
+      // ---- частота переключений ----
+      var gth = G.init({ img: img, cfg: Object.assign({}, gcfg, { minSwitchMs: 120 }),
+                         stageEl: $(".display") });
+      move(cx + 400, cy); G.update();
+      ok("первое переключение проходит", fileOf(img) === "look-right.png", fileOf(img));
+      move(cx, cy + 400); G.update();
+      ok("второе переключение подряд отброшено: не чаще 1 раза в 120мс",
+         fileOf(img) === "look-right.png", fileOf(img));
+      await tick(200);
+      G.update();
+      ok("после паузы направление догоняет", fileOf(img) === "look-down.png", fileOf(img));
+
+      // возвращаем инстанс без троттлинга для остальных проверок
+      G.init({ img: img, cfg: gcfg, stageEl: $(".display") });
+      move(cx + 400, cy); G.update();
+
+      // Реальная причина видимого дёрганья была не в gaze.js (направление
+      // здесь и раньше не пересчитывалось), а в CSS: .display:hover .char
+      // трясла спрайт transform'ом независимо от направления взгляда.
+      // Направление и так не скачет — проверяем это за реальное время,
+      // с играющей анимацией дыхания, а не только один кадр G.update().
+      head("gaze: направление не скачет 2с при неподвижном курсоре (анимация играет)");
+      $("#stage").dataset.state = "idle";
+      move(inX, inY); G.update();
+      var stillFile = fileOf(img);
+      var stillSeen = [stillFile], stillStable = true;
+      for (var si = 0; si < 10; si++) {
+        await tick(200);
+        G.update();
+        var sf = fileOf(img);
+        stillSeen.push(sf);
+        if (sf !== stillFile) stillStable = false;
+      }
+      ok("направление не изменилось ни разу за 10 сэмплов по 200мс",
+         stillStable, stillSeen.join(","));
+
+      // Дёрганье персонажа при наведении на самом деле было вызвано CSS-
+      // правилом .display:hover .char { animation: wobble … }, оставшимся
+      // с самого первого коммита (тогда единственным персонажем был SVG-
+      // плейсхолдер) — gaze.js тут ни при чём, трясло transform'ом поверх
+      // любого спрайта. Правило сузили до .char--placeholder. Проверка
+      // настоящего :hover живёт в tools/xbrowser.py: синтетический
+      // mousemove здесь не взводит псевдокласс :hover, а внешние
+      // стили в file:// недоступны через cssRules/fetch в Chromium и
+      // WebKit (кросс-origin запрет), так что здесь это не проверить.
+
+      // ==================== СЦЕНА: ЦЕНТРИРОВАНИЕ И ЦЕНТР ДЛЯ GAZE ====================
+      head("сцена персонажа");
+      var stage = $(".display__inner");
+      // Замораживаем анимацию обёртки: дыхание даёт субпиксельный сдвиг и
+      // геометрию мерить в его середине бессмысленно. Проверяем вёрстку.
+      var animHost = $("#stage");
+      animHost.style.animation = "none";
+      var ir = img.getBoundingClientRect(), sr = stage.getBoundingClientRect();
+      var padTop = ir.top - sr.top, padBottom = sr.bottom - ir.bottom;
+      var padLeft = ir.left - sr.left, padRight = sr.right - ir.right;
+
+      // Персонаж намеренно ниже центра: сверху воздуха больше, чем под ногами.
+      // Абсолютный запас берём из живого FIT, а не числом: bias совсем
+      // небольшой (см. js/character.js — сцена уже сжата почти до предела
+      // прозрачными полями в PNG), на низких сценах разница может быть
+      // всего в пару пикселей — важен только знак, а не величина буфера.
+      var fcfg0 = M.character.fitConfig;
+      ok("над головой воздуха больше, чем под ногами", padTop > padBottom,
+         Math.round(padTop) + " сверху / " + Math.round(padBottom) + " снизу");
+      ok("поля слева и справа равны", Math.abs(padLeft - padRight) <= 1,
+         Math.round(padLeft) + " / " + Math.round(padRight));
+      // Те же две величины, что и в FIT.minBottomPx/minBottomPct.
+      var floorPx = Math.min(fcfg0.minBottomPx, Math.round(sr.height * fcfg0.minBottomPct));
+      ok("спрайт не прижат к нижней грани рамки", padBottom >= floorPx - 0.5,
+         Math.round(padBottom) + " при минимуме " + floorPx +
+         " (сцена " + Math.round(sr.height) + ")");
+      ok("спрайт по центру рамки по горизонтали",
+         Math.abs((ir.left + ir.right) / 2 - (sr.left + sr.right) / 2) <= 1);
+      ok("по вертикали спрайт ниже центра рамки",
+         (ir.top + ir.bottom) / 2 > (sr.top + sr.bottom) / 2,
+         Math.round((ir.top + ir.bottom) / 2) + " vs центр " +
+         Math.round((sr.top + sr.bottom) / 2));
+      // Не «целым множителем от frameSize»: frameSize в data.js — это
+      // размер кадра листа действий, а кадры слежения бывают крупными
+      // и целого множителя не имеют вовсе. Требование к ним другое:
+      // пропорции исходника сохранены, размер в целых пикселях.
+      var w = Math.round(ir.width), hh = Math.round(ir.height);
+      var natRatio = img.naturalWidth / img.naturalHeight;
+      ok("спрайт сохраняет пропорции исходника и мерится целыми пикселями",
+         Math.abs(w / hh - natRatio) < 0.02 &&
+         Math.abs(ir.width - w) < 0.01 && Math.abs(ir.height - hh) < 0.01,
+         w + "x" + hh + " при исходнике " + img.naturalWidth + "x" + img.naturalHeight);
+
+      // gaze меряет сам <img>, поэтому после центрирования его центр —
+      // это середина рамки. Проверяем от неё, а не от прежнего низа.
+      var fcx = (ir.left + ir.right) / 2, fcy = (ir.top + ir.bottom) / 2;
+      // Сцена стала выше, поэтому точки для секторов берём заведомо за её
+      // пределами — иначе срабатывает правило «курсор внутри рамки».
+      var fr = $(".display").getBoundingClientRect();
+      var outX = fr.width / 2 + 120, outY = fr.height / 2 + 120;
+      move(fcx + 6, fcy + 6); G.update();
+      ok("мёртвая зона отсчитывается от середины рамки",
+         fileOf(img) === "look-center.png", fileOf(img));
+      move(fcx + outX, fcy); G.update();
+      ok("сектор вправо — от середины рамки", fileOf(img) === "look-right.png", fileOf(img));
+      move(fcx, fcy - outY); G.update();
+      ok("сектор вверх — от середины рамки", fileOf(img) === "look-up.png", fileOf(img));
+      move(fcx - outX, fcy + outY); G.update();
+      ok("сектор вниз-влево — от середины рамки",
+         fileOf(img) === "look-down-left.png", fileOf(img));
+
+      // Сдвигаем сцену программно: если бы gaze держал устаревший rect,
+      // точка в новом центре дала бы направление, а не center.
+      stage.style.paddingTop = "160px";
+      window.dispatchEvent(new Event("resize"));
+      var ir2 = img.getBoundingClientRect();
+      ok("геометрия реально изменилась", Math.abs(ir2.top - ir.top) > 20,
+         Math.round(ir.top) + " -> " + Math.round(ir2.top));
+      move((ir2.left + ir2.right) / 2, (ir2.top + ir2.bottom) / 2 + 6); G.update();
+      ok("после resize gaze берёт новый центр, а не старый",
+         fileOf(img) === "look-center.png", fileOf(img));
+      stage.style.paddingTop = "";
+      animHost.style.animation = "";     // возвращаем дыхание
+      window.dispatchEvent(new Event("resize"));
+      G.update();
+
+      // ==================== reduced-motion ====================
+      head("gaze: prefers-reduced-motion");
+      var realRM = M.dom.reducedMotion;
+      M.dom.reducedMotion = function () { return true; };
+      var st2 = G.init({ img: img, cfg: gcfg, stageEl: $(".display") });
+      ok("при reduced-motion обработчики НЕ вешаются", st2.enabled === false);
+      ok("isEnabled() === false", G.isEnabled() === false);
+      ok("показан look-center", fileOf(img) === "look-center.png", fileOf(img));
+      move(cx + 400, cy); G.update(); await raf();
+      ok("mousemove при reduced-motion ничего не меняет",
+         fileOf(img) === "look-center.png", fileOf(img));
+      M.dom.reducedMotion = realRM;
+
+      // ==================== тач-устройство ====================
+      head("gaze: тач-устройство");
+      window.matchMedia = function (q) {
+        if (/hover|pointer/.test(q)) return { matches: false, addEventListener: function () {}, addListener: function () {} };
+        return realMM.call(window, q);
+      };
+      var st3 = G.init({ img: img, cfg: gcfg, stageEl: $(".display") });
+      ok("на тач-устройстве обработчики НЕ вешаются", st3.enabled === false);
+      move(cx + 400, cy); G.update(); await raf();
+      ok("картинка остаётся look-center", fileOf(img) === "look-center.png", fileOf(img));
+      window.matchMedia = realMM;
+      G.destroy();
+
+      // ==================== РЕГРЕСС: ВСЁ ОСТАЛЬНОЕ ====================
+      head("регресс: навигация и состояние");
+      ok("store валиден", M.store.ok);
+      ok("5 кнопок статов", $$(".stat").length === 5);
+      ok("боковая панель — nav, не tablist", !!$("nav.stats") && !$('[role="tablist"]'));
+
+      location.hash = "#projects"; await tick();
+      ok("SECTION: 4 карточки", $$("#content .card").length === 4);
+      ok("SECTION: aria-current", $('.stat[data-section="projects"]').getAttribute("aria-current") === "true");
+
+      var stats = $$(".stat");
+      stats[0].focus(); key("ArrowDown"); await tick(20);
+      ok("ArrowDown двигает фокус", document.activeElement === stats[1]);
+      key("End"); await tick(20);
+      ok("End -> последний", document.activeElement === stats[4]);
+
+      var isNarrow = window.innerWidth <= 900;
+      var card = $('.card[data-item="hyperloop"]');
+      card.focus(); card.click(); await tick(170);
+      // На узком экране деталь открывается модалкой, а не в правой панели
+      var dRoot = isNarrow ? $("#modal-body") : $("#content");
+      ok("DETAIL открылась",
+         !!dRoot.querySelector(".detail__title") &&
+         dRoot.querySelector(".detail__title").textContent === "HYPERLOOP UNIVERSITY PROJECT",
+         isNarrow ? "модалка" : "панель");
+      ok("заголовок детали не дублирует id заголовка сетки",
+         $$("#content-title").length <= 1, $$("#content-title").length + " с таким id");
+      ok(isNarrow ? "фокус на кнопке закрытия модалки" : "фокус на BACK",
+         document.activeElement === (isNarrow ? $("#modal-close") : $('[data-action="back"]')));
+      ok("текст детали лежит в DOM целиком, без печати",
+         $$(".detail__text p", dRoot).map(function (p) { return p.textContent; }).join("|") ===
+         SITE_DATA.sections[2].items[0].detail.text.join("|"));
+      ok("в правой панели нет печатающегося слоя",
+         $$(".typed, .typed__ink, .typed__ghost", dRoot).length === 0);
+      ok("текст детали не спрятан от скринридера",
+         !$(".detail__text", dRoot).hasAttribute("aria-hidden"));
+      ok("нет aria-live", !$("#content [aria-live]"));
+
+      key("Escape"); await tick(160);
+      ok("Esc возвращает на сетку", !!$("#content .cards") && location.hash === "#projects");
+      ok("фокус вернулся на карточку", document.activeElement === $('.card[data-item="hyperloop"]'));
+
+      if (isNarrow) { key("Escape"); await tick(170); }
+      $("#content").style.maxHeight = "120px";
+      $("#content").scrollTop = 40;
+      var saved = $("#content").scrollTop;
+      $('.card[data-item="hyperloop"]').click(); await tick(170);
+      if (isNarrow) { key("Escape"); } else { $('[data-action="back"]').click(); }
+      await tick(180);
+      ok("BACK восстанавливает скролл сетки", $("#content").scrollTop === saved,
+         $("#content").scrollTop + " != " + saved);
+      $("#content").style.maxHeight = "";
+
+      $('.card[data-item="hyperloop"]').click(); await tick(140);
+      var len = history.length;
+      $$('.ribbon__item[data-item="poker-simulator"]',
+         isNarrow ? $("#modal-body") : $("#content"))[0].click();
+      await tick(170);
+      ok("лента соседей = replace, не push", history.length === len);
+
+      location.hash = "#about"; await tick();
+      ok("PAGE: без BACK и без сетки", !$('[data-action="back"]') && !$("#content .cards"));
+      location.hash = "#nope/nothing"; await tick(140);
+      ok("битый хэш -> IDLE", !!$("#content .hint"));
+      location.hash = "#projects/not-real"; await tick(140);
+      ok("битая карточка -> откат на секцию", location.hash === "#projects" && !!$("#content .cards"));
+
+      ok("звук выключен по умолчанию", M.audio.isMuted());
+      M.audio.toggle(); await tick(20);
+      ok("localStorage запомнил звук", localStorage.getItem("mira.sound") === "on");
+      key("m"); await tick(20);
+      ok("клавиша M выключает", M.audio.isMuted());
+
+      $("#menu-btn").click(); await tick(20);
+      ok("гамбургер сворачивает статы", $("#stats").dataset.collapsed === "true");
+      $("#menu-btn").click(); await tick(20);
+
+
+      // ==================== СТАТЫ ПЕРСОНАЖА ====================
+      head("статы персонажа");
+      var cells = $$(".lvlbar__cell");
+      ok("ячеек шкалы столько же, сколько в данных",
+         cells.length === SITE_DATA.profile.levelTotal, cells.length);
+      ok("закрашено ровно levelFilled ячеек",
+         $$(".lvlbar__cell.is-on").length === SITE_DATA.profile.levelFilled,
+         $$(".lvlbar__cell.is-on").length);
+      ok("шкала не градиент, а отдельные элементы", cells.length > 1);
+      ok("у шкалы есть текстовая альтернатива",
+         ($(".lvlbar").getAttribute("aria-label") || "").indexOf(String(SITE_DATA.profile.level)) > -1,
+         $(".lvlbar").getAttribute("aria-label"));
+      ok("блок STATUS / LOCATION / CURRENTLY убран",
+         $$(".charstats__rows").length === 0 && !SITE_DATA.profile.rows);
+      ok("после шкалы XP в колонке ничего нет",
+         $$(".hero > *").pop() === $(".charstats") &&
+         $(".charstats").lastElementChild.querySelector(".lvlbar") !== null,
+         $(".charstats").lastElementChild.className);
+
+      // ==================== ПОДВАЛ ====================
+      head("подвал");
+      var flinks = $$(".footer__link");
+      ok("ссылок столько же, сколько в данных",
+         flinks.length === SITE_DATA.footer.links.length, flinks.length);
+      ok("у всех ссылок подвала есть aria-label и title",
+         flinks.every(function (a) { return a.getAttribute("aria-label") && a.getAttribute("title"); }));
+      ok("подписи не выводятся текстом — только иконки",
+         flinks.every(function (a) { return a.textContent.trim() === ""; }));
+      ok("внешние ссылки подвала с rel=noopener",
+         flinks.filter(function (a) { return a.getAttribute("target"); })
+               .every(function (a) { return (a.getAttribute("rel") || "").indexOf("noopener") > -1; }));
+      ok("копирайт из данных", $(".footer__copy").textContent === SITE_DATA.footer.copyright,
+         $(".footer__copy").textContent);
+      ok("подвал прибит к низу панели, вне скроллящейся области",
+         $(".footer").parentElement === $(".content-frame") &&
+         !$(".content").contains($(".footer")));
+
+      // ==================== ЛЕНТА СОСЕДЕЙ ====================
+      head("кнопки ленты соседей");
+      location.hash = "#projects/hyperloop"; await tick(180);
+      var ribs = $$(".ribbon__item", window.innerWidth <= 900 ? $("#modal-body") : $("#content"));
+      ok("кнопки ленты без текстовых подписей",
+         ribs.every(function (b) { return b.textContent.trim() === ""; }),
+         ribs.map(function (b) { return b.textContent.trim(); }).join(","));
+      ok("у кнопок ленты есть aria-label и title",
+         ribs.every(function (b) { return b.getAttribute("aria-label") && b.getAttribute("title"); }));
+      ok("кнопки ленты квадратные",
+         ribs.every(function (b) {
+           var r = b.getBoundingClientRect();
+           return Math.abs(r.width - r.height) <= 1 && r.width >= 40;
+         }), ribs.map(function (b) {
+           var r = b.getBoundingClientRect(); return Math.round(r.width) + "x" + Math.round(r.height);
+         }).join(" "));
+
+      // ==================== ПАНЕЛЬ ДЕЙСТВИЙ ====================
+      head("панель действий: PLAY MUSIC, MUTE и DOWNLOAD CV, остальное спрятано");
+      var acts = $$(".act");
+      var byId = function (id) { return $('.act[data-action="' + id + '"]'); };
+      var HIDDEN_IDS = ["think", "energy", "debug", "photo", "sayhi"];
+
+      ok("в DOM 3 действия", acts.length === 3, acts.length);
+      ok("2 primary + 1 slot (DOWNLOAD CV)",
+         $$(".act--primary").length === 2 && $$(".act--slot").length === 1,
+         $$(".act--primary").length + " / " + $$(".act--slot").length);
+      ok("состав: PLAY MUSIC, MUTE, DOWNLOAD CV, в этом порядке",
+         acts.map(function (n) { return n.dataset.action; }).join(",") === "music,mute,cv",
+         acts.map(function (n) { return n.dataset.action; }).join(","));
+      ok("DOWNLOAD CV — семантическая ссылка на реальный PDF, открывается в новой вкладке",
+         byId("cv") && byId("cv").tagName === "A" &&
+         byId("cv").getAttribute("href") === "./cv.pdf" &&
+         byId("cv").getAttribute("target") === "_blank" &&
+         (byId("cv").getAttribute("rel") || "").indexOf("noopener") > -1,
+         byId("cv") && byId("cv").outerHTML.slice(0, 120));
+
+      // Скрытые данные остаются в SITE_DATA и в сторе — их не удалили,
+      // просто не рендерят. Чтобы вернуть — снять visible: false в data.js.
+      ok("в SITE_DATA.actions.items 8 записей (7 старых + DOWNLOAD CV)",
+         SITE_DATA.actions.items.length === 8, SITE_DATA.actions.items.length);
+      ok("пять из них помечены visible: false в исходных данных",
+         HIDDEN_IDS.every(function (id) {
+           var raw = SITE_DATA.actions.items.find(function (a) { return a.id === id; });
+           return raw && raw.visible === false;
+         }));
+      ok("store.actions.items тоже хранит все 8, включая скрытые",
+         M.store.actions.items.length === 8, M.store.actions.items.length);
+      ok("store помечает их visible: false (нормализовано, не undefined)",
+         HIDDEN_IDS.every(function (id) {
+           return M.store.actions.byId[id] && M.store.actions.byId[id].visible === false;
+         }));
+      ok("у скрытых действий данные не выпотрошены — голос/спрайты/фразы на месте",
+         M.store.actions.byId.think.voice && M.store.actions.byId.think.voice.note === 300 &&
+         M.store.actions.byId.photo.sprites === "takePhoto" &&
+         M.store.actions.byId.sayhi.line === SITE_DATA.actions.items.find(function (a) {
+           return a.id === "sayhi"; }).line);
+      ok("ни одно скрытое действие не попало в DOM",
+         HIDDEN_IDS.every(function (id) { return !byId(id); }));
+
+      // Обе плитки делят ширину ряда поровну — теперь без разделения на
+      // широкий/узкий вьюпорт: с двумя плитками нет причин для отдельной
+      // "ленты", .actions__primary — та же сетка в 2 колонки везде.
+      var primaryActs = $$(".act--primary");
+      ok("PLAY MUSIC и MUTE делят ширину ряда поровну",
+         Math.abs(primaryActs[0].getBoundingClientRect().width -
+                  primaryActs[1].getBoundingClientRect().width) <= 2,
+         Math.round(primaryActs[0].getBoundingClientRect().width) + " vs " +
+         Math.round(primaryActs[1].getBoundingClientRect().width));
+      ok("вместе они занимают всю ширину панели (плюс зазор между ними)",
+         Math.abs(primaryActs[0].getBoundingClientRect().width * 2 +
+                  (primaryActs[1].getBoundingClientRect().left -
+                   primaryActs[0].getBoundingClientRect().right) -
+                  $(".actions__row").getBoundingClientRect().width) <= 2);
+      ok("высота плиток 130-140px, как в макете",
+         primaryActs.every(function (n) {
+           var h = n.getBoundingClientRect().height;
+           return h >= 130 && h <= 140;
+         }), primaryActs.map(function (n) {
+           return Math.round(n.getBoundingClientRect().height); }).join(" "));
+      ok("у всех действий есть aria-label и title",
+         acts.every(function (n) { return n.getAttribute("aria-label") && n.getAttribute("title"); }));
+      ok("строка обратной связи есть и объявляется",
+         $("#act-feedback") && $("#act-feedback").getAttribute("role") === "status");
+      ok("кнопки навигации стали крупнее: 58-62px",
+         $$(".stat").every(function (n) {
+           var h = n.getBoundingClientRect().height;
+           return h >= 58 && h <= 62;
+         }), $$(".stat").map(function (n) {
+           return Math.round(n.getBoundingClientRect().height); }).join(" "));
+
+      // ---- MUTE и кнопка в шапке делят одно состояние ----
+      head("MUTE: одно состояние на две кнопки");
+      var muteBtn = byId("mute"), headBtn = $("#sound-btn");
+      ok("обе кнопки на месте", !!muteBtn && !!headBtn);
+      ok("обе несут aria-pressed",
+         muteBtn.hasAttribute("aria-pressed") && headBtn.hasAttribute("aria-pressed"));
+
+      function muteState() {
+        return { muted: M.audio.isMuted(),
+                 mute: muteBtn.getAttribute("aria-pressed"),
+                 head: headBtn.getAttribute("aria-pressed") };
+      }
+      var s0 = muteState();
+      ok("состояния кнопок согласованы между собой",
+         (s0.mute === "true") === s0.muted && (s0.head === "true") === !s0.muted,
+         JSON.stringify(s0));
+
+      muteBtn.click(); await tick(80);
+      var s1 = muteState();
+      ok("клик по MUTE переключил общее состояние", s1.muted !== s0.muted);
+      ok("клик по MUTE перерисовал и кнопку в шапке",
+         (s1.head === "true") === !s1.muted, JSON.stringify(s1));
+      ok("клик по MUTE перерисовал сам MUTE",
+         (s1.mute === "true") === s1.muted, JSON.stringify(s1));
+
+      headBtn.click(); await tick(80);
+      var s2 = muteState();
+      ok("клик по кнопке в шапке вернул состояние", s2.muted === s0.muted);
+      ok("клик по шапке перерисовал MUTE",
+         (s2.mute === "true") === s2.muted, JSON.stringify(s2));
+      ok("второй независимой переменной нет: обе читают audio.isMuted()",
+         (s2.mute === "true") === M.audio.isMuted() &&
+         (s2.head === "true") === !M.audio.isMuted());
+
+      // ==================== МУЗЫКА И СОСТОЯНИЯ ====================
+      head("музыка и состояния персонажа");
+      var stageEl = $("#stage");
+      var musicBtn = $('.act[data-action="music"]');
+      var imgSrcBefore = img.getAttribute("src");
+      // Центр картинки — СЕЙЧАС, пока она ещё видна: ниже по тесту клик
+      // по музыке её скроет (getBoundingClientRect() на hidden даст ноль),
+      // а брать вместо неё центр .display неточно — сцена и спрайт не
+      // концентричны (персонаж намеренно смещён ниже центра), и на узком
+      // мобильном вьюпорте этого расхождения хватает, чтобы «вправо»
+      // соскользнуло в «вправо-вниз».
+      var imgRectBefore = img.getBoundingClientRect();
+      var imgCx = imgRectBefore.left + imgRectBefore.width / 2;
+      var imgCy = imgRectBefore.top + imgRectBefore.height / 2;
+
+      ok("музыка не включается сама при загрузке", M.audio.music.isPlaying() === false);
+      ok("состояние по умолчанию — idle", stageEl.dataset.state === "idle", stageEl.dataset.state);
+      ok("кнопка музыки не нажата", musicBtn.getAttribute("aria-pressed") === "false");
+
+      musicBtn.click(); await tick(120);
+      ok("клик включает музыку", M.audio.music.isPlaying() === true);
+      ok("aria-pressed стал true", musicBtn.getAttribute("aria-pressed") === "true");
+      ok("состояние сцены стало dance", stageEl.dataset.state === "dance", stageEl.dataset.state);
+      ok("реплика сменилась на танцевальную",
+         $("#bubble-sr").textContent === SITE_DATA.character.states.dance.line,
+         $("#bubble-sr").textContent);
+      ok("строка обратной связи обновилась",
+         $("#act-feedback").textContent === SITE_DATA.actions.items[0].feedback,
+         $("#act-feedback").textContent);
+      ok("бейдж ON показан", getComputedStyle($(".act__badge")).display !== "none");
+      ok("окно диалога получило класс музыки", $(".hero__bubble").classList.contains("is-music"));
+      ok("эквалайзер виден", getComputedStyle($(".eq")).display !== "none");
+
+      // src картинки остаётся за gaze, музыка его не трогает
+      ok("переключение музыки не тронуло src спрайта",
+         img.getAttribute("src") === imgSrcBefore, img.getAttribute("src"));
+      // К этому месту gaze был уже уничтожен тестами тач-устройства,
+      // поэтому поднимаем его заново — проверяем именно сосуществование
+      // слежения и танца, а не живучесть предыдущего инстанса.
+      window.matchMedia = function (q) {
+        if (/hover|pointer/.test(q)) {
+          return { matches: true, media: q, addEventListener: function () {}, addListener: function () {} };
+        }
+        return realMM.call(window, q);
+      };
+      var stDance = G.init({ img: img, cfg: gcfg, stageEl: $(".display") });
+      window.matchMedia = realMM;
+      ok("gaze поднимается при активном танце", stDance.enabled === true);
+
+      // Настоящий клик по PLAY MUSIC (выше) уже запустил кадры танца на
+      // ВТОРОЙ картинке (.char__action) и скрыл эту (.char__img) —
+      // character.js больше не крутит танец поверх gaze-картинки, у
+      // танца теперь свой рисованный цикл. gaze.js это знает и сам
+      // отказывается что-то считать для скрытого <img> (нулевой rect,
+      // см. "спрайт скрыт — считать нечего" в frame()) — значит и
+      // проверять нужно не «меняет src на скрытой картинке» (этого
+      // больше не бывает), а то ради чего это вообще нужно: курсор не
+      // теряется, пока картинка скрыта, и как только её возвращают —
+      // направление сразу актуальное, без прыжка на устаревший кадр.
+      ok("исходная сцена: gaze-картинка скрыта во время танца", img.hidden === true);
+
+      move(imgCx + 400, imgCy); G.update();
+      ok("пока картинка скрыта, gaze её src не трогает",
+         fileOf(img) === "look-center.png", fileOf(img));
+
+      img.hidden = false;    // «анимация действия закончилась» — как в restoreIdleVisual()
+      G.update();
+      ok("картинку вернули — направление сразу актуальное, а не устаревший кадр",
+         fileOf(img) === "look-right.png", fileOf(img));
+      ok("танец при этом не сбросился", stageEl.dataset.state === "dance");
+      G.destroy();
+      ok("одно состояние за раз: у сцены ровно один data-state",
+         stageEl.dataset.state === "dance" && $$("[data-state]").length === 1);
+
+      musicBtn.click(); await tick(120);
+      ok("повторный клик выключает музыку", M.audio.music.isPlaying() === false);
+      ok("aria-pressed вернулся в false", musicBtn.getAttribute("aria-pressed") === "false");
+      ok("состояние вернулось в idle", stageEl.dataset.state === "idle");
+      ok("реплика сменилась на «музыка выключена»",
+         $("#bubble-sr").textContent === SITE_DATA.actions.items[0].lineOff,
+         $("#bubble-sr").textContent);
+      ok("класс музыки снят", !$(".hero__bubble").classList.contains("is-music"));
+
+      // ==================== MUTE ДЕЙСТВИТЕЛЬНО ОСТАНАВЛИВАЕТ МУЗЫКУ ====
+      // Раньше mute гасил только интерфейсные blip'ы — музыка играла своим
+      // отдельным узлом (tone() соединялась прямо с ctx.destination) и о
+      // флаге muted не знала вовсе. Теперь всё звучащее (музыка, blip'ы,
+      // голос) сходится в один masterGain, а mute вдобавок по-настоящему
+      // останавливает музыку (чистит её setInterval), а не просто глушит
+      // играющий впустую фон — проверяем это через M.audio.music.isPlaying(),
+      // а не через громкость: сам gain-узел приватен в audio.js.
+      head("MUTE реально останавливает музыку, а не просто глушит");
+      if (M.audio.isMuted()) { headBtn.click(); await tick(80); }   // старт с unmuted
+      musicBtn.click(); await tick(150);
+      ok("музыка играет", M.audio.music.isPlaying() === true);
+
+      muteBtn.click(); await tick(100);                              // MUTE во время игры
+      ok("музыка вкл -> mute -> тишина: isPlaying() стал false",
+         M.audio.music.isPlaying() === false);
+      ok("MUTE и кнопка в шапке синхронны и после программной остановки музыки",
+         muteBtn.getAttribute("aria-pressed") === "true" &&
+         headBtn.getAttribute("aria-pressed") === "false");
+      ok("кнопка PLAY MUSIC отражает реальную остановку — единая точка правды",
+         musicBtn.getAttribute("aria-pressed") === "false");
+      ok("сцена вернулась в idle вместе с музыкой",
+         stageEl.dataset.state === "idle", stageEl.dataset.state);
+      ok("строка статуса обновилась на сообщение MUTE",
+         $("#act-feedback").textContent === SITE_DATA.actions.items[6].feedback,
+         $("#act-feedback").textContent);
+
+      muteBtn.click(); await tick(150);                              // unmute -> резюме
+      ok("mute -> unmute: музыка возвращается в прежнем состоянии (играла — играет)",
+         M.audio.music.isPlaying() === true);
+      ok("кнопка PLAY MUSIC снова нажата", musicBtn.getAttribute("aria-pressed") === "true");
+      ok("сцена снова в dance", stageEl.dataset.state === "dance", stageEl.dataset.state);
+
+      musicBtn.click(); await tick(120);   // выключаем музыку явно — не тащим в другие тесты
+      ok("музыка остановлена для следующих проверок", M.audio.music.isPlaying() === false);
+
+      // ---- mute -> play music: нажатие снимает mute (см. комментарий в audio.js) ----
+      if (!M.audio.isMuted()) { headBtn.click(); await tick(80); }   // гарантируем muted
+      ok("подготовка: звук выключен", M.audio.isMuted() === true);
+      musicBtn.click(); await tick(150);
+      ok("mute -> PLAY MUSIC: mute снимается, музыка звучит по-настоящему",
+         M.audio.isMuted() === false && M.audio.music.isPlaying() === true);
+      ok("обе кнопки звука перерисовались в unmuted",
+         muteBtn.getAttribute("aria-pressed") === "false" &&
+         headBtn.getAttribute("aria-pressed") === "true");
+      musicBtn.click(); await tick(120);   // и снова тихо для следующих тестов
+      ok("музыка остановлена", M.audio.music.isPlaying() === false);
+
+      // ---- реплика по фокусу и мигание oneshot-действия ----
+      // SAY HI и THINK сейчас спрятаны (visible: false) и не в DOM — но
+      // логика фокуса/flash() в app.js общая для любого действия, не
+      // завязана на конкретный id, и должна продолжать работать для
+      // скрытых-пока-что действий на случай, если их вернут. Рендерим их
+      // временно офф-экран через тот же M.render.actions(), что и боевую
+      // панель (никакой отдельной тестовой копии логики), кликаем/фокусируем
+      // по-настоящему — делегирование событий висит на document и не
+      // зависит от того, где в DOM лежит узел — и убираем за собой.
+      var forcedVisible = Object.assign({}, M.store.actions, {
+        items: M.store.actions.items.map(function (a) {
+          return (a.id === "sayhi" || a.id === "think") ?
+            Object.assign({}, a, { visible: true }) : a;
+        })
+      });
+      var tempWrap = document.createElement("div");
+      tempWrap.style.cssText = "position:absolute;left:-9999px;top:-9999px";
+      tempWrap.appendChild(M.render.actions(forcedVisible));
+      document.body.appendChild(tempWrap);
+
+      var ghBtn = tempWrap.querySelector('.act[data-action="sayhi"]');
+      ghBtn.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
+      await tick(80);
+      ok("реплика обновляется по фокусу",
+         $("#bubble-sr").textContent === SITE_DATA.actions.items[5].line,
+         $("#bubble-sr").textContent);
+      ghBtn.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
+      await tick(80);
+
+      // ---- одноразовое действие мигает нажатым состоянием ----
+      var secretBtn = tempWrap.querySelector('.act[data-action="think"]');
+      secretBtn.click();
+      ok("одноразовое действие мигает нажатым состоянием",
+         secretBtn.classList.contains("is-pressed"));
+      await tick(220);
+      ok("нажатое состояние снимается само",
+         !secretBtn.classList.contains("is-pressed"));
+      // Клик проверял только 150-мсную вспышку is-pressed, а не полный
+      // прогон кадров THINK (10 x 100мс). Без явной остановки .char__img
+      // остался бы скрыт до конца анимации и увёл бы в ноль все геометрии
+      // ниже по файлу — они меряют именно его.
+      M.character.stopAction();
+      ok("реплика одноразового действия показана",
+         $("#bubble-sr").textContent === SITE_DATA.actions.items[1].line,
+         $("#bubble-sr").textContent);
+      document.body.removeChild(tempWrap);
+
+      // ---- prefers-reduced-motion: анимации не навешиваются ----
+      var realRM2 = M.dom.reducedMotion;
+      M.dom.reducedMotion = function () { return true; };
+      M.character.setState("dance");
+      ok("при reduced-motion анимация сцены отключена",
+         stageEl.dataset.motion === "off" &&
+         getComputedStyle(stageEl).animationName === "none",
+         stageEl.dataset.motion + " / " + getComputedStyle(stageEl).animationName);
+      ok("музыка при этом остаётся доступной", typeof M.audio.music.start === "function");
+      M.dom.reducedMotion = realRM2;
+      M.character.setState("idle");
+      ok("после возврата анимация снова назначена",
+         !stageEl.hasAttribute("data-motion") &&
+         getComputedStyle(stageEl).animationName !== "none",
+         getComputedStyle(stageEl).animationName);
+
+      // ==================== МЕТАДАННЫЕ И ВВОДНОЕ ПРЕДЛОЖЕНИЕ ====================
+      head("правая панель");
+      // Разные тона теперь живут не в ABOUT ME (её теги убраны по брифу —
+      // остался только заголовок и один абзац), а в WORK/PROJECTS: LOCATION
+      // и STATUS — tone: "plain"/"alt" у HEALWARE и SELF-BALANCING ROBOT.
+      location.hash = "#work/healware"; await tick(160);
+      var plainCount = $$(".tag--plain").length;
+      location.hash = "#projects/self-balancing-robot"; await tick(160);
+      ok("ряды метаданных несут разные тона",
+         $$(".tag--alt").length > 0 && plainCount > 0,
+         "alt=" + $$(".tag--alt").length + " plain=" + plainCount);
+
+      location.hash = "#about"; await tick(160);
+      ok("вводное предложение — единственный абзац, тегов нет",
+         $$(".detail__text > p").length === 1 && $$(".tags", $("#content")).length === 0,
+         $$(".detail__text > p").length + " абзацев, " + $$(".tags", $("#content")).length + " .tags");
+      ok("карточка проекта из правой панели убрана", $$(".featured").length === 0);
+
+      // ==================== EXTRA: mode "cards" (ACHIEVEMENTS) ====================
+      // Новый режим секции — все карточки видны сразу, без перехода на
+      // деталь (в отличие от mode "list" у WORK/PROJECTS). Кнопка навигации
+      // остаётся EXTRA, а заголовок в панели — ACHIEVEMENTS: это то, что
+      // отличает section.heading от section.label.
+      head('EXTRA: mode "cards" (ACHIEVEMENTS)');
+      ok("кнопка навигации подписана EXTRA",
+         $('.stat[data-section="extra"] .stat__label').textContent === "EXTRA");
+      // transientLine переживает навигацию (это фича — короткая реплика
+      // действия не должна обрываться переходом между секциями), поэтому
+      // сначала нужно дождаться, пока истечёт её собственный hold-таймер
+      // от более раннего теста (THINK: showLine(..., 2600, ...)), иначе
+      // она перекроет section.bubble независимо от того, сколько раз тут
+      // сменить hash.
+      await tick(2700);
+      location.hash = "#extra"; await tick(200);
+      ok("заголовок панели — ACHIEVEMENTS, не EXTRA",
+         $("#content-title").textContent === "ACHIEVEMENTS", $("#content-title").textContent);
+      ok("реплика при открытии EXTRA — новая строка из брифа",
+         $("#bubble-sr").textContent === "Here is what else I have", $("#bubble-sr").textContent);
+      ok("все 5 карточек достижений видны сразу, без клика",
+         $$(".achv-grid .achv").length === 5, $$(".achv-grid .achv").length);
+      ok("ни одна карточка не превратилась в кликабельную .card (нет второго уровня)",
+         $$("#content .card").length === 0);
+      ok("у каждой карточки есть заголовок и описание",
+         $$(".achv").every(function (n) {
+           return !!n.querySelector(".achv__title") && !!n.querySelector(".achv__desc");
+         }));
+      ok("картинок в достижениях больше нет (брифом убраны из данных)",
+         $$(".achv img").length === 0, $$(".achv img").length);
+      ok("и пустых контейнеров под них тоже нет",
+         $$(".achv .achv__img, .achv figure").length === 0,
+         $$(".achv .achv__img, .achv figure").length);
+      ok("заголовки карточек совпадают с data.js дословно",
+         $$(".achv__title").map(function (n) { return n.textContent; }).join("|") ===
+         SITE_DATA.sections.find(function (s) { return s.id === "extra"; })
+           .items.map(function (it) { return it.title; }).join("|"));
+      ok("itemId у cards-секции невалиден — откатывается на секцию, как у mode page",
+         (function () {
+           location.hash = "#extra/anything"; return true;
+         })());
+      await tick(160);
+      ok("… и правда откатился: hash = #extra, карточки всё ещё все 5 видны",
+         location.hash === "#extra" && $$(".achv-grid .achv").length === 5,
+         location.hash + " / " + $$(".achv-grid .achv").length + " карточек");
+
+      // ==================== ГОЛОС ПЕРСОНАЖА ====================
+      head("голос персонажа");
+      var bubbleInk = $("#bubble-ink"), bubbleSr = $("#bubble-sr");
+
+      ok("параметры голоса лежат в data.js",
+         !!SITE_DATA.character.voice && typeof SITE_DATA.character.voice.note === "number",
+         JSON.stringify(SITE_DATA.character.voice));
+      ok("скорость печати в диапазоне 25-35мс",
+         SITE_DATA.character.voice.speed >= 25 && SITE_DATA.character.voice.speed <= 35,
+         SITE_DATA.character.voice.speed);
+      ok("длительность blip'а 20-40мс",
+         SITE_DATA.character.voice.dur >= 0.02 && SITE_DATA.character.voice.dur <= 0.04,
+         SITE_DATA.character.voice.dur);
+      ok("blip играет не на каждый символ", SITE_DATA.character.voice.every >= 2,
+         SITE_DATA.character.voice.every);
+      ok("высота гуляет, а не телеграф", SITE_DATA.character.voice.detune > 0);
+
+      // Печатается ТОЛЬКО реплика. Строку задаём сами и длинную: между
+      // play() и первым кадром есть окно, где печать уже идёт, а каретки
+      // ещё нет — на коротких репликах проверка попадала в него и флейкала.
+      M.character.say("TESTING THE VOICE WITH A DELIBERATELY LONG SENTENCE RIGHT HERE");
+      await tick(140);
+      ok("реплика печатается по буквам",
+         M.character.isSpeaking() &&
+         bubbleInk.textContent.length < bubbleSr.textContent.length,
+         bubbleInk.textContent.length + "/" + bubbleSr.textContent.length);
+      ok("во время печати есть каретка", bubbleInk.classList.contains("is-typing"));
+
+      // клик по окну реплики допечатывает и глушит остаток голоса
+      $(".hero__bubble").click();
+      ok("клик по окну реплики мгновенно допечатывает",
+         bubbleInk.textContent === bubbleSr.textContent && !M.character.isSpeaking(),
+         "«" + bubbleInk.textContent + "»");
+      ok("каретка снята после завершения", !bubbleInk.classList.contains("is-typing"));
+
+      ok("нигде больше текст не печатается: слоёв .typed на странице нет",
+         $$(".typed, .typed__ghost").length === 0);
+      ok("строка обратной связи не печатается",
+         $("#act-feedback").textContent.length > 0 &&
+         $$("#act-feedback .typed").length === 0);
+
+      // своя интонация у действий
+      head("интонация действий");
+      var vThink = store_action("think").voice, vHi = store_action("sayhi").voice;
+      function store_action(id) { return SITE_DATA.actions.items.filter(
+        function (a) { return a.id === id; })[0]; }
+      ok("у SAY HI голос выше базового",
+         store_action("sayhi").voice.note > SITE_DATA.character.voice.note,
+         store_action("sayhi").voice.note + " vs " + SITE_DATA.character.voice.note);
+      ok("у THINK голос ниже базового",
+         store_action("think").voice.note < SITE_DATA.character.voice.note,
+         store_action("think").voice.note);
+      ok("у THINK печать медленнее базовой",
+         store_action("think").voice.speed > SITE_DATA.character.voice.speed,
+         store_action("think").voice.speed);
+
+      // звуковые эффекты действий
+      head("звуки действий");
+      ok("у TAKE PHOTO есть свой эффект", store_action("photo").sfx === "shutter");
+      ok("у ENERGY есть свой эффект", store_action("energy").sfx === "can");
+      ok("эффекты зарегистрированы в audio.js",
+         ["shutter", "can", "bug", "wave", "think"].every(function (n) {
+           return M.audio.hasSfx(n); }));
+      ok("звуковых файлов в проекте нет — всё генерируется кодом",
+         M.audio.hasSfx("shutter") && typeof M.audio.sfx === "function");
+
+      // всё подчиняется единому MUTE
+      var wasMuted = M.audio.isMuted();
+      if (!wasMuted) { M.audio.toggle(); await tick(40); }
+      ok("при MUTE эффект действия не играет", M.audio.sfx("shutter") === false);
+      ok("при MUTE голос молчит (blip не создаёт узлов)",
+         M.audio.voice({ note: 440 }) === undefined && M.audio.isMuted());
+      if (!wasMuted) { M.audio.toggle(); await tick(40); }
+
+      // ==================== РАМКИ ЗАМКНУТЫ ====================
+      head("рамки");
+      // Все коробки со своей рамкой. Шапка окна намеренно отделена только
+      // нижней линией — это разделитель внутри окна, а не отдельная коробка.
+      // .tag--plain — намеренно без чипа и без рамки: это значение строкой
+      var framedSel = ".px-box, .tag:not(.tag--plain) .tag__val, .lvlbar__cell";
+      function sideWidths(n) {
+        var cs = getComputedStyle(n);
+        return ["Top", "Right", "Bottom", "Left"].map(function (s) {
+          return parseFloat(cs["border" + s + "Width"]) || 0;
+        });
+      }
+      function visible(n) {
+        var r = n.getBoundingClientRect();
+        return r.width > 0 && r.height > 0;
+      }
+      var framed = $$(framedSel).filter(visible);
+      ok("на странице есть коробки с рамками", framed.length > 10, framed.length);
+
+      var openSides = framed.filter(function (n) {
+        var w = sideWidths(n);
+        return w.some(function (x) { return x === 0; });
+      });
+      ok("у каждой коробки рамка со всех четырёх сторон", openSides.length === 0,
+         openSides.slice(0, 5).map(function (n) {
+           return n.className.split(" ")[0] + "[" + sideWidths(n).join(",") + "]"; }).join(" "));
+
+      var uneven = framed.filter(function (n) {
+        var w = sideWidths(n);
+        return Math.max.apply(null, w) !== Math.min.apply(null, w);
+      });
+      ok("толщина рамки одинакова со всех сторон", uneven.length === 0,
+         uneven.slice(0, 5).map(function (n) {
+           return n.className.split(" ")[0] + "[" + sideWidths(n).join(",") + "]"; }).join(" "));
+
+      var fractional = framed.filter(function (n) {
+        return sideWidths(n).some(function (x) { return Math.abs(x - Math.round(x)) > 0.01; });
+      });
+      ok("толщины рамок ложатся на целые пиксели", fractional.length === 0,
+         fractional.slice(0, 5).map(function (n) {
+           return n.className.split(" ")[0] + "[" + sideWidths(n).join(",") + "]"; }).join(" "));
+
+      // Углы: border по определению смыкается, но проверим, что рамку не
+      // срезает overflow: hidden у какого-нибудь родителя.
+      var clipped = framed.filter(function (n) {
+        var r = n.getBoundingClientRect();
+        var p = n.parentElement;
+        while (p && p !== document.body) {
+          var cs = getComputedStyle(p);
+          var scrolls = p.scrollWidth > p.clientWidth + 1 || p.scrollHeight > p.clientHeight + 1;
+          if (!scrolls && cs.overflow !== "visible" && cs.overflowX !== "visible") {
+            var pr = p.getBoundingClientRect();
+            if (r.left < pr.left - 0.5 || r.right > pr.right + 0.5 ||
+                r.top < pr.top - 0.5 || r.bottom > pr.bottom + 0.5) return true;
+          }
+          p = p.parentElement;
+        }
+        return false;
+      });
+      ok("рамки не срезаются overflow:hidden у родителей", clipped.length === 0,
+         clipped.slice(0, 4).map(function (n) { return n.className.split(" ")[0]; }).join(" "));
+
+      // Двойная рамка — border плюс кольца, а не стопка из трёх теней
+      var dbl = $$(".px-double").filter(visible);
+      ok("двойная рамка построена на border, а не только на тенях",
+         dbl.length > 0 && dbl.every(function (n) {
+           return sideWidths(n).every(function (x) { return x > 0; }); }),
+         dbl.length + " элементов");
+
+      // .tag:not(.tag--plain) требует страницу, где такой тег реально
+      // отрисован сейчас — ABOUT ME тегов больше не несёт вовсе (см. бриф),
+      // не-plain тон сейчас только у STATUS/SELF-BALANCING ROBOT.
+      location.hash = "#projects/self-balancing-robot"; await tick(160);
+      ok("перечисленные в задании коробки на месте и с рамкой",
+         [".screen", ".hero", ".hero__bubble", ".hero__stage", ".acts",
+          ".stat", ".act", ".actions__feedback", ".content-frame",
+          ".tag:not(.tag--plain) .tag__val"]
+           .every(function (sel) {
+             var n = $(sel);
+             return n && sideWidths(n).every(function (x) { return x > 0; });
+           }),
+         [".screen", ".hero", ".hero__bubble", ".hero__stage", ".acts",
+          ".stat", ".act", ".actions__feedback", ".content-frame",
+          ".tag:not(.tag--plain) .tag__val"]
+           .filter(function (sel) {
+             var n = $(sel);
+             return !n || sideWidths(n).some(function (x) { return x === 0; });
+           }).join(" ") || "все");
+
+      // ============ ЦЕНТРАЛЬНАЯ ПАНЕЛЬ ПОМЕЩАЕТСЯ В ОКНО ============
+      head("центральная колонка в границах окна");
+      location.hash = "#about"; await tick(200);
+      // На узком экране рабочая область прокручивается: меряем в её начале,
+      // иначе панель законно уезжает выше заголовка вместе со скроллом.
+      var wsEl = $(".workspace");
+      wsEl.scrollTop = 0; window.scrollTo(0, 0);
+      await tick(80);
+      var heroEl = $(".hero"), tbEl = $(".titlebar"), scEl = $(".screen");
+      var hr = heroEl.getBoundingClientRect();
+      var tr = tbEl.getBoundingClientRect();
+      var scs = getComputedStyle(scEl), sr = scEl.getBoundingClientRect();
+      var innerBottom = sr.bottom - parseFloat(scs.borderBottomWidth);
+
+      ok("верх панели не выше низа заголовка окна", hr.top >= tr.bottom - 0.5,
+         "панель " + Math.round(hr.top) + ", заголовок до " + Math.round(tr.bottom));
+      ok("низ панели не ниже внутренней нижней границы окна",
+         hr.bottom <= innerBottom + 0.5,
+         "панель " + Math.round(hr.bottom) + ", окно до " + Math.round(innerBottom));
+
+      // Главное: раньше в границах была сама панель, а вываливались её дети.
+      // Проверяем это не только в центре — в левой колонке была та же беда.
+      var kids = $$(".hero > *");
+      function escapedFrom(panelSel, kidSel) {
+        var p = $(panelSel);
+        if (!p) return [];
+        var pr = p.getBoundingClientRect();
+        return $$(kidSel).filter(function (n) {
+          var r = n.getBoundingClientRect();
+          return r.height > 0 && (r.top < pr.top - 0.5 || r.bottom > pr.bottom + 0.5);
+        });
+      }
+      function describe(list) {
+        return list.map(function (n) {
+          var r = n.getBoundingClientRect();
+          return n.className.split(" ")[0] + "(" + Math.round(r.top) + ".." +
+                 Math.round(r.bottom) + ")"; }).join(" ");
+      }
+      var escaped = escapedFrom(".hero", ".hero > *");
+      ok("всё содержимое центральной колонки внутри её панели", escaped.length === 0,
+         describe(escaped) || "панель " + Math.round(hr.top) + ".." + Math.round(hr.bottom));
+
+      var escActs = escapedFrom(".acts", ".acts > *");
+      ok("всё содержимое панели действий внутри неё", escActs.length === 0, describe(escActs));
+
+      var escContent = escapedFrom(".content-frame", ".content-frame > *");
+      ok("контент и подвал внутри правой панели", escContent.length === 0, describe(escContent));
+
+      // И сами панели внутри рабочей области — но только когда она не
+      // прокручивается: на узком экране всё, что ниже сгиба, выходит за её
+      // видимый прямоугольник совершенно законно.
+      var wr = wsEl.getBoundingClientRect();
+      var wsScrolls = wsEl.scrollHeight > wsEl.clientHeight + 1;
+      if (wsScrolls) {
+        ok("рабочая область прокручивается — панели проверяем по содержимому",
+           wsEl.scrollTop === 0, "scrollTop=" + wsEl.scrollTop);
+      } else {
+        var panels = [".hero", ".acts", ".stats", ".content-frame"];
+        var outOfWs = panels.filter(function (sel) {
+          var n = $(sel); if (!n) return false;
+          var r = n.getBoundingClientRect();
+          return r.top < wr.top - 0.5 || r.bottom > wr.bottom + 0.5;
+        });
+        ok("все панели внутри рабочей области", outOfWs.length === 0,
+           outOfWs.map(function (sel) {
+             var r = $(sel).getBoundingClientRect();
+             return sel + "(" + Math.round(r.top) + ".." + Math.round(r.bottom) + ")"; }).join(" "));
+      }
+
+      // position: relative у .px-box нужен хвостику и из потока не выводит.
+      // Важно другое: нет отрицательного отступа, смещения и transform.
+      ok("окно реплики в потоке: без отрицательных отступов и сдвигов",
+         (function () {
+           var cs = getComputedStyle($(".hero__bubble"));
+           var okPos = cs.position === "static" || cs.position === "relative";
+           var okOff = ["top", "left"].every(function (k) {
+             return cs[k] === "auto" || parseFloat(cs[k]) === 0; });
+           return okPos && okOff && parseFloat(cs.marginTop) >= 0 &&
+                  (cs.transform === "none" || cs.transform === "matrix(1, 0, 0, 1, 0, 0)");
+         })(),
+         (function () { var cs = getComputedStyle($(".hero__bubble"));
+           return cs.position + " top=" + cs.top + " mt=" + cs.marginTop + " " + cs.transform; })());
+
+      ok("порядок колонки: реплика -> сцена -> имя/LVL -> XP",
+         kids.map(function (n) { return n.className.split(" ")[0]; }).join(",") ===
+         "hero__bubble,hero__stage,charstats",
+         kids.map(function (n) { return n.className.split(" ")[0]; }).join(","));
+
+      // ---- размер и положение персонажа ----
+      // .fit() форсирует пересчёт под ТЕКУЩИЙ layout, а не .lastFit(),
+      // который просто отдаёт кэш с прошлого вызова — тестов навигации
+      // и модалок выше в файле прибавилось, и без форс-пересчёта здесь
+      // можно было сравнить живой imgR с точным расчётом ПОД СТАРУЮ,
+      // уже неактуальную геометрию сцены.
+      MIRA.character.fit();
+      var stInner = $(".display__inner").getBoundingClientRect();
+      var imgEl = $(".char__img");
+      var imgR = imgEl.getBoundingClientRect();
+      var stFrame = $(".hero__stage").getBoundingClientRect();
+      var fit = MIRA.character.lastFit();
+      var fcfg = MIRA.character.fitConfig;
+      var padTop = imgR.top - stInner.top, padBottom = stInner.bottom - imgR.bottom;
+      var bias = (padTop - padBottom) / 2 / stInner.height * 100;
+
+      ok("размер спрайта посчитан", !!fit,
+         fit ? fit.mode + " " + fit.spriteW + "x" + fit.spriteH : "fitSprite вернул null");
+
+      // Ждём знак и потолок в fcfg.bias*100 (плюс округление) — не точное
+      // число: needFree может срезать сдвиг раньше, чем он дойдёт до
+      // номинала (в упор на низких сценах — на 160px сцене needFree и
+      // round() съедают его совсем, bias честно округляется до 0, а не до
+      // отрицательного), а на "vписан"-режиме конкурирует ещё и ширина
+      // сцены с квадратным кадром спрайта.
+      ok("персонаж смещён ниже центра сцены, не больше настроенного bias",
+         bias >= 0 && bias <= fcfg.bias * 100 + 1,
+         bias.toFixed(1) + "% при настроенном " + (fcfg.bias * 100) +
+         "% (сверху " + Math.round(padTop) +
+         ", снизу " + Math.round(padBottom) + ", сцена " + Math.round(stInner.height) + ")");
+
+      // Пиксель-арт масштабируется только целым множителем. Крупный
+      // сглаженный исходник целого множителя не имеет вовсе — там
+      // требование другое: целые пиксели на экране.
+      if (fit && fit.mode === "целый множитель") {
+        ok("пиксель-арт: экранный размер = исходник x целое",
+           fit.n === Math.round(fit.n) && fit.n >= 1 &&
+           Math.round(imgR.width) === fit.natW * fit.n &&
+           Math.round(imgR.height) === fit.natH * fit.n,
+           "N=" + fit.n + ", " + Math.round(imgR.width) + "x" + Math.round(imgR.height) +
+           " при исходнике " + fit.natW + "x" + fit.natH);
+      } else {
+        ok("крупный исходник: пропорции кадра сохранены",
+           !!fit && Math.abs(fit.spriteW / fit.spriteH - fit.natW / fit.natH) < 0.01,
+           fit ? fit.spriteW + "x" + fit.spriteH + " при исходнике " +
+                 fit.natW + "x" + fit.natH : "-");
+      }
+
+      ok("спрайт занимает не меньше 60% высоты сцены",
+         !!fit && fit.pct >= 60, fit ? fit.pct + "%" : "-");
+
+      ok("спрайт целиком внутри рамки сцены",
+         imgR.left >= stFrame.left - 0.5 && imgR.right <= stFrame.right + 0.5 &&
+         imgR.top >= stFrame.top - 0.5 && imgR.bottom <= stFrame.bottom + 0.5,
+         Math.round(imgR.left) + ".." + Math.round(imgR.right) + " / " +
+         Math.round(imgR.top) + ".." + Math.round(imgR.bottom) + " в рамке " +
+         Math.round(stFrame.left) + ".." + Math.round(stFrame.right) + " / " +
+         Math.round(stFrame.top) + ".." + Math.round(stFrame.bottom));
+
+      var isFrac = function (v) { return Math.abs(v - Math.round(v)) > 0.01; };
+      ok("спрайт стоит и мерится в целых пикселях",
+         !isFrac(imgR.width) && !isFrac(imgR.height) &&
+         !isFrac(parseFloat(imgEl.style.marginTop)) &&
+         !isFrac(parseFloat(imgEl.style.marginBottom)),
+         imgR.width + "x" + imgR.height + ", поля " +
+         imgEl.style.marginTop + "/" + imgEl.style.marginBottom);
+
+      ok("поля слева и справа от спрайта равны",
+         Math.abs((imgR.left - stInner.left) - (stInner.right - imgR.right)) <= 1,
+         Math.round(imgR.left - stInner.left) + " / " + Math.round(stInner.right - imgR.right));
+
+      // ============ НАКЛАДКИ: ТЕНИ И КОЛЬЦА НЕ ЗАНИМАЮТ МЕСТА ============
+      // box-shadow рисуется ВНЕ потока: браузер не учитывает его при
+      // расчёте отступов, поэтому элемент виден больше своего box и
+      // наезжает на соседа. Здесь сравниваются ВИДИМЫЕ прямоугольники:
+      // getBoundingClientRect (в нём уже учтён transform) плюс вылет
+      // теней. Значения --px-* для этого не годятся: там лежат строки
+      // вида "calc(3px * 2)", и parseFloat от них даёт NaN.
+      head("накладки: видимые прямоугольники не пересекаются");
+
+      function splitShadows(str) {
+        var out = [], depth = 0, cur = "";
+        for (var i = 0; i < str.length; i++) {
+          var ch = str[i];
+          if (ch === "(") depth++;
+          if (ch === ")") depth--;
+          if (ch === "," && depth === 0) { out.push(cur); cur = ""; }
+          else cur += ch;
+        }
+        if (cur.trim()) out.push(cur);
+        return out;
+      }
+      function shadowBleed(el) {
+        var res = { t: 0, r: 0, b: 0, l: 0 };
+        var raw = getComputedStyle(el).boxShadow;
+        if (!raw || raw === "none") return res;
+        splitShadows(raw).forEach(function (part) {
+          var p = part.trim();
+          if (p.indexOf("inset") >= 0) return;
+          if (/rgba\([^)]*,\s*0\s*\)/.test(p)) return;   // прозрачная — не рисует
+          var nums = (p.replace(/rgba?\([^)]*\)/g, "").match(/-?[\d.]+px/g) || [])
+                     .map(parseFloat);
+          if (nums.length < 2) return;
+          var dx = nums[0], dy = nums[1], blur = nums[2] || 0, spread = nums[3] || 0;
+          res.r = Math.max(res.r, dx + spread + blur);
+          res.b = Math.max(res.b, dy + spread + blur);
+          res.l = Math.max(res.l, spread + blur - dx);
+          res.t = Math.max(res.t, spread + blur - dy);
+        });
+        return res;
+      }
+      // Видимая коробка поддерева: сам элемент и все его потомки с тенями.
+      function visualRect(el) {
+        var r = el.getBoundingClientRect();
+        var L = r.left, T = r.top, R = r.right, B = r.bottom;
+        var nodes = [el].concat(Array.prototype.slice.call(el.querySelectorAll(".px-box")));
+        nodes.forEach(function (n) {
+          if (!n.getClientRects().length) return;
+          var nr = n.getBoundingClientRect(), s = shadowBleed(n);
+          L = Math.min(L, nr.left - s.l); T = Math.min(T, nr.top - s.t);
+          R = Math.max(R, nr.right + s.r); B = Math.max(B, nr.bottom + s.b);
+        });
+        return { left: L, top: T, right: R, bottom: B, box: r };
+      }
+      function visible(el) {
+        if (!el.getClientRects().length) return false;
+        var cs = getComputedStyle(el);
+        return cs.visibility !== "hidden" &&
+               cs.position !== "absolute" && cs.position !== "fixed";
+      }
+
+      // --- пара соседей в колонке ---
+      var COLS = [".col-left", ".stats", ".stats__list", ".acts", ".actions__row",
+                  ".actions__primary", ".actions__grid", ".hero", ".workspace",
+                  ".content-frame", ".charstats"];
+      var badPairs = [];
+      COLS.forEach(function (sel) {
+        var c = $(sel);
+        if (!c) return;
+        var cs = getComputedStyle(c);
+        if (/auto|scroll/.test(cs.overflowX) || /auto|scroll/.test(cs.overflowY)) return;
+        var kids = Array.prototype.slice.call(c.children).filter(visible);
+        for (var i = 0; i + 1 < kids.length; i++) {
+          var A = visualRect(kids[i]), B = visualRect(kids[i + 1]);
+          var ox = Math.min(A.right, B.right) - Math.max(A.left, B.left);
+          var oy = Math.min(A.bottom, B.bottom) - Math.max(A.top, B.top);
+          if (ox > 0.5 && oy > 0.5) {
+            badPairs.push(sel + ": " + (kids[i].className || kids[i].tagName) + " x " +
+                          (kids[i + 1].className || kids[i + 1].tagName) +
+                          " на " + ox.toFixed(1) + "x" + oy.toFixed(1) + "px");
+          }
+        }
+      });
+      ok("соседние блоки в колонках не пересекаются с учётом теней",
+         badPairs.length === 0, badPairs.join(" | ") || "чисто");
+
+      // --- кнопка против внутренней рамки своей панели ---
+      var badChild = [];
+      Array.prototype.slice.call(document.querySelectorAll(".px-box")).forEach(function (p) {
+        if (!visible(p)) return;
+        var pcs = getComputedStyle(p);
+        if (/auto|scroll/.test(pcs.overflowX) || /auto|scroll/.test(pcs.overflowY)) return;
+        var pr = p.getBoundingClientRect();
+        var inner = {
+          left: pr.left + parseFloat(pcs.borderLeftWidth),
+          top: pr.top + parseFloat(pcs.borderTopWidth),
+          right: pr.right - parseFloat(pcs.borderRightWidth),
+          bottom: pr.bottom - parseFloat(pcs.borderBottomWidth)
+        };
+        Array.prototype.slice.call(p.querySelectorAll(".px-box")).forEach(function (ch) {
+          if (!visible(ch)) return;
+          if (ch.parentElement.closest(".px-box") !== p) return;
+          var hop = ch.parentElement, scrolled = false;
+          while (hop && hop !== p) {
+            var hs = getComputedStyle(hop);
+            if (/auto|scroll/.test(hs.overflowX) || /auto|scroll/.test(hs.overflowY)) scrolled = true;
+            hop = hop.parentElement;
+          }
+          if (scrolled) return;
+          var r = ch.getBoundingClientRect(), s = shadowBleed(ch);
+          var d = Math.max((r.right + s.r) - inner.right, (r.bottom + s.b) - inner.bottom,
+                           inner.left - (r.left - s.l), inner.top - (r.top - s.t));
+          if (d > 0.5) {
+            badChild.push((ch.className || ch.tagName) + " за рамку " +
+                          (p.className || p.tagName) + " на " + d.toFixed(1) + "px");
+          }
+        });
+      });
+      ok("тени кнопок не выходят за внутреннюю рамку своей панели",
+         badChild.length === 0, badChild.join(" | ") || "чисто");
+
+      // --- подъём на :hover должен помещаться в зазор над кнопкой ---
+      var lift = parseFloat(getComputedStyle(document.documentElement)
+                   .getPropertyValue("--px-lift")) || 0;
+      ok("подъём кнопки на :hover заложен в токен --px-lift",
+         lift > 0, lift + "px");
+
+      // --- отрицательных margin не должно быть вовсе ---
+      var negMargins = [];
+      Array.prototype.slice.call(document.querySelectorAll("*")).forEach(function (el) {
+        if (!el.getClientRects().length) return;
+        var cs = getComputedStyle(el);
+        ["marginTop", "marginRight", "marginBottom", "marginLeft"].forEach(function (k) {
+          if (parseFloat(cs[k]) < 0) {
+            negMargins.push((el.className || el.tagName) + "." + k + "=" + cs[k]);
+          }
+        });
+      });
+      ok("отрицательных margin в макете нет",
+         negMargins.length === 0, negMargins.slice(0, 5).join(" | ") || "чисто");
+
+      // ==================== МОБИЛЬНАЯ РАСКЛАДКА ====================
+      head("мобильная раскладка");
+      var narrow = window.innerWidth <= 900;
+      if (!narrow) {
+        ok("проверки мобильной раскладки идут отдельным прогоном", true,
+           "ширина " + window.innerWidth + ", здесь пропускаем");
+      } else {
+        function top(sel) { return $(sel).getBoundingClientRect().top; }
+        ok("порядок: реплика -> персонаж -> профиль -> действия -> навигация -> контент",
+           top(".hero__bubble") < top("#stage") &&
+           top("#stage") < top(".charstats") &&
+           top(".charstats") < top(".acts") &&
+           top(".acts") < top(".stats") &&
+           top(".stats") < top("#content"),
+           [".hero__bubble", "#stage", ".charstats", ".acts", ".stats", "#content"]
+             .map(function (s2) { return s2 + "=" + Math.round(top(s2)); }).join(" "));
+
+        // Главное требование: без прокрутки видны персонаж, окно диалога
+        // и хотя бы одна кнопка действия.
+        var firstAct = $(".act").getBoundingClientRect();
+        ok("персонаж виден без прокрутки",
+           $("#stage").getBoundingClientRect().bottom <= window.innerHeight);
+        ok("окно диалога видно без прокрутки",
+           $(".hero__bubble").getBoundingClientRect().bottom <= window.innerHeight);
+        ok("хотя бы одна кнопка действия видна без прокрутки",
+           firstAct.bottom <= window.innerHeight,
+           Math.round(firstAct.bottom) + " > " + window.innerHeight);
+
+        // Раньше здесь была своя лента-с-прокруткой для .actions__row —
+        // нужна была под 2 primary + 5 слотов. Слотов больше нет (data.js:
+        // visible: false), PLAY MUSIC и MUTE — те же 2 широкие плитки, что
+        // и на десктопе (без всякого overflow-x), и это уже покрыто общей
+        // проверкой "высота плиток 130-140px" в разделе панели действий
+        // выше — она не завязана на ширину вьюпорта.
+        var row = $(".actions__row");
+        // Раньше навигация тоже была лентой с горизонтальной прокруткой —
+        // теперь длинные подписи вроде WORK EXPERIENCE переносятся внутри
+        // своей кнопки (flex-wrap), а сам список статов переносится по
+        // строкам, а не скроллится в сторону. См. .stats__list в
+        // 07-responsive.css.
+        var navRow0 = $(".stats__list");
+        ok("у ленты навигации нет горизонтальной прокрутки — она переносится",
+           navRow0.scrollWidth <= navRow0.clientWidth + 1,
+           navRow0.scrollWidth + " vs " + navRow0.clientWidth);
+        ok("ряд действий не схлопнут — кнопки внутри своей панели",
+           row.getBoundingClientRect().bottom <=
+           $(".acts").getBoundingClientRect().bottom + 1);
+
+        ok("главное действие идёт первым",
+           $$(".act")[0].dataset.action === "music",
+           $$(".act")[0].dataset.action);
+
+        ok("подписи навигации полные, без сокращений",
+           $$(".stat__label").map(function (n) { return n.textContent; }).join("|") ===
+           SITE_DATA.sections.map(function (x) { return x.label; }).join("|"),
+           $$(".stat__label").map(function (n) { return n.textContent; }).join("|"));
+
+        ok("нет горизонтальной прокрутки страницы",
+           document.documentElement.scrollWidth <= window.innerWidth + 1,
+           document.documentElement.scrollWidth + " > " + window.innerWidth);
+        var tooSmallM = $$(".act, .stat, .nav-arrow, .footer__link, .link, .back").filter(function (n) {
+          var r2 = n.getBoundingClientRect();
+          return r2.height > 0 && (r2.width < 44 || r2.height < 44);
+        });
+        ok("все тач-цели не мельче 44px", tooSmallM.length === 0,
+           tooSmallM.map(function (n) { return n.className.split(" ")[0]; }).join(", "));
+      }
+
+      head("регресс: геометрия и тексты");
+      ok("у всех img есть alt", $$("img").every(function (i) { return i.hasAttribute("alt"); }));
+      ok("нет горизонтального скролла",
+         document.documentElement.scrollWidth <= window.innerWidth + 1,
+         document.documentElement.scrollWidth + " > " + window.innerWidth);
+      // Ниже 760px по высоте страница отпускается в скролл сознательно
+      // (см. 07-responsive.css), поэтому проверяем правило, а не следствие.
+      var tallEnough = window.innerHeight >= 760;
+      if (tallEnough) {
+        ok("на высоком вьюпорте страница не скроллится",
+           document.documentElement.scrollHeight <= window.innerHeight + 1,
+           document.documentElement.scrollHeight + " > " + window.innerHeight);
+      } else {
+        ok("на низком вьюпорте скролл страницы осознанно разрешён",
+           getComputedStyle(document.body).overflowY !== "hidden",
+           "innerHeight=" + window.innerHeight + " overflowY=" +
+           getComputedStyle(document.body).overflowY);
+      }
+      ok("контур .px-box не обрезан", getComputedStyle($(".content-frame")).overflow === "visible");
+
+      // Проверка потерялась при перестройке набора в коммите с gaze — возвращена.
+      // Иконки подвала по макету 36px на десктопе и вырастают до 44 на тач-
+      // ширинах, поэтому здесь они не участвуют: их меряет мобильный прогон.
+      var tapSel = ".stat, .card, .back, .link, .nav-arrow, .ribbon__item, .inv__tile, #sound-btn, #menu-btn";
+      var tooSmall = $$(tapSel).filter(function (n) {
+        var r = n.getBoundingClientRect();
+        return r.height > 0 && (r.width < 27 || r.height < 27);
+      });
+      ok("интерактивные элементы не мельче своей тач-цели", tooSmall.length === 0,
+         tooSmall.map(function (n) {
+           var r = n.getBoundingClientRect();
+           return n.className.split(" ")[0] + " " + Math.round(r.width) + "x" + Math.round(r.height);
+         }).join(", "));
+      ok("крупные кнопки >= 44px",
+         $$(".stat, .card, .back, .link, .ribbon__item").every(function (n) {
+           var r = n.getBoundingClientRect();
+           return r.height === 0 || r.height >= 44;
+         }));
+      ok("lang=en", document.documentElement.lang === "en");
+      var cyr = /[Ѐ-ӿ]/;
+      var bad = [];
+      (function walk(n) {
+        // сам тест написан по-русски — его собственные узлы не считаем
+        if (n.nodeType === 1) {
+          var t = n.tagName;
+          if (t === "SCRIPT" || t === "STYLE" || n.id === "RESULTS") return;
+        }
+        if (n.nodeType === 3 && cyr.test(n.nodeValue)) bad.push(n.nodeValue.trim().slice(0, 40));
+        for (var i = 0; i < n.childNodes.length; i++) walk(n.childNodes[i]);
+      })(document.body);
+      $$("img,[alt],[aria-label],[title]").forEach(function (el) {
+        ["alt", "aria-label", "title"].forEach(function (a) {
+          var v = el.getAttribute(a);
+          if (v && cyr.test(v)) bad.push(a + "=" + v.slice(0, 40));
+        });
+      });
+      // ==================== ВЁРСТКА: ACTIONS НЕ НАЕЗЖАЕТ НА НАВИГАЦИЮ ====
+      // Тень и внешнее кольцо двойной рамки рисуются через box-shadow и не
+      // занимают места в потоке — обычный getBoundingClientRect() их не
+      // видит, поэтому меряем полный визуальный прямоугольник (border-box
+      // + тень + кольцо .px-double) и сравниваем с тем же прямоугольником
+      // навигации. На десктопе и ноутбуке ACTIONS ниже статов, на мобильном
+      // лента статов уезжает вниз и ACTIONS оказывается выше неё — порядок
+      // разный, но в обоих случаях панели не должны наезжать друг на друга.
+      head("вёрстка: ACTIONS не наезжает на навигацию (с учётом тени)");
+      // --px-gap-w/--px-line2-w/--px-drop-x/-y — обычные custom properties,
+      // они наследуются вниз по DOM даже туда, где ничего не рисуют. #stats
+      // не .px-box — своей тени и кольца у него нет, но он ВИДИТ значения,
+      // унаследованные от .screen.px-double (ring=8px), и наивный замер
+      // приписал бы эти 8px контейнеру, у которого нет своего box-shadow.
+      // Меряем поэтому не #stats, а каждую .stat-кнопку по отдельности —
+      // они сами .px-box и несут свои значения не по наследству.
+      function expandedRect(el) {
+        var r = el.getBoundingClientRect();
+        var cs = getComputedStyle(el);
+        var gapW = parseFloat(cs.getPropertyValue("--px-gap-w")) || 0;
+        var line2W = parseFloat(cs.getPropertyValue("--px-line2-w")) || 0;
+        var dropX = parseFloat(cs.getPropertyValue("--px-drop-x")) || 0;
+        var dropY = parseFloat(cs.getPropertyValue("--px-drop-y")) || 0;
+        var ring = gapW + line2W;
+        return { left: r.left - ring, top: r.top - ring,
+                 right: r.right + ring + dropX, bottom: r.bottom + ring + dropY };
+      }
+      function rectsOverlap(a, b) {
+        return !(a.left > b.right || a.right < b.left ||
+                 a.top > b.bottom || a.bottom < b.top);
+      }
+      var actionsRect = expandedRect($("#actions"));
+      var overlappingStats = $$(".stat").filter(function (n) {
+        return rectsOverlap(actionsRect, expandedRect(n));
+      });
+      ok("прямоугольник ACTIONS (с тенью) не пересекается ни с одной кнопкой статов (с тенью)",
+         overlappingStats.length === 0,
+         "actions=" + JSON.stringify(actionsRect) + " задели: " +
+         overlappingStats.map(function (n) { return n.textContent.trim(); }).join(", "));
+
+      ok("на странице нет кириллицы (весь текст сайта — EN)", bad.length === 0, bad.join(" | "));
+
+      ok("нет ошибок и предупреждений в консоли", errors.length === 0, errors.join(" ;; "));
+
+      finish();
+    })().catch(function (e) {
+      out.push("");
+      out.push("ИСКЛЮЧЕНИЕ: " + (e && e.stack ? e.stack : e));
+      fails++;
+      finish();
+    });
+
+    function finish() {
+      var total = out.filter(function (l) { return /^(PASS|FAIL)/.test(l); }).length;
+      out.push("");
+      out.push(fails === 0 ? "ИТОГ: все " + total + " проверок пройдены"
+                           : "ИТОГ: ПРОВАЛЕНО " + fails + " из " + total);
+      $("#RESULTS").textContent = out.join("\n");
+    }
+  });
+})();
+</script>
+</body>
+</html>

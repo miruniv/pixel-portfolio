@@ -1,0 +1,851 @@
+/* ============================================================
+   05-components.css — все элементы интерфейса
+   ============================================================ */
+
+/* ============ TITLE BAR ============ */
+.titlebar__title {
+  font-family: var(--font-display);
+  font-size: var(--fs-md);
+  letter-spacing: 1px;
+}
+.titlebar__icon { width: 32px; height: 32px; }
+
+/* Кнопки окна. Декоративные — aria-hidden и вне tab-порядка. */
+.tbtn {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin: var(--sp-1);
+  --px-fill: var(--face);
+  --px-hi: var(--face-hi);
+  --px-lo: var(--face-lo);
+}
+.tbtn__glyph { display: block; background: var(--ink); }
+.tbtn--min .tbtn__glyph { width: 12px; height: 4px; }
+.tbtn--max .tbtn__glyph { width: 12px; height: 12px; box-shadow: inset 0 0 0 2px var(--face); }
+.tbtn--menu .tbtn__glyph {
+  width: 16px; height: 4px;
+  box-shadow: 0 -6px 0 var(--ink), 0 6px 0 var(--ink);
+}
+.tbtn--sound .tbtn__glyph { width: 16px; height: 16px; background: none; }
+.tbtn[aria-pressed="true"] { --px-fill: var(--accent-soft); }
+
+/* ============ СТАТЫ (левая колонка) ============ */
+.stat {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  min-height: 60px;
+  padding: var(--sp-3) var(--sp-4);
+  --bd: var(--bd-md);
+  --px-fill: var(--tile);
+  font-family: var(--font-display);
+  font-size: var(--fs-md);
+  line-height: 1.4;
+  letter-spacing: 0.5px;
+  transition: background-color 80ms steps(2);
+}
+.stat__icon { flex: 0 0 auto; width: 32px; height: 32px; }
+.stat__icon svg, .stat__icon img { width: 100%; height: 100%; }
+.stat__label { flex: 1 1 auto; }
+
+.stat:hover { --px-fill: var(--tile-hover); }
+
+/* Активный стат: инвертированная фаска + акцентная заливка.
+   Текст всегда --ink на --accent-soft = 9.3:1. */
+.stat[aria-current="true"] {
+  --px-fill: var(--accent-soft);
+  --px-hi: var(--accent-lo);     /* инверсия: тёмная грань сверху-слева */
+  --px-lo: var(--accent-hi);
+  transform: translate(2px, 2px);
+}
+.stat[aria-current="true"] .stat__label { text-shadow: 0 0 0 var(--ink); }
+
+/* ============ ПЕРСОНАЖ (центр) ============ */
+.hero__bubble {
+  --px-fill: var(--face);
+  padding: var(--sp-3);
+  font-size: var(--fs-md);
+  line-height: 1.5;
+  text-align: center;
+  min-height: calc(var(--sp-4) * 4);
+  display: grid;
+  align-items: center;
+}
+
+/* Сцена: прямоугольник с одной полной рамкой и однотонной заливкой.
+   Никаких внутренних колец — .display__inner больше не px-box. */
+.display {
+  --px-fill: var(--display);
+  padding: 0;
+}
+
+/* Персонаж по центру по обеим осям. Поля заданы одним padding-block,
+   поэтому равны по определению. --stage-pad подобран так, чтобы спрайт
+   занимал примерно три четверти высоты сцены, как в макете.
+   gaze.js меряет сам <img>, так что центр уезжает вместе со спрайтом. */
+/* Персонаж по центру по горизонтали и чуть НИЖЕ центра по вертикали:
+   сверху воздуха больше, чем под ногами. Сдвиг задан лишним верхним
+   отступом контейнера, без абсолютного позиционирования. */
+.display__inner {
+  position: relative;
+  display: grid;
+  justify-items: start;
+  align-content: start;
+  /* Вертикальные поля больше не задаются здесь: размер спрайта и его
+     смещение вниз считает fitSprite() в js/character.js, целыми
+     пикселями. Коробка сцены при этом прежняя — её держит min-height
+     и растяжение во flex-колонке. */
+  padding-inline: var(--sp-2);
+  min-height: calc(var(--char-size) * var(--char-scale) + var(--stage-pad) * 2);
+}
+
+/* Накладки поверх сцены: `...`, лампочка, +10 ENERGY, вспышка */
+.overlays {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+/* Размер задаёт fitSprite() прямо на <img>, обёртка подстраивается */
+.char {
+  display: grid;
+  place-items: center;
+}
+.char svg {
+  width: calc(var(--char-size) * var(--char-scale));
+  height: calc(var(--char-size) * var(--char-scale));
+  shape-rendering: crispEdges;
+}
+
+/* Слежение за курсором: один <img>, меняется только src.
+   Затухание нужно для мягкого возврата к взгляду прямо, когда курсор
+   уходит за пределы окна. */
+.char__img,
+.char__action {
+  display: block;                /* ширина и высота приходят из character.js */
+  image-rendering: pixelated;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+.char__img { transition: opacity 120ms linear; }
+.char__img.is-settling { opacity: 0.55; }
+
+/* .char__action — второй, независимый <img> для покадровых анимаций
+   действий (THINK/DEBUG/…). Живёт рядом с .char__img и никогда не делит
+   с ним src: пока действие играет, .char__img просто hidden, а gaze.js
+   как ни в чём не бывало продолжает писать в него направление взгляда
+   в фоне. Поэтому возврат к слежению не «прыгает» на look-center — на
+   момент показа .char__img уже стоит верный кадр. Без transition:
+   кадры пиксель-арта меняются резкой сменой, не плавным перекрестным
+   затуханием.
+
+   ВАЖНО: атрибут [hidden] и правило .char__img{display:block} выше —
+   одного порядка специфичности (класс = атрибут), и авторские правила
+   всегда перебивают UA-дефолт [hidden]{display:none} независимо от
+   порядка в файле. Без явного [hidden]{display:none} здесь скрытая
+   картинка осталась бы видимой и раздувала .char по высоте — оба <img>
+   занимали бы каждый свою строку грида одновременно. */
+.char__img[hidden],
+.char__action[hidden] { display: none; }
+
+/* Реальный спрайт-лист. Ключ: анимируем на ПОЛНУЮ ширину листа
+   (-frames * frameSize) со steps(frames) — тогда шаги попадают ровно
+   на границы кадров, а конечное положение никогда не показывается. */
+.char--sprite {
+  width: calc(var(--char-size) * var(--char-scale));
+  height: calc(var(--char-size) * var(--char-scale));
+  background-image: var(--sheet);
+  background-repeat: no-repeat;
+  background-size: calc(var(--char-size) * var(--frames) * var(--char-scale))
+                   calc(var(--char-size) * var(--char-scale));
+  background-position: 0 0;
+  image-rendering: pixelated;
+  animation: sprite-idle var(--sheet-dur, 1s) steps(var(--frames)) infinite;
+}
+@keyframes sprite-idle {
+  to { background-position-x: calc(-1 * var(--char-size) * var(--frames) * var(--char-scale)); }
+}
+
+/* Плейсхолдер-силуэт: покачивается на 4px по пиксельному гриду */
+.char--placeholder svg { animation: bob 1.2s steps(2) infinite; }
+@keyframes bob { 50% { transform: translateY(-4px); } }
+
+/* Только у плейсхолдера: gaze и sprite-режимы уже реагируют на курсор сами
+   (поворотом головы, покадровой анимацией), а этот wobble остался с самых
+   первых коммитов, когда единственным персонажем был SVG-силуэт. На
+   .char--gaze он применялся до сих пор и тряс спрайт всё то время, что
+   курсор просто лежит внутри рамки — независимо от направления взгляда. */
+.display:hover .char--placeholder { animation: wobble 260ms steps(2) infinite; }
+@keyframes wobble { 50% { transform: translateX(4px); } }
+
+.hero__plate {
+  --px-fill: var(--face);
+  --px-hi: var(--tile);
+  --px-lo: var(--face-lo);
+  padding: var(--sp-3);
+  font-family: var(--font-display);
+  font-size: var(--fs-md);
+  text-align: center;
+  letter-spacing: 2px;
+}
+
+/* ============ ПРАВАЯ ПАНЕЛЬ ============ */
+/* Заголовок раздела: крупный, с розовой подчёркивающей полосой по ширине
+   текста — inline-block, чтобы линия не тянулась на всю панель. */
+.content__title {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: var(--fs-2xl);
+  line-height: var(--lh-tight);
+  letter-spacing: 1px;
+  padding-bottom: var(--sp-2);
+  margin-bottom: var(--sp-5);
+  border-bottom: var(--bd) solid var(--accent-soft);
+}
+.content__intro {
+  color: var(--ink-2);
+  font-size: var(--fs-md);
+  line-height: var(--lh-body);
+  margin-bottom: var(--sp-5);
+}
+
+/* Пустое состояние */
+.hint {
+  display: grid;
+  justify-content: center;
+  align-content: start;
+  gap: var(--sp-2);
+  padding-top: var(--sp-7);
+  font-family: var(--font-display);
+  font-size: var(--fs-md);
+  color: var(--ink-2);
+  text-align: center;
+}
+
+/* ---- Сетка карточек (уровень 1) ---- */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
+  gap: var(--sp-5);
+  padding: var(--sp-1);
+}
+.card {
+  display: grid;
+  width: 100%;
+  --bd: var(--bd-md);
+  gap: var(--sp-2);
+  justify-items: center;
+  padding: var(--sp-3);
+  min-height: var(--tap);
+  --px-fill: var(--tile);
+  text-align: center;
+}
+.card:hover { --px-fill: var(--tile-hover); }
+.card__thumb {
+  --px-fill: var(--panel-2);
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 96px;
+}
+.card__thumb img { width: 64px; height: 64px; }
+/* Плейсхолдер превью, пока нет картинки: первая буква заголовка */
+.card__letter {
+  font-family: var(--font-display);
+  font-size: var(--fs-2xl);
+  color: var(--accent);
+}
+.card__title {
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  word-break: break-word;
+}
+.card__sub { font-size: var(--fs-sm); color: var(--ink); opacity: 0.8; }
+
+/* ---- PROJECTS: крупнее превью (~25-35%), сама карточка не трогается ----
+   Колонка чуть шире 136px по умолчанию, чтобы увеличенное превью с
+   паддингом карточки не упиралось в рамку на узких десктопных окнах. */
+.cards--projects { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+.cards--projects .card__thumb { width: 120px; height: 120px; }
+.cards--projects .card__thumb img { width: 80px; height: 80px; }
+
+/* ---- WORK EXPERIENCE: карточки заметно крупнее, только на широком
+   экране (см. 07-responsive.css — на <=900px раздел уже одноколоночный,
+   там хватает общей .cards-раскладки). auto-fit вместо auto-fill: с
+   ровно 2 карточками auto-fill оставлял(бы) пустые треки и прижимал
+   обе карточки влево — auto-fit схлопывает пустые треки и отдаёт им
+   ширину ряда, отсюда и «лучше использует горизонтальное место». */
+@media (min-width: 901px) {
+  .cards--work {
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: var(--sp-6);
+  }
+  .cards--work .card {
+    padding: var(--sp-4);
+    gap: var(--sp-3);
+  }
+  .cards--work .card__thumb { width: 112px; height: 112px; }
+  .cards--work .card__thumb img { width: 74px; height: 74px; }
+}
+
+/* ---- Карточки без деталей (ACHIEVEMENTS) ----
+   minmax(min(100%, 260px), 1fr): на очень узких экранах min(...) отдаёт
+   100% раньше, чем 260px перестанет помещаться — иначе колонка не может
+   сжаться меньше 260px и появляется горизонтальный скролл. Высота — auto,
+   без строгой сетки строк, поэтому длинное описание не обрезается и не
+   требует мелкого шрифта, чтобы влезть. */
+.achv-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: var(--sp-5);
+  padding: var(--sp-1);
+  align-items: start;
+}
+/* Без картинки (текущие данные — image: не задан) карточка держится
+   только на паддинге и зазоре: чуть просторнее, чем раньше рядом с
+   превью, иначе заголовок с описанием выглядят прижатыми к рамке. */
+.achv {
+  display: grid;
+  gap: var(--sp-4);
+  padding: var(--sp-5);
+  --bd: var(--bd-md);
+  --px-fill: var(--tile);
+}
+.achv__img {
+  --px-fill: var(--panel-2);
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  margin: 0;
+  overflow: hidden;
+}
+.achv__img img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.achv__title {
+  font-family: var(--font-display);
+  font-size: var(--fs-md);
+  line-height: var(--lh-tight);
+  letter-spacing: 0.5px;
+}
+.achv__desc {
+  font-size: var(--fs-sm);
+  line-height: var(--lh-body);
+  color: var(--ink-2);
+}
+
+/* ---- Деталь (уровень 2) ---- */
+.detail { display: grid; gap: var(--sp-4); padding: var(--sp-1); }
+
+.detail__bar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  --bd: var(--bd-md);
+  padding: var(--sp-2) var(--sp-3);
+  min-height: var(--tap);
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
+  letter-spacing: 1px;
+}
+
+/* Лента соседних карточек — компенсирует потерю сетки из виду */
+.ribbon { display: flex; gap: var(--sp-2); flex-wrap: wrap; margin-left: auto; }
+.ribbon__item {
+  display: grid;
+  place-items: center;
+  width: var(--tap); height: var(--tap);
+  --bd: var(--bd-sm);
+  --px-fill: var(--tile);
+}
+.ribbon__item img, .ribbon__item svg { width: 24px; height: 24px; }
+.ribbon__item[aria-current="true"] { --px-fill: var(--accent-soft); }
+
+.detail__title {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  line-height: var(--lh-tight);
+  letter-spacing: 1px;
+  padding-bottom: var(--sp-2);
+  border-bottom: var(--bd) solid var(--accent-soft);
+}
+.detail__sub { color: var(--ink-2); font-size: var(--fs-md); margin-top: var(--sp-2); }
+
+.detail__hero {
+  --px-fill: var(--panel-2);
+  display: grid;
+  place-items: center;
+  padding: var(--sp-3);
+}
+.detail__hero img { width: 100%; max-width: 384px; height: auto; }
+
+/* ---- Текст в правой панели ----
+   Печатается только реплика над персонажем, здесь текст появляется целиком,
+   поэтому ни «призрака», ни дубля для скринридера не нужно. */
+.detail__text {
+  display: grid;
+  gap: var(--sp-4);
+  font-size: var(--fs-md);
+  line-height: var(--lh-body);
+  color: var(--ink-2);
+}
+/* Первый абзац — вводное предложение: крупнее и темнее остального */
+.detail__text > p:first-child { font-size: var(--fs-lead); color: var(--ink); }
+/* Каретка в окне реплики, пока персонаж «говорит» */
+#bubble-ink.is-typing::after {
+  content: "";
+  display: inline-block;
+  width: 0.5em;
+  height: 1em;
+  margin-left: 2px;
+  background: var(--accent);
+  vertical-align: -2px;
+  animation: blink 800ms steps(2) infinite;
+}
+.back__arrow, .hint__arrow, .link__ext {
+  display: block;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+}
+.hint { grid-auto-flow: column; justify-content: center; align-items: center; }
+
+.caret {
+  display: inline-block;
+  width: 0.5em; height: 1em;
+  background: var(--accent);
+  vertical-align: -2px;
+  animation: blink 800ms steps(2) infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }
+
+/* ---- Теги-статы ---- */
+.tags { display: grid; gap: var(--sp-2); }
+.tag {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sp-2);
+  font-size: var(--fs-md);
+}
+.tag__label {
+  font-family: var(--font-display);
+  font-size: var(--fs-label);
+  letter-spacing: 1.5px;
+  color: var(--ink-2);
+}
+.tag__val {
+  padding: 3px var(--sp-2);
+  background: var(--chip-mint);
+  border: var(--bd-sm) solid var(--ink);
+}
+/* Второй тон чипов — для рядов вроде ALSO, чтобы они не сливались со STACK */
+.tag--alt .tag__val { background: var(--chip-blue); }
+/* Ряд без чипов — для CURRENTLY: просто значение в строку */
+.tag--plain .tag__val { background: none; border: 0; padding: 0; }
+
+/* ---- Ссылки ---- */
+.links { display: flex; flex-wrap: wrap; gap: var(--sp-3); padding: var(--sp-1); }
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  --bd: var(--bd-md);
+  min-height: var(--tap);
+  padding: var(--sp-2) var(--sp-3);
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
+  text-decoration: none;
+  letter-spacing: 1px;
+}
+.link:hover { --px-fill: var(--accent-soft); }
+
+/* ============ ПАНЕЛЬ ДЕЙСТВИЙ ============ */
+/* .acts — только контур (px-box): по правилу 03-pixel-box.css нельзя
+   вешать overflow на сам .px-box, иначе обрежется рамка. Padding, gap
+   и скролл живут на вложенном .acts__scroll. */
+.acts {
+  display: flex;
+  flex-direction: column;
+  margin: var(--sp-3);
+  min-height: 0;
+}
+.acts__scroll {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  /* Зазор считается по рамке ДЕТЕЙ, а не панели: у кнопок --bd 3px и
+     2px, вылет тени 6px и 2px. Брать 4px от самой панели тут незачем —
+     лишние пиксели выдавливали строку обратной связи за рамку. */
+  --px-clear: calc(var(--bd-md) * 2 + var(--px-lift));
+  gap: max(var(--sp-3), var(--px-clear));
+  padding: max(var(--sp-3), var(--px-clear));
+}
+.actions__title {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
+  letter-spacing: 1.5px;
+}
+.actions__rule { flex: 1 1 auto; height: var(--bd-sm); background: var(--accent-soft); }
+.actions__hint {
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  letter-spacing: 1px;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.actions__row     { display: grid; gap: max(var(--sp-3), var(--px-clear)); min-width: 0; }
+/* PLAY MUSIC и MUTE делят верхний ряд поровну — два широких, почти
+   квадратных слота, а не одна во всю ширину плашка. */
+.actions__primary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: max(var(--sp-3), var(--px-clear)); }
+/* Слоты с рамкой 2px: тень вылезает на 2px, больше зазора им не нужно.
+   auto-fit, а не repeat(3, ...): раньше слотов было ровно 6 (плюс скрытые
+   до 3 в ряд), сейчас виден только DOWNLOAD CV — фиксированные 3 колонки
+   оставили бы его на трети ширины с пустым местом справа. auto-fit
+   схлопывает пустые треки, поэтому один слот занимает всю ширину ряда,
+   а вернувшиеся слоты снова лягут по несколько в ряд сами. */
+.actions__grid    { --px-clear: calc(var(--bd-sm) * 2 + var(--px-lift));
+                    display: grid; grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); gap: max(var(--sp-3), var(--px-clear)); }
+
+/* ---- Общая плитка действия ---- */
+.act {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: var(--sp-2);
+  width: 100%;
+  min-height: var(--tap);
+  padding: var(--sp-3) var(--sp-2);
+  text-align: center;
+  text-decoration: none;
+  transition: transform 80ms steps(2);
+}
+
+/* ---- Primary: рамка 3px, выраженная тень, крупная плитка ---- */
+/* Заметно крупнее слотов: рамка толще, тень выраженнее, иконка над
+   подписью — как в слотах, но заметно больше. Заливка нейтральная по
+   умолчанию и загорается розовым только когда действие включено (тот же
+   .act[aria-pressed="true"] ниже, что и у слотов) — иначе MUTE в выключенном
+   состоянии выглядел бы так же ярко, как и включённый PLAY MUSIC.
+   Высота фиксированная (как у .act--slot): в WebKit min-height даёт другую
+   метрику двухстрочной подписи, чем в Chromium/Firefox. */
+.act--primary {
+  --bd: var(--bd-md);
+  --px-fill: var(--slot);
+  --px-hi: var(--face-hi);
+  --px-lo: var(--face-lo);
+  height: 136px;
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
+  letter-spacing: 1px;
+}
+.act--primary .act__icon svg { width: 28px; height: 28px; }
+.act--primary .act__label {
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.3;
+}
+/* Второе primary-действие в своём, фиолетовом тоне */
+.act--primary[data-action="outfit"] {
+  --px-fill: var(--violet);
+  --px-hi: var(--violet-hi);
+  --px-lo: var(--violet-lo);
+}
+
+/* ---- Slot: заливка ближе к фону панели, рамка 2px, тень слабее ---- */
+/* Тише главной: заливка близка к фону панели, рамка тоньше, но полная
+   со всех четырёх сторон, тень слабее. */
+.act--slot {
+  --bd: var(--bd-sm);
+  --px-fill: var(--slot);
+  --px-hi: var(--face-hi);
+  --px-lo: var(--face-lo);
+  --px-drop-x: var(--bd-sm);
+  --px-drop-y: var(--bd-sm);
+  --px-drop-c: var(--tile-lo);
+  /* Фиксированная высота, а не min-height: в WebKit метрики двухстрочной
+     подписи давали 63px против 60 в Chromium и Firefox. */
+  height: 60px;
+  padding: var(--sp-2) var(--sp-1);
+  gap: var(--sp-1);
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.5px;
+}
+/* Длинная подпись переносится на две строки, а не обрезается */
+.act--slot .act__label {
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.3;
+}
+.act--slot .act__icon svg { width: 18px; height: 18px; }
+
+/* Единственный жёлтый элемент на сайте */
+.act--secret {
+  --px-fill: var(--secret);
+  --px-line: var(--secret-line);
+  --px-hi: transparent;
+  --px-lo: transparent;
+  border: var(--bd-sm) dashed var(--secret-line);
+}
+
+.act__label { line-height: var(--lh-tight); }
+.act__icon { display: grid; place-items: center; }
+
+/* Бейдж ON: только у включённого переключателя. Абсолютное позиционирование
+   здесь — украшение, не структура. */
+.act__badge {
+  display: none;
+  position: absolute;
+  top: calc(-1 * var(--bd-md));
+  right: calc(-1 * var(--bd-md));
+  padding: 1px var(--sp-1);
+  background: var(--ink);
+  color: var(--panel);
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  letter-spacing: 1px;
+}
+.act[aria-pressed="true"] .act__badge { display: block; }
+
+/* ---- Состояния контролов ---- */
+.act:hover {
+  transform: translateY(-2px);
+  --px-drop-y: calc(var(--bd) * 2 + 2px);
+}
+.act--slot:hover { --px-fill: var(--panel); }
+
+.act:active,
+.act.is-pressed {
+  transform: translateY(2px);
+  --px-drop-x: 0px;
+  --px-drop-y: 0px;
+}
+
+/* Переключатель остаётся подсвеченным, пока включён */
+.act[aria-pressed="true"] {
+  --px-fill: var(--accent-soft);
+  --px-hi: var(--accent-lo);
+  --px-lo: var(--accent-hi);
+}
+
+.act[disabled],
+.act[aria-disabled="true"] {
+  opacity: 0.55;
+  filter: saturate(0.5);
+  transform: none;
+  --px-drop-x: 0px;
+  --px-drop-y: 0px;
+}
+
+/* ---- Строка обратной связи под сеткой ---- */
+.actions__feedback {
+  --bd: var(--bd-sm);
+  --px-fill: var(--panel);
+  --px-line: var(--accent-soft);
+  margin-top: auto;
+  padding: var(--sp-2) var(--sp-3);
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  letter-spacing: 1px;
+  line-height: var(--lh-tight);
+  color: var(--accent);
+}
+
+/* ============ СОСТОЯНИЯ ПЕРСОНАЖА ============
+   Анимации живут на обёртке #stage. Сам <img> не трогаем: его src
+   подставляет gaze.js, и он продолжает следить за курсором пока идёт
+   дыхание или танец. Только transform — никаких width/top по таймеру. */
+.stage {
+  display: grid;
+  place-items: center;
+  transform-origin: 50% 100%;   /* вращение от ног, а не от середины тела */
+}
+.stage[data-state="idle"]  { animation: breathe 2.4s ease-in-out infinite; }
+.stage[data-state="dance"] { animation: dance 0.9s ease-in-out infinite; }
+.stage[data-motion="off"]  { animation: none !important; }
+
+/* Дискретные блоки вместо интерполяции: плавный translate ставил спрайт
+   на дробный пиксель (translateY(-0.9px)) и тот размывался. */
+@keyframes breathe {
+  0%, 49.99%  { transform: translateY(0); }
+  50%, 100%   { transform: translateY(-2px); }
+}
+@keyframes dance {
+  0%   { transform: rotate(-5deg) translateY(0); }
+  25%  { transform: rotate(0deg)  translateY(-4px); }
+  50%  { transform: rotate(5deg)  translateY(0); }
+  75%  { transform: rotate(0deg)  translateY(-4px); }
+  100% { transform: rotate(-5deg) translateY(0); }
+}
+
+/* ============ ДИАЛОГОВОЕ ОКНО: МУЗЫКА ============ */
+.hero__bubble { position: relative; }
+.eq {
+  display: none;
+  position: absolute;
+  left: var(--sp-3);
+  bottom: var(--sp-2);
+  gap: 2px;
+  align-items: flex-end;
+  height: 10px;
+}
+.hero__bubble.is-music .eq { display: flex; }
+.eq__bar {
+  width: 3px;
+  height: 10px;
+  background: var(--accent);
+  transform-origin: 50% 100%;
+  animation: eq 0.8s ease-in-out infinite;
+}
+.eq__bar:nth-child(2) { animation-delay: 0.2s; }
+.eq__bar:nth-child(3) { animation-delay: 0.4s; }
+.eq__bar:nth-child(4) { animation-delay: 0.1s; }
+@keyframes eq {
+  0%, 100% { transform: scaleY(0.4); }
+  50%      { transform: scaleY(1); }
+}
+
+.bubble__note {
+  display: none;
+  position: absolute;
+  right: var(--sp-3);
+  top: var(--sp-2);
+  width: 12px;
+  height: 12px;
+  opacity: 0.5;
+}
+.hero__bubble.is-music .bubble__note { display: block; }
+
+/* ============ СТАТЫ ПЕРСОНАЖА ============ */
+/* Профиль идёт внутри общей панели и своей рамки не имеет */
+.charstats {
+  display: grid;
+  gap: var(--sp-4);
+  padding: var(--sp-2) 0 0;
+}
+
+/* Шапка карточки: имя слева, уровень справа, стрелки рядом с именем */
+.profile__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+.profile__ident { display: flex; align-items: center; gap: var(--sp-2); min-width: 0; }
+.profile__name {
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  letter-spacing: 2px;
+}
+.profile__lvl {
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
+  letter-spacing: 1px;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.charstats__lvl { display: flex; align-items: center; gap: var(--sp-3); }
+.charstats__lvlnum {
+  font-family: var(--font-display);
+  font-size: var(--fs-label);
+  letter-spacing: 1.5px;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+/* Шкала из отдельных квадратиков, не градиент. flex: 1 1 0 даёт им
+   сжиматься вместе с колонкой, оставаясь одинаковыми. */
+.lvlbar { display: flex; gap: 2px; flex: 1 1 auto; min-width: 0; }
+.lvlbar__cell {
+  flex: 1 1 0;
+  min-width: 6px;
+  height: 16px;
+  background: var(--panel-2);
+  border: var(--bd-sm) solid var(--ink);
+}
+.lvlbar__cell.is-on { background: var(--accent); }
+
+
+/* ============ ПОДВАЛ ============ */
+.footer__links { display: flex; gap: var(--sp-3); padding: var(--sp-1); }
+.footer__link {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  --bd: var(--bd-md);
+  --px-fill: var(--accent-soft);
+}
+.footer__link svg { width: 24px; height: 24px; }
+.footer__link:hover { --px-fill: var(--accent-hi); }
+.footer__copy {
+  font-size: var(--fs-copy);
+  letter-spacing: 1px;
+  color: var(--ink-2);
+}
+
+/* ============ BOOT ============ */
+.boot__window { --px-fill: var(--panel); text-align: center; }
+.boot__label {
+  font-family: var(--font-display);
+  font-size: var(--fs-md);
+  letter-spacing: 2px;
+}
+.boot__bar { --px-fill: var(--panel-2); height: 24px; padding: var(--sp-1); }
+.boot__fill {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  transition: width 120ms steps(4);
+}
+
+/* ============ МОДАЛКА ============ */
+.modal__window { --px-fill: var(--panel); }
+.modal__title {
+  font-family: var(--font-display);
+  font-size: var(--fs-md);
+  letter-spacing: 1px;
+}
+.modal__close {
+  display: grid;
+  place-items: center;
+  width: var(--tap);
+  height: var(--tap);
+  font-family: var(--font-display);
+  font-size: var(--fs-md);
+}
+
+/* ============ NOSCRIPT ============ */
+.noscript {
+  display: grid;
+  gap: var(--sp-3);
+  max-width: 480px;
+  margin: var(--sp-8) auto;
+  padding: var(--sp-5);
+}
